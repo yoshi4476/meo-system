@@ -161,3 +161,29 @@ class GBPClient:
         response = requests.get(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
+
+    def get_location_details(self, location_name: str):
+        """
+        Fetch detailed location info.
+        location_name: "locations/{locationId}" (New API) or "accounts/{accountId}/locations/{locationId}"
+        """
+        # Note: list_locations returns "locations/..." format ID from the new API
+        # but we might need to handle mixed formats if we used the old v4 API manually
+        url = f"{self.base_url}/{location_name}"
+        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo"}
+        response = requests.get(url, headers=self._get_headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+
+    def update_location_details(self, location_name: str, update_mask: str, data: dict):
+        """
+        Update location details.
+        location_name: "locations/{locationId}"
+        update_mask: Comma-separated list of fields to update (e.g. "title,phoneNumbers")
+        data: Dict containing the fields to update
+        """
+        url = f"{self.base_url}/{location_name}"
+        params = {"updateMask": update_mask}
+        response = requests.patch(url, headers=self._get_headers(), params=params, json=data)
+        response.raise_for_status()
+        return response.json()
