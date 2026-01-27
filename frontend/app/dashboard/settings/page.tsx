@@ -332,7 +332,7 @@ export default function SettingsPage() {
                          <option value="">▼ 店舗を選択してください</option>
                          {locations.map((loc: any) => (
                            <option key={loc.name} value={loc.name}>
-                             {loc.locationName} ({loc.storeCode || 'コードなし'})
+                             {loc.title} ({loc.storeCode || 'コードなし'})
                            </option>
                          ))}
                        </select>
