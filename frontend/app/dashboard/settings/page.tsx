@@ -128,7 +128,7 @@ export default function SettingsPage() {
             <div className="mt-4 grid grid-cols-3 gap-4 text-center">
               <div className="p-3 bg-slate-900/50 rounded-lg">
                 <div className="text-xs text-slate-400">エンドポイント</div>
-                <div className="text-lg font-bold text-white">15+</div>
+                <div className="text-lg font-bold text-white">15件</div>
               </div>
               <div className="p-3 bg-slate-900/50 rounded-lg">
                 <div className="text-xs text-slate-400">ステータス</div>
@@ -261,8 +261,8 @@ export default function SettingsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">OpenAI API (GPT-4o)</h3>
-                  <p className="text-xs text-slate-400">記事生成、返信作成、分析などのAI機能に必要です</p>
+                  <h3 className="font-bold text-white whitespace-nowrap">OpenAI API (GPT-4o)</h3>
+                  <p className="text-xs text-slate-400 whitespace-nowrap">記事生成、返信作成、分析などのAI機能</p>
                 </div>
               </div>
               {getStatusBadge(connectionStatus.openai)}
