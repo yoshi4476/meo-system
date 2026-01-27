@@ -36,7 +36,7 @@ class StoreCreate(StoreBase):
 
 class Store(StoreBase):
     id: str
-    company_id: str
+    company_id: Optional[str] = None
     posts: List[Post] = []
 
     class Config:
