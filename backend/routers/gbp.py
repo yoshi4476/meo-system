@@ -209,17 +209,23 @@ def list_locations(db: Session = Depends(database.get_db), current_user: models.
     client = google_api.GBPClient(connection.access_token)
     try:
         accounts = client.list_accounts()
-        # For simplicity, use the first account
         if not accounts.get('accounts'):
              return []
-        account_name = accounts['accounts'][0]['name']
-        locations = client.list_locations(account_name)
         
-        # Sync logic (simplified)
-        # In a real app, we would upsert these into the Store table
+        all_locations = []
+        for account in accounts['accounts']:
+            account_name = account['name']
+            location_data = client.list_locations(account_name)
+            if location_data and 'locations' in location_data:
+                all_locations.extend(location_data['locations'])
         
-        return locations
+        # Wrap in expected structure if needed, or just return list via pydantic
+        # The frontend expects { "locations": [...] } based on page.tsx:101
+        return {"locations": all_locations}
     except Exception as e:
+        print(f"DEBUG: Error listing locations: {e}")
+        # Return empty list on error instead of 400 to avoid breaking UI? 
+        # No, better to raise so we know
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/sync/{location_id}")
