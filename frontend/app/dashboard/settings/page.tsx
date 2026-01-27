@@ -21,6 +21,7 @@ export default function SettingsPage() {
 
   // ユーザー情報（本番ではAPIから取得）
   const [userInfo, setUserInfo] = useState({
+    id: '', // Added to fix type error
     name: '',
     email: '',
     role: 'STORE_USER',
