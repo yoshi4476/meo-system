@@ -27,11 +27,11 @@ export default function Home() {
             AIによる分析と自動最適化で、あなたの店舗をGoogleマップの検索上位へ。
           </p>
         
-      <div className="glass p-8 rounded-2xl w-full max-w-md mt-8 flex flex-col gap-6 items-center">
+      <div className="glass p-8 rounded-2xl w-full max-w-md mt-8 flex flex-col gap-6 items-center relative z-50">
           <h2 className="text-2xl font-semibold mb-2">ようこそ</h2>
           <a 
             href={`${process.env.NEXT_PUBLIC_API_URL || ''}/google/login`}
-            className="btn-primary w-full flex items-center justify-center gap-3 decoration-none"
+            className="btn-primary w-full flex items-center justify-center gap-3 decoration-none cursor-pointer relative z-50 hover:scale-105 active:scale-95 transition-transform"
           >
              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.99 19.27 5 15.1 5 10c0-5.1 8.99-9.1 13.95-9.1 2.65 0 4.79.97 6.63 2.64l2.05-2.05C24.47 1.05 19.33 0 13.95 0 6.25 0 0 6.25 0 13.95S6.25 27.9 13.95 27.9c6.98 0 12.91-5.11 12.91-12.91 0-1.29-.15-2.34-.69-3.89z"/></svg>
              Googleでログイン
