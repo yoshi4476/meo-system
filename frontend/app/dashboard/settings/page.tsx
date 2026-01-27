@@ -117,7 +117,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-slate-400 mt-1">バックエンドAPIドキュメント、システム設定、ユーザー管理</p>
               </div>
               <a 
-                href="http://localhost:8001/docs" 
+                href={`${process.env.NEXT_PUBLIC_API_URL || ''}/docs`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-sm font-medium transition-colors"
@@ -236,7 +236,8 @@ export default function SettingsPage() {
               <button 
                 onClick={() => {
                     // バックエンドのGoogle OAuth URLを開く
-                    window.open('http://localhost:8001/google/login?state=user', '_blank');
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+                    window.location.href = `${apiUrl}/google/login?state=user`;
                     // ステータスを更新（実際にはコールバックで行う）
                     setTimeout(() => {
                       setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
