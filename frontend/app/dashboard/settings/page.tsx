@@ -247,15 +247,33 @@ export default function SettingsPage() {
             token: typeof window !== 'undefined' ? localStorage.getItem('meo_auth_token')?.substring(0, 10) + '...' : '(server)',
             apiUrl: process.env.NEXT_PUBLIC_API_URL,
             // @ts-ignore
-            lastError: typeof window !== 'undefined' ? window._lastDebugError : null
+            lastError: typeof window !== 'undefined' ? window._lastDebugError : null,
+            loginUrl: `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${userInfo.id || 'default'}`
           }, null, 2)}
         </pre>
-        <button 
-           onClick={fetchUserInfo}
-           className="mt-2 text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600"
-        >
-           最新情報を再取得
-        </button>
+        <div className="flex gap-2 mt-2">
+            <button 
+               onClick={fetchUserInfo}
+               className="text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600"
+            >
+               最新情報を再取得
+            </button>
+            <button
+               onClick={async () => {
+                   const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${userInfo.id || 'default'}`;
+                   console.log("Testing Login URL:", url);
+                   try {
+                       const res = await fetch(url, { method: 'HEAD' }); // Check if reachable
+                       alert(`Link Check: ${res.status} ${res.statusText}`);
+                   } catch(e) {
+                       alert(`Link Check Error: ${e}`);
+                   }
+               }}
+               className="text-xs bg-blue-900/50 px-2 py-1 rounded hover:bg-blue-800/50"
+            >
+               リンク診断
+            </button>
+        </div>
       </section>
 
       {/* 管理者専用: API管理セクション */}
