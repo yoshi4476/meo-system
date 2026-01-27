@@ -46,20 +46,37 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        # DEBUG LOGGING
+        print(f"DEBUG AUTH: Verifying token: {token[:10]}...")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
+        print(f"DEBUG AUTH: Payload sub (email): {email}")
+        
         if email is None:
+            print("DEBUG AUTH: Email is None")
             raise credentials_exception
-    except JWTError:
-        raise credentials_exception
+    except JWTError as e:
+        print(f"DEBUG AUTH: JWTError: {e}")
+        raise HTTPException(
+            status_code=401,
+            detail=f"Auth Error: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     from sqlalchemy.orm import joinedload
     user = db.query(models.User).options(
         joinedload(models.User.google_connection),
         joinedload(models.User.store)
     ).filter(models.User.email == email).first()
+    
     if user is None:
-        raise credentials_exception
+        print(f"DEBUG AUTH: User not found for email {email}")
+        raise HTTPException(
+            status_code=401,
+            detail=f"Auth Error: User not found for {email}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
     return user
 
 def require_super_admin(current_user: models.User = Depends(get_current_user)):
