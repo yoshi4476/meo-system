@@ -133,7 +133,12 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
         connection.expiry = datetime.utcnow() + timedelta(seconds=tokens.get("expires_in", 3600))
         
         db.commit()
-        return {"message": "Successfully connected to Google Business Profile"}
+        
+        # Redirect to Frontend Dashboard
+        import os
+        from fastapi.responses import RedirectResponse
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        return RedirectResponse(url=f"{frontend_url}/dashboard?status=success")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
