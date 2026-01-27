@@ -124,12 +124,9 @@ export default function SettingsPage() {
 
       if (savedGoogleKey) {
         setApiKeys(prev => ({ ...prev, google: savedGoogleKey }));
-        // Legacy: API key presence implies connected
-        // setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
       }
       if (savedOpenaiKey) {
         setApiKeys(prev => ({ ...prev, openai: savedOpenaiKey }));
-        setConnectionStatus(prev => ({ ...prev, openai: 'connected' }));
       }
       
       if (savedUserInfo) {
@@ -154,11 +151,9 @@ export default function SettingsPage() {
     } else {
       if (apiKeys.openai) {
         localStorage.setItem('openai_api_key', apiKeys.openai);
-        setConnectionStatus(prev => ({ ...prev, openai: 'connected' }));
         alert('OpenAI APIキーを保存しました');
       } else {
         localStorage.removeItem('openai_api_key');
-        setConnectionStatus(prev => ({ ...prev, openai: 'disconnected' }));
       }
     }
   };
@@ -271,10 +266,11 @@ export default function SettingsPage() {
             <label className="block text-sm text-slate-400 mb-2">ユーザー名</label>
             <input 
               type="text" 
+              // @ts-ignore
               value={userInfo.name || ''} 
-              onChange={(e) => setUserInfo(prev => ({ ...prev, name: e.target.value }))}
+              readOnly
               placeholder="ユーザー名を入力"
-              className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
+              className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white/50 focus:outline-none focus:border-aurora-cyan cursor-not-allowed"
             />
           </div>
           <div>
