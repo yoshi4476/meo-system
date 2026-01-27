@@ -2,7 +2,8 @@
 
 
 
-const handleGoogleLogin = () => {
+export default function Home() {
+  const handleGoogleLogin = () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     if (!apiUrl) {
       alert('システムエラー: APIへの接続URLが設定されていません。管理者に連絡してください。');
