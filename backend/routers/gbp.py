@@ -260,7 +260,7 @@ async def sync_store_data(location_id: str, db: Session = Depends(database.get_d
     
     return {"status": "success", "message": f"Successfully synced data for location {location_id}", "synced_items": {"reviews": 12, "posts": 5, "insights": "updated"}}
 
-class LocationSelectRequest(models.BaseModel):
+class LocationSelectRequest(BaseModel):
     locationId: str
     displayName: str
     storeCode: str = None
