@@ -7,11 +7,11 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24 relative overflow-hidden">
-      {/* 背景エフェクト */}
-      <div className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none">
+      {/* 背景エフェクト - 診断のため一時的に無効化 */}
+      {/* <div className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-aurora-purple/20 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-aurora-cyan/20 rounded-full blur-[120px] animate-pulse delay-1000"></div>
-      </div>
+      </div> */}
 
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
         <p className="fixed left-0 top-0 flex w-full justify-center border-b border-white/10 bg-deep-navy/50 backdrop-blur-2xl pb-6 pt-8 lg:static lg:w-auto lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30 text-black font-bold">
@@ -28,7 +28,7 @@ export default function Home() {
           </p>
         
       <div className="glass p-8 rounded-2xl w-full max-w-md mt-8 flex flex-col gap-6 items-center relative z-50">
-          <h2 className="text-2xl font-semibold mb-2">ようこそ</h2>
+          <h2 className="text-2xl font-semibold mb-2">ようこそ (v3 check)</h2>
           <a 
             href={`${process.env.NEXT_PUBLIC_API_URL || ''}/google/login`}
             className="btn-primary w-full flex items-center justify-center gap-3 decoration-none cursor-pointer relative z-50 hover:scale-105 active:scale-95 transition-transform"
