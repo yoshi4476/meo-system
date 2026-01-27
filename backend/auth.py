@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 import os
-from . import models, database
+import models, database
 from sqlalchemy.orm import Session
 
 # Secret key settings
