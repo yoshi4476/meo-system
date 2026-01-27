@@ -189,7 +189,7 @@ export default function SettingsPage() {
             apiUrl: process.env.NEXT_PUBLIC_API_URL,
             // @ts-ignore
             lastError: typeof window !== 'undefined' ? window._lastDebugError : null,
-            loginUrl: `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${userInfo.id || 'default'}`
+            loginUrl: `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${userInfo?.id || 'default'}`
           }, null, 2)}
         </pre>
         <div className="flex gap-2 mt-2">
@@ -201,7 +201,7 @@ export default function SettingsPage() {
             </button>
             <button
                onClick={async () => {
-                   const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${userInfo.id || 'default'}`;
+                   const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${userInfo?.id || 'default'}`;
                    console.log("Testing Login URL:", url);
                    try {
                        const res = await fetch(url, { method: 'HEAD' }); // Check if reachable
@@ -267,7 +267,7 @@ export default function SettingsPage() {
             <input 
               type="text" 
               // @ts-ignore
-              value={userInfo.name || ''} 
+              value={userInfo?.name || ''} 
               readOnly
               placeholder="ユーザー名を入力"
               className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white/50 focus:outline-none focus:border-aurora-cyan cursor-not-allowed"
@@ -277,7 +277,7 @@ export default function SettingsPage() {
             <label className="block text-sm text-slate-400 mb-2">メールアドレス</label>
             <input 
               type="email" 
-              value={userInfo.email} 
+              value={userInfo?.email || ''} 
               readOnly
               className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-slate-400 cursor-not-allowed"
             />
@@ -285,7 +285,7 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm text-slate-400 mb-2">権限ロール</label>
              <div className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-slate-400">
-               {userInfo.role}
+               {userInfo?.role || '...'}
              </div>
           </div>
         </div>
