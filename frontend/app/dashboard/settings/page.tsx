@@ -174,6 +174,25 @@ export default function SettingsPage() {
         <p className="text-slate-400 mt-1">アカウント設定、通知、API連携の管理</p>
       </div>
 
+      {/* DEBUG SECTION */}
+      <section className="glass-card p-4 border border-yellow-500/30 bg-yellow-900/10">
+        <h3 className="text-yellow-400 font-bold mb-2">🔧 デバッグ情報</h3>
+        <pre className="text-xs text-slate-300 overflow-auto max-h-40 bg-black/50 p-2 rounded">
+          {JSON.stringify({
+            connectionStatus,
+            userInfo,
+            token: localStorage.getItem('meo_auth_token')?.substring(0, 10) + '...',
+            apiUrl: process.env.NEXT_PUBLIC_API_URL
+          }, null, 2)}
+        </pre>
+        <button 
+           onClick={fetchUserInfo}
+           className="mt-2 text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600"
+        >
+           最新情報を再取得
+        </button>
+      </section>
+
       {/* 管理者専用: API管理セクション */}
       {isSuperAdmin && (
         <section className="glass-card p-6 border-2 border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
