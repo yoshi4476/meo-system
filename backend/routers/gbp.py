@@ -125,7 +125,11 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
         
         # 2. If User not known from state (Login Flow), fetch from Google
         if not user:
-            user_info = google_api.get_user_info()
+            # Instantiate Client with access token to fetch user info
+            access_token = tokens.get("access_token")
+            client = google_api.GBPClient(access_token)
+            user_info = client.get_user_info()
+            
             email = user_info.get("email")
             if not email:
                 raise HTTPException(status_code=400, detail="Google account has no email")
