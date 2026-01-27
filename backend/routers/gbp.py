@@ -115,31 +115,70 @@ def login_google(state: str = "default"):
 @router.get("/callback")
 def callback_google(code: str, state: str, db: Session = Depends(database.get_db)):
     try:
-        # State should match user_id (simple validation)
-        user = db.query(models.User).filter(models.User.id == state).first()
-        if not user:
-             raise HTTPException(status_code=400, detail="Invalid state parameter")
-
+        user = None
+        # State *usually* matches user_id for connection flow, but "default" means login flow
+        if state != "default":
+             user = db.query(models.User).filter(models.User.id == state).first()
+        
+        # 1. Get Tokens
         tokens = google_api.get_tokens(code)
         
-        # Save or update connection
+        # 2. If User not known from state (Login Flow), fetch from Google
+        if not user:
+            user_info = google_api.get_user_info()
+            email = user_info.get("email")
+            if not email:
+                raise HTTPException(status_code=400, detail="Google account has no email")
+            
+            # Find existing user by email
+            user = db.query(models.User).filter(models.User.email == email).first()
+            
+            # If still no user, Auto-Register (Create User)
+            if not user:
+                # Create a random password since they use Google Login
+                import secrets
+                random_password = secrets.token_urlsafe(16)
+                hashed_password = auth.get_password_hash(random_password)
+                
+                user = models.User(
+                    email=email,
+                    hashed_password=hashed_password,
+                    role="STORE_USER", # Default role
+                    is_active=True
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+
+        # 3. Save/Update Google Connection
         connection = user.google_connection
         if not connection:
             connection = models.GoogleConnection(user_id=user.id)
             db.add(connection)
         
         connection.access_token = tokens.get("access_token")
-        connection.refresh_token = tokens.get("refresh_token") # Note: only returned on first consent or force
+        connection.refresh_token = tokens.get("refresh_token")
         connection.scopes = tokens.get("scope")
         connection.expiry = datetime.utcnow() + timedelta(seconds=tokens.get("expires_in", 3600))
         
         db.commit()
         
-        # Redirect to Frontend Dashboard
+        # 4. Generate App Token (JWT) for the Frontend
+        access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = auth.create_access_token(
+            data={"sub": user.email}, expires_delta=access_token_expires
+        )
+        
+        # 5. Redirect to Frontend Dashboard with Token
         import os
         from fastapi.responses import RedirectResponse
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-        return RedirectResponse(url=f"{frontend_url}/dashboard?status=success")
+        
+        # Redirect to /dashboard with token query param
+        # Frontend should grab this token and save it
+        response = RedirectResponse(url=f"{frontend_url}/dashboard?token={access_token}&status=success")
+        return response
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

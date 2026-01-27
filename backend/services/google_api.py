@@ -118,3 +118,12 @@ class GBPClient:
         response = requests.post(url, headers=self._get_headers(), json=post_data)
         response.raise_for_status()
         return response.json()
+
+    def get_user_info(self):
+        """
+        Fetch user info (email, name) from Google.
+        """
+        url = "https://www.googleapis.com/oauth2/v2/userinfo"
+        response = requests.get(url, headers=self._get_headers())
+        response.raise_for_status()
+        return response.json()
