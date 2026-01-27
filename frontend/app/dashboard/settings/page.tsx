@@ -38,31 +38,48 @@ export default function SettingsPage() {
   const fetchUserInfo = async () => {
     try {
       const token = localStorage.getItem('meo_auth_token');
-      if (!token) return;
+      if (!token) {
+        // @ts-ignore
+        window._lastDebugError = "No token found in localStorage";
+        return;
+      }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+      console.log(`Fetching user info from: ${apiUrl}/users/me`);
+      
       const response = await fetch(`${apiUrl}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        // @ts-ignore
+        window._lastDebugError = `HTTP Error ${response.status}: ${errorText}`;
+        console.error('Fetch error:', response.status, errorText);
+        return;
+      }
 
-      if (response.ok) {
-        const data = await response.json();
-        setUserInfo(prev => ({
-          ...prev,
-          ...data,
-          role: data.role || 'STORE_USER'
-        }));
-        
-        // 接続状態を更新
-        if (data.is_google_connected) {
-          setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
-          // 接続済みなら店舗一覧を取得
-          fetchGoogleLocations();
-        }
+      const data = await response.json();
+      // @ts-ignore
+      window._lastDebugError = null; // Clear error on success
+
+      setUserInfo(prev => ({
+        ...prev,
+        ...data,
+        role: data.role || 'STORE_USER'
+      }));
+      
+      // 接続状態を更新
+      if (data.is_google_connected) {
+        setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
+        // 接続済みなら店舗一覧を取得
+        fetchGoogleLocations();
       }
     } catch (error) {
+      // @ts-ignore
+      window._lastDebugError = `Network/Exception: ${error.message}`;
       console.error('Failed to fetch user info:', error);
     }
   };
@@ -182,7 +199,9 @@ export default function SettingsPage() {
             connectionStatus,
             userInfo,
             token: typeof window !== 'undefined' ? localStorage.getItem('meo_auth_token')?.substring(0, 10) + '...' : '(server)',
-            apiUrl: process.env.NEXT_PUBLIC_API_URL
+            apiUrl: process.env.NEXT_PUBLIC_API_URL,
+            // @ts-ignore
+            lastError: typeof window !== 'undefined' ? window._lastDebugError : null
           }, null, 2)}
         </pre>
         <button 
