@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .. import models, database, auth
-from ..services import google_api
+import models, database, auth
+from services import google_api
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional, List

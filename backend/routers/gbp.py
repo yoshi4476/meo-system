@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from .. import models, database, auth
-from ..services import google_api
+import models, database, auth
+from services import google_api
 from datetime import datetime, timedelta
 
 router = APIRouter(

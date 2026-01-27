@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from .database import SessionLocal, engine
-from . import models, schemas, auth
-from .routers import gbp, posts, reviews, admin
+from database import SessionLocal, engine
+import models, schemas, auth
+from routers import gbp, posts, reviews, admin
 from datetime import timedelta
 
 models.Base.metadata.create_all(bind=engine)
