@@ -262,7 +262,7 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-white whitespace-nowrap">OpenAI API (GPT-4o)</h3>
-                  <p className="text-xs text-slate-400 whitespace-nowrap">記事生成、返信作成、分析などのAI機能</p>
+                  <p className="text-xs text-slate-400 whitespace-nowrap">記事生成、返信作成、分析などの自動生成機能</p>
                 </div>
               </div>
               {getStatusBadge(connectionStatus.openai)}
@@ -285,7 +285,7 @@ export default function SettingsPage() {
             </div>
             {!apiKeys.openai && (
               <p className="text-xs text-yellow-400 mt-2 flex items-center gap-1">
-                <span>⚠️</span> APIキーが設定されていないため、AI機能（投稿生成、クチコミ返信など）はモックモードで動作します。
+                <span>⚠️</span> APIキーが設定されていないため、自動生成機能（投稿生成、クチコミ返信など）はモックモードで動作します。
               </p>
             )}
           </div>
