@@ -69,16 +69,50 @@ class GBPClient:
 
     def list_accounts(self):
         url = f"{self.account_url}/accounts"
-        response = requests.get(url, headers=self._get_headers())
-        response.raise_for_status()
-        return response.json()
+        all_accounts = []
+        next_page_token = None
+        
+        while True:
+            params = {}
+            if next_page_token:
+                params["pageToken"] = next_page_token
+                
+            response = requests.get(url, headers=self._get_headers(), params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            if "accounts" in data:
+                all_accounts.extend(data["accounts"])
+            
+            next_page_token = data.get("nextPageToken")
+            if not next_page_token:
+                break
+                
+        return {"accounts": all_accounts}
 
     def list_locations(self, account_name: str):
         url = f"{self.base_url}/{account_name}/locations"
         params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea"}
-        response = requests.get(url, headers=self._get_headers(), params=params)
-        response.raise_for_status()
-        return response.json()
+        all_locations = []
+        next_page_token = None
+        
+        while True:
+            current_params = params.copy()
+            if next_page_token:
+                current_params["pageToken"] = next_page_token
+                
+            response = requests.get(url, headers=self._get_headers(), params=current_params)
+            response.raise_for_status()
+            data = response.json()
+            
+            if "locations" in data:
+                all_locations.extend(data["locations"])
+                
+            next_page_token = data.get("nextPageToken")
+            if not next_page_token:
+                break
+                
+        return {"locations": all_locations}
 
     def list_reviews(self, location_name: str):
         """
