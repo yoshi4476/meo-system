@@ -73,3 +73,38 @@ def require_super_admin(current_user: models.User = Depends(get_current_user)):
             detail="Not authorized. Super Admin access required."
         )
     return current_user
+
+def require_company_admin(current_user: models.User = Depends(get_current_user)):
+    """
+    Dependency to ensure user is SUPER_ADMIN or COMPANY_ADMIN.
+    """
+    if current_user.role not in ["SUPER_ADMIN", "COMPANY_ADMIN"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized. Company Admin access required."
+        )
+    return current_user
+
+def require_store_access(store_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Dependency to ensure user has access to the specific store.
+    - SUPER_ADMIN: Access all
+    - COMPANY_ADMIN: Access if store belongs to their company
+    - STORE_USER: Access if assigned to this store
+    """
+    if current_user.role == "SUPER_ADMIN":
+        return current_user
+        
+    store = db.query(models.Store).filter(models.Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found in database")
+
+    if current_user.role == "COMPANY_ADMIN":
+        if current_user.company_id != store.company_id:
+            raise HTTPException(status_code=403, detail="Not authorized for this company's store")
+            
+    if current_user.role == "STORE_USER":
+        if current_user.store_id != store_id:
+             raise HTTPException(status_code=403, detail="Not authorized for this store")
+             
+    return current_user

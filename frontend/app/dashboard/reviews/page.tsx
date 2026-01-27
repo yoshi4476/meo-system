@@ -1,224 +1,202 @@
 'use client';
-import { useState } from 'react';
 
-// モックデータ：クチコミ
-const mockReviews = [
-  { 
-    id: 1, 
-    user: '田中 太郎', 
-    rating: 5, 
-    date: '2日前', 
-    comment: 'ランチのパスタが絶品でした！スタッフの対応も丁寧で、とても居心地が良かったです。また利用します。',
-    reply: '',
-    status: 'unreplied'
-  },
-  { 
-    id: 2, 
-    user: '鈴木 花子', 
-    rating: 4, 
-    date: '3日前', 
-    comment: '雰囲気は最高ですが、混雑時の提供時間が少し長かったです。味は間違いないので、そこだけ残念。',
-    reply: '',
-    status: 'unreplied'
-  },
-  { 
-    id: 3, 
-    user: 'John Smith', 
-    rating: 5, 
-    date: '1週間前', 
-    comment: 'Great atmosphere and delicious coffee!',
-    reply: 'Thank you for visiting! We look forward to seeing you again.',
-    status: 'replied'
-  }
-];
+import { useState, useEffect } from 'react';
+import { useDashboard } from '../../../contexts/DashboardContext';
+import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
+
+type Review = {
+    id: string;
+    reviewer_name: string;
+    star_rating: string; // ENUM or string 'FIVE' etc? Backend schema implies string.
+    comment: string;
+    reply_comment?: string;
+    create_time: string;
+    reply_time?: string;
+};
+
+// Helper to convert star rating string/literal to number if needed, or visual
+const StarRating = ({ rating }: { rating: string }) => {
+    // Basic mapping if API returns "FIVE" etc, or numbers. Assuming numbers/strings "5" based on typical Google API unless enum.
+    // Google often returns "FIVE", "FOUR". Let's handle both.
+    const map: {[key: string]: number} = { 'FIVE': 5, 'FOUR': 4, 'THREE': 3, 'TWO': 2, 'ONE': 1 };
+    const stars = map[rating] || parseInt(rating) || 0;
+    
+    return (
+        <div className="flex text-yellow-500">
+            {[...Array(5)].map((_, i) => (
+                <span key={i} className={i < stars ? "text-yellow-400" : "text-slate-600"}>★</span>
+            ))}
+        </div>
+    );
+};
 
 export default function ReviewsPage() {
-  const [reviews, setReviews] = useState(mockReviews);
-  const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  
-  // 共通プロンプト機能
-  const [commonPrompt, setCommonPrompt] = useState('親しみやすく、感謝の気持ちを伝えて。再来店を促すような一言を添えて。');
-  const [commonPromptLocked, setCommonPromptLocked] = useState(false);
+    const { userInfo } = useDashboard();
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
 
-  const handleSelectReview = (id: number) => {
-    setSelectedReviewId(id);
-    const review = reviews.find(r => r.id === id);
-    if (review?.reply) {
-      setReplyText(review.reply);
-    } else {
-      setReplyText('');
-    }
-  };
-
-  const handleGenerateReply = () => {
-    if (!selectedReviewId) return;
-    
-    setIsGenerating(true);
-    setTimeout(() => {
-      const review = reviews.find(r => r.id === selectedReviewId);
-      let generatedReply = '';
-      
-      if (review) {
-        generatedReply = `${review.user}様\n\nご来店いただき、また${review.rating}星の高評価をいただきありがとうございます。\n`;
-        
-        if (review.rating >= 4) {
-          generatedReply += `「${review.comment.substring(0, 10)}...」というお褒めの言葉、スタッフ一同大変嬉しく思います。\n`;
-        } else {
-          generatedReply += `貴重なご意見ありがとうございます。ご指摘いただいた点は真摯に受け止め、改善に努めてまいります。\n`;
+    useEffect(() => {
+        if (userInfo?.store_id) {
+            fetchReviews();
         }
+    }, [userInfo]);
 
-        // 共通プロンプトの内容を反映（擬似的に追加）
-        // 実際にはAIがこれを考慮して生成する
-        const promptNote = commonPrompt.length > 20 ? commonPrompt.substring(0, 20) + '...' : commonPrompt;
-        
-        generatedReply += `\n（AIへの指示「${promptNote}」に基づき、心温まるメッセージを作成しました）\n`;
-        generatedReply += `\nまたのご来店を心よりお待ちしております。\n\n渋谷店 店長`;
-      }
-      
-      setReplyText(generatedReply);
-      setIsGenerating(false);
-    }, 1500);
-  };
+    const fetchReviews = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/?store_id=${userInfo?.store_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setReviews(await res.json());
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const handleSaveReply = () => {
-    if (!selectedReviewId) return;
-    
-    setReviews(prev => prev.map(r => {
-      if (r.id === selectedReviewId) {
-        return { ...r, reply: replyText, status: 'replied' };
-      }
-      return r;
-    }));
-    
-    setSelectedReviewId(null);
-    setReplyText('');
-    alert('返信を保存しました');
-  };
+    const handleSync = async () => {
+        setIsSyncing(true);
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/sync/${userInfo?.store_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                alert(`同期完了: ${data.message}`);
+                fetchReviews();
+            } else {
+                alert('同期に失敗しました');
+            }
+        } catch (e) {
+            alert('エラーが発生しました');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
-  const selectedReview = reviews.find(r => r.id === selectedReviewId);
+    const handleReply = async (reviewId: string) => {
+        if (!replyText) return;
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/${reviewId}/reply`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ reply_text: replyText })
+            });
+            
+            if (res.ok) {
+                alert('返信しました');
+                setReplyingTo(null); // Close box
+                setReplyText('');
+                fetchReviews();
+            } else {
+                const err = await res.json();
+                alert(`返信失敗: ${err.detail}`);
+            }
+        } catch (e) {
+            alert('エラーが発生しました');
+        }
+    };
 
-  return (
-    <div className="flex h-[calc(100vh-6rem)] gap-6">
-      {/* 左カラム：クチコミリスト + 共通プロンプト */}
-      <div className="w-1/3 flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-white">クチコミ管理</h1>
-          <div className="flex gap-2 text-sm">
-            <span className="text-slate-400">未返信: <strong className="text-red-400">{reviews.filter(r => r.status === 'unreplied').length}件</strong></span>
-          </div>
-        </div>
+    if (!userInfo?.store_id) return <div className="p-8 text-slate-400">店舗を選択してください</div>;
 
-        {/* 共通プロンプト設定エリア */}
-        <div className="glass-card p-4 border border-aurora-purple/30 bg-aurora-purple/5">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold text-aurora-cyan flex items-center gap-1">
-              <span>✨</span> 全返信共通AI指示 (プロンプト)
-            </label>
-            <button
-              onClick={() => setCommonPromptLocked(!commonPromptLocked)}
-              className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full transition-colors ${commonPromptLocked ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-white/10 text-slate-400 hover:bg-white/20'}`}
-            >
-              {commonPromptLocked ? '🔒 ロック中' : '🔓 ロック'}
-            </button>
-          </div>
-          <textarea
-            className={`w-full bg-slate-900/50 border rounded-lg px-3 py-2 text-white text-xs focus:outline-none transition-colors h-16 resize-none ${commonPromptLocked ? 'border-red-500/30 bg-red-500/5 text-slate-400' : 'border-white/10 focus:border-aurora-cyan'}`}
-            placeholder="例: 親しみやすく、感謝の気持ちを伝えて"
-            value={commonPrompt}
-            onChange={(e) => !commonPromptLocked && setCommonPrompt(e.target.value)}
-            disabled={commonPromptLocked}
-          />
-          {commonPromptLocked && <p className="text-[10px] text-red-400 mt-1">管理者が設定をロックしています</p>}
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-          {reviews.map((review) => (
-            <div 
-              key={review.id}
-              onClick={() => handleSelectReview(review.id)}
-              className={`p-4 rounded-xl cursor-pointer transition-all border ${
-                selectedReviewId === review.id
-                  ? 'bg-aurora-purple/20 border-aurora-purple'
-                  : 'bg-slate-800/50 border-white/5 hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
-                    {review.user.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-white">{review.user}</div>
-                    <div className="text-xs text-slate-500">{review.date}</div>
-                  </div>
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold text-white">クチコミ管理</h1>
+                    <p className="text-slate-400 mt-1">お客様からのクチコミを確認・返信します</p>
                 </div>
-                <div className="flex flex-col items-end">
-                  <div className="text-yellow-400 text-sm">{'★'.repeat(review.rating)}</div>
-                  {review.status === 'unreplied' && (
-                    <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full mt-1">未返信</span>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-slate-300 line-clamp-2">{review.comment}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 右カラム：返信エディタ */}
-      <div className="flex-1 glass-card p-6 flex flex-col h-full relative overflow-hidden">
-        {selectedReview ? (
-          <>
-            <div className="mb-6 pb-6 border-b border-white/10">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-yellow-400">{'★'.repeat(selectedReview.rating)}</span>
-                <span className="text-slate-400 text-sm">by {selectedReview.user}</span>
-              </div>
-              <p className="text-white text-lg italic">&quot;{selectedReview.comment}&quot;</p>
-            </div>
-
-            <div className="flex-1 flex flex-col gap-4">
-              <div className="flex-1 relative">
-                <textarea 
-                  className="w-full h-full bg-slate-900/50 border border-white/10 rounded-xl p-4 text-white resize-none focus:outline-none focus:border-aurora-purple"
-                  placeholder="返信内容を入力するか、AI生成ボタンを押してください..."
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                />
                 <button 
-                  onClick={handleGenerateReply}
-                  disabled={isGenerating}
-                  className="absolute bottom-4 right-4 px-4 py-2 rounded-lg bg-aurora-purple hover:bg-aurora-purple/80 text-white text-sm font-medium shadow-lg shadow-purple-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
+                    onClick={handleSync}
+                    disabled={isSyncing}
+                    className="bg-slate-700 text-white border border-slate-600 px-4 py-2 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50"
                 >
-                  {isGenerating ? '生成中...' : '✨ AI返信作成'}
+                    {isSyncing ? '同期中...' : '🔄 Googleから同期'}
                 </button>
-              </div>
             </div>
 
-            <div className="mt-4 flex justify-end gap-3">
-              <button 
-                onClick={() => setSelectedReviewId(null)}
-                className="px-6 py-2 rounded-lg border border-white/10 text-slate-300 hover:bg-white/5 transition-colors"
-              >
-                キャンセル
-              </button>
-              <button 
-                onClick={handleSaveReply}
-                className="px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium shadow-lg shadow-green-500/20 transition-colors"
-              >
-                返信を公開
-              </button>
+            <div className="grid gap-4">
+                {isLoading ? (
+                    <div className="text-slate-400 text-center py-8">読み込み中...</div>
+                ) : reviews.length === 0 ? (
+                    <div className="text-slate-500 text-center py-8 glass-card">
+                        クチコミはまだありません。<br/>
+                        同期ボタンを押して最新のクチコミを取得してください。
+                    </div>
+                ) : (
+                    reviews.map(review => (
+                        <div key={review.id} className="glass-card p-6 gap-4">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-slate-400">
+                                        {review.reviewer_name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-white">{review.reviewer_name}</div>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <StarRating rating={review.star_rating} />
+                                            <span>•</span>
+                                            <span>{format(new Date(review.create_time), 'yyyy/MM/dd', { locale: ja })}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {!review.reply_comment && (
+                                    <button 
+                                        onClick={() => setReplyingTo(replyingTo === review.id ? null : review.id)}
+                                        className="text-aurora-cyan text-sm hover:underline"
+                                    >
+                                        {replyingTo === review.id ? 'キャンセル' : '返信する'}
+                                    </button>
+                                )}
+                            </div>
+
+                            <p className="text-slate-300 mb-4 whitespace-pre-wrap">{review.comment || '(コメントなし)'}</p>
+
+                            {review.reply_comment && (
+                                <div className="bg-slate-800/50 p-4 rounded-lg border-l-2 border-aurora-cyan ml-4">
+                                    <div className="text-xs text-slate-400 mb-1 flex justify-between">
+                                        <span className="font-bold text-aurora-cyan">オーナーからの返信</span>
+                                        <span>{review.reply_time && format(new Date(review.reply_time), 'yyyy/MM/dd', { locale: ja })}</span>
+                                    </div>
+                                    <p className="text-slate-300 text-sm whitespace-pre-wrap">{review.reply_comment}</p>
+                                </div>
+                            )}
+
+                            {replyingTo === review.id && !review.reply_comment && (
+                                <div className="mt-4 animate-fade-in pl-14">
+                                    <textarea 
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg p-3 text-white h-24 focus:border-aurora-cyan focus:outline-none mb-2"
+                                        placeholder="返信内容を入力..."
+                                    />
+                                    <div className="flex justify-end">
+                                        <button 
+                                            onClick={() => handleReply(review.id)}
+                                            className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded text-sm hover:bg-cyan-400"
+                                        >
+                                            返信を送信
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
             </div>
-          </>
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center text-slate-500">
-            <div className="text-4xl mb-4">💬</div>
-            <p>左側のリストからクチコミを選択してください</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        </div>
+    );
 }

@@ -175,15 +175,60 @@ class GBPClient:
         response.raise_for_status()
         return response.json()
 
-    def update_location_details(self, location_name: str, update_mask: str, data: dict):
-        """
-        Update location details.
-        location_name: "locations/{locationId}"
-        update_mask: Comma-separated list of fields to update (e.g. "title,phoneNumbers")
-        data: Dict containing the fields to update
-        """
         url = f"{self.base_url}/{location_name}"
         params = {"updateMask": update_mask}
         response = requests.patch(url, headers=self._get_headers(), params=params, json=data)
+        response.raise_for_status()
+        return response.json()
+
+    def fetch_performance_metrics(self, location_name: str, start_date: dict, end_date: dict, daily_metric: str = "BUSINESS_IMPRESSIONS_DESKTOP_MAPS"):
+        """
+        Fetch performance metrics (New Performance API).
+        location_name: "locations/{locationId}"
+        start_date: {"year": 2023, "month": 1, "day": 1}
+        end_date: {"year": 2023, "month": 1, "day": 31}
+        daily_metric: Enum (e.g., BUSINESS_IMPRESSIONS_DESKTOP_MAPS, BUSINESS_IMPRESSIONS_DESKTOP_SEARCH, etc.)
+                      Note: The API allows fetching multiple metrics. For simplicity, we implement one or list.
+        """
+        url = f"https://businessprofileperformance.googleapis.com/v1/{location_name}:fetchMultiDailyMetricsTimeSeries"
+        
+        # We'll fetch a standard set of metrics for the dashboard
+        metrics = [
+            "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
+            "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
+            "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
+            "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
+            "WEBSITE_CLICKS",
+            "CALL_CLICKS",
+            "DRIVING_DIRECTIONS_CLICKS"
+        ]
+        
+        params = {
+            "dailyMetrics": metrics,
+            "dailyRange": {
+                "start_date": start_date,
+                "end_date": end_date
+            }
+        }
+        
+        # Use GET with query params? No, documentation says GET with query params for v1?
+        # Actually it's often a GET with complicated query params.
+        # Format: ?dailyMetrics=...&dailyRange.startDate.year=...
+        
+        query_params = []
+        for m in metrics:
+            query_params.append(f"dailyMetrics={m}")
+            
+        query_params.append(f"dailyRange.startDate.year={start_date['year']}")
+        query_params.append(f"dailyRange.startDate.month={start_date['month']}")
+        query_params.append(f"dailyRange.startDate.day={start_date['day']}")
+        query_params.append(f"dailyRange.endDate.year={end_date['year']}")
+        query_params.append(f"dailyRange.endDate.month={end_date['month']}")
+        query_params.append(f"dailyRange.endDate.day={end_date['day']}")
+        
+        query_string = "&".join(query_params)
+        full_url = f"{url}?{query_string}"
+        
+        response = requests.get(full_url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
