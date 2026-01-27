@@ -1,0 +1,230 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "MEO Mastermind" [level=1] [ref=e5]
+      - button [ref=e6]:
+        - img [ref=e7]
+    - complementary [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - heading "MEO Mastermind" [level=1] [ref=e13]
+          - paragraph [ref=e14]: エンタープライズ版
+        - button [ref=e15]:
+          - img [ref=e16]
+      - generic [ref=e18]:
+        - generic [ref=e19]: 店舗を選択
+        - combobox [ref=e20]:
+          - option "渋谷店" [selected]
+          - option "新宿店"
+          - option "池袋店"
+          - option "すべての店舗"
+      - navigation [ref=e21]:
+        - paragraph [ref=e22]: メイン
+        - link "ダッシュボード" [ref=e23] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e24]
+          - generic [ref=e26]: ダッシュボード
+        - link "投稿管理" [ref=e27] [cursor=pointer]:
+          - /url: /dashboard/posts
+          - img [ref=e28]
+          - generic [ref=e30]: 投稿管理
+        - link "インサイト" [ref=e31] [cursor=pointer]:
+          - /url: /dashboard/insights
+          - img [ref=e32]
+          - generic [ref=e34]: インサイト
+        - link "クチコミ" [ref=e35] [cursor=pointer]:
+          - /url: /dashboard/reviews
+          - img [ref=e36]
+          - generic [ref=e38]: クチコミ
+        - link "メッセージ" [ref=e39] [cursor=pointer]:
+          - /url: /dashboard/messages
+          - img [ref=e40]
+          - generic [ref=e42]: メッセージ
+        - link "レポート出力" [ref=e43] [cursor=pointer]:
+          - /url: /dashboard/reports
+          - img [ref=e44]
+          - generic [ref=e46]: レポート出力
+      - navigation [ref=e47]:
+        - paragraph [ref=e48]: ツール
+        - link "写真管理" [ref=e49] [cursor=pointer]:
+          - /url: /dashboard/photos
+          - img [ref=e50]
+          - generic [ref=e52]: 写真管理
+        - link "Q&A管理" [ref=e53] [cursor=pointer]:
+          - /url: /dashboard/qa
+          - img [ref=e54]
+          - generic [ref=e56]: Q&A管理
+        - link "QRコード生成" [ref=e57] [cursor=pointer]:
+          - /url: /dashboard/qrcode
+          - img [ref=e58]
+          - generic [ref=e60]: QRコード生成
+        - link "プロフィール最適化" [ref=e61] [cursor=pointer]:
+          - /url: /dashboard/optimize
+          - img [ref=e62]
+          - generic [ref=e64]: プロフィール最適化
+      - navigation [ref=e65]:
+        - paragraph [ref=e66]: 設定
+        - link "ユーザー管理" [ref=e67] [cursor=pointer]:
+          - /url: /dashboard/users
+          - img [ref=e68]
+          - generic [ref=e70]: ユーザー管理
+        - link "店舗情報" [ref=e71] [cursor=pointer]:
+          - /url: /dashboard/profile
+          - img [ref=e72]
+          - generic [ref=e74]: 店舗情報
+        - link "店舗管理" [ref=e75] [cursor=pointer]:
+          - /url: /dashboard/stores
+          - img [ref=e76]
+          - generic [ref=e78]: 店舗管理
+        - link "設定" [ref=e79] [cursor=pointer]:
+          - /url: /dashboard/settings
+          - img [ref=e80]
+          - generic [ref=e82]: 設定
+      - generic [ref=e84]:
+        - paragraph [ref=e85]: MEO総合スコア
+        - generic [ref=e86]:
+          - generic [ref=e87]: A+
+          - generic [ref=e88]: 前月比+12%
+    - main [ref=e91]:
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - heading "ダッシュボード" [level=1] [ref=e96]
+            - paragraph [ref=e97]: おかえりなさい、渋谷店マネージャー様
+          - generic [ref=e98]:
+            - link "レポート出力" [ref=e99] [cursor=pointer]:
+              - /url: /dashboard/reports
+            - link "投稿を作成" [ref=e100] [cursor=pointer]:
+              - /url: /dashboard/posts/new
+        - generic [ref=e102]:
+          - generic [ref=e103]: 🤖
+          - generic [ref=e104]:
+            - heading "おはようございます！今日のタスクは3件です" [level=3] [ref=e105]
+            - paragraph [ref=e106]:
+              - text: 新しいクチコミが1件届いています。また、先週の投稿パフォーマンスが好調です。詳細は
+              - link "インサイト" [ref=e107] [cursor=pointer]:
+                - /url: /dashboard/insights
+              - text: をご確認ください。
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - img [ref=e111]
+            - heading "表示回数" [level=3] [ref=e113]
+            - generic [ref=e114]:
+              - generic [ref=e115]: 12,450
+              - generic [ref=e116]:
+                - generic [ref=e117]: ↑
+                - text: +15.3%
+            - paragraph [ref=e118]: 前週比
+          - generic [ref=e119]:
+            - img [ref=e121]
+            - heading "検索クエリ" [level=3] [ref=e123]
+            - generic [ref=e124]:
+              - generic [ref=e125]: 4,821
+              - generic [ref=e126]:
+                - generic [ref=e127]: ↑
+                - text: +5.2%
+            - paragraph [ref=e128]: 前週比
+          - generic [ref=e129]:
+            - img [ref=e131]
+            - heading "ルート検索" [level=3] [ref=e133]
+            - generic [ref=e134]:
+              - generic [ref=e135]: "892"
+              - generic [ref=e136]:
+                - generic [ref=e137]: ↓
+                - text: "-2.1%"
+            - paragraph [ref=e138]: 前週比
+          - generic [ref=e139]:
+            - img [ref=e141]
+            - heading "ウェブサイトクリック" [level=3] [ref=e143]
+            - generic [ref=e144]:
+              - generic [ref=e145]: 1,203
+              - generic [ref=e146]:
+                - generic [ref=e147]: ↑
+                - text: +8.7%
+            - paragraph [ref=e148]: 前週比
+        - heading "AI推奨アクション" [level=2] [ref=e149]: AI推奨アクション
+        - generic [ref=e151]:
+          - generic [ref=e152]:
+            - generic [ref=e153]:
+              - generic [ref=e154]:
+                - text: 高インパクト
+                - heading "ランチメニューの新しい写真を投稿" [level=3] [ref=e155]
+              - img [ref=e157]
+            - paragraph [ref=e159]: 今週のランチタイム検索が20%増加していますが、最新のランチ写真は2週間前のものです。
+            - link "AIで作成（ワンクリック）" [ref=e160] [cursor=pointer]:
+              - /url: /dashboard/posts/new
+          - generic [ref=e161]:
+            - generic [ref=e162]:
+              - generic [ref=e163]:
+                - text: 中インパクト
+                - heading "新しいクチコミに返信" [level=3] [ref=e164]
+              - img [ref=e166]
+            - paragraph [ref=e168]: 田中さんから「サービスが素晴らしい」と4つ星のクチコミが届きました。今すぐ返信してエンゲージメントを高めましょう。
+            - link "返信を作成" [ref=e169] [cursor=pointer]:
+              - /url: /dashboard/reviews
+          - generic [ref=e170]:
+            - generic [ref=e171]:
+              - generic [ref=e172]:
+                - text: プロフィール最適化
+                - heading "営業時間を更新してください" [level=3] [ref=e173]
+              - img [ref=e175]
+            - paragraph [ref=e177]: 祝日の営業時間が設定されていません。1月の祝日（成人の日など）の営業時間を追加しましょう。
+            - link "営業時間を編集" [ref=e178] [cursor=pointer]:
+              - /url: /dashboard/profile
+          - generic [ref=e179]:
+            - generic [ref=e180]:
+              - generic [ref=e181]:
+                - text: Q&A最適化
+                - heading "よくある質問を追加" [level=3] [ref=e182]
+              - img [ref=e184]
+            - paragraph [ref=e186]: 「駐車場はありますか？」「予約は必要ですか？」などのよくある質問を事前に登録しておくと、検索意図をカバーできます。
+            - button "AIでQ&Aを生成" [ref=e187]
+        - heading "予約投稿スケジュール" [level=2] [ref=e188]: 予約投稿スケジュール
+        - generic [ref=e190]:
+          - generic [ref=e191]:
+            - generic [ref=e192]: 日
+            - generic [ref=e193]: 月
+            - generic [ref=e194]: 火
+            - generic [ref=e195]: 水
+            - generic [ref=e196]: 木
+            - generic [ref=e197]: 金
+            - generic [ref=e198]: 土
+            - generic [ref=e199] [cursor=pointer]: "1"
+            - generic [ref=e200] [cursor=pointer]: "2"
+            - generic [ref=e201] [cursor=pointer]: "3"
+            - generic [ref=e202] [cursor=pointer]: "4"
+            - generic [ref=e203] [cursor=pointer]: "5"
+            - generic [ref=e204] [cursor=pointer]: "6"
+            - generic [ref=e205] [cursor=pointer]: "7"
+            - generic [ref=e206] [cursor=pointer]: "8"
+            - generic [ref=e207] [cursor=pointer]: "9"
+            - generic [ref=e208] [cursor=pointer]: "10"
+            - generic [ref=e209] [cursor=pointer]: "11"
+            - generic [ref=e210] [cursor=pointer]: "12"
+            - generic [ref=e211] [cursor=pointer]: "13"
+            - generic [ref=e212] [cursor=pointer]: "14"
+            - generic [ref=e213] [cursor=pointer]: "15"
+            - generic [ref=e214] [cursor=pointer]: "16"
+            - generic [ref=e215] [cursor=pointer]: "17"
+            - generic [ref=e216] [cursor=pointer]: "18"
+            - generic [ref=e217] [cursor=pointer]: "19"
+            - generic [ref=e218] [cursor=pointer]: "20"
+            - generic [ref=e219] [cursor=pointer]: "21"
+            - generic [ref=e220] [cursor=pointer]: "22"
+            - generic [ref=e221] [cursor=pointer]: "23"
+            - generic [ref=e222] [cursor=pointer]: "24"
+            - generic [ref=e223] [cursor=pointer]: "25"
+            - generic [ref=e224] [cursor=pointer]: "26"
+            - generic [ref=e225] [cursor=pointer]: "27"
+            - generic [ref=e226] [cursor=pointer]: "28"
+            - generic [ref=e227] [cursor=pointer]: "29"
+            - generic [ref=e228] [cursor=pointer]: "30"
+            - generic [ref=e229] [cursor=pointer]: "31"
+          - generic [ref=e230]:
+            - generic [ref=e233]: 投稿予定
+            - generic [ref=e236]: イベント
+```
