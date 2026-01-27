@@ -140,8 +140,9 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
             # If still no user, Auto-Register (Create User)
             if not user:
                 # Create a random password since they use Google Login
-                import secrets
-                random_password = secrets.token_urlsafe(16)
+                # Create a random password since they use Google Login (using uuid for safety/length)
+                import uuid
+                random_password = uuid.uuid4().hex # 32 chars, well within 72 byte limit
                 hashed_password = auth.get_password_hash(random_password)
                 
                 user = models.User(
