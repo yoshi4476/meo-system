@@ -1,0 +1,14 @@
+# Backend
+backend/venv/
+backend/__pycache__/
+*.pyc
+*.db
+.env
+
+# Frontend (if not covered by nested gitignore)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# IDE
+.vscode/
