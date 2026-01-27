@@ -202,6 +202,28 @@ async def read_users_me(current_user: schemas.User = Depends(auth.get_current_us
 
     return current_user
 
+@app.put("/users/me", response_model=schemas.User)
+def update_user_me(user_update: schemas.UserUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    # 1. Verify current password
+    if not auth.verify_password(user_update.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect password")
+    
+    # 2. Update Email
+    if user_update.email and user_update.email != current_user.email:
+        # Check uniqueness
+        existing_user = db.query(models.User).filter(models.User.email == user_update.email).first()
+        if existing_user:
+             raise HTTPException(status_code=400, detail="Email already registered")
+        current_user.email = user_update.email
+    
+    # 3. Update Password
+    if user_update.password:
+        current_user.hashed_password = auth.get_password_hash(user_update.password)
+    
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
 @app.get("/users/", response_model=list[schemas.User])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: schemas.User = Depends(auth.get_current_user)):
      # Only admin can list users - for demo simplicity we allow all auth users for now

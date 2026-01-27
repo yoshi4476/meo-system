@@ -261,34 +261,103 @@ export default function SettingsPage() {
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <span className="text-2xl">👤</span> アカウント情報
         </h2>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm text-slate-400 mb-2">ユーザー名</label>
-            <input 
-              type="text" 
-              // @ts-ignore
-              value={userInfo?.name || ''} 
-              readOnly
-              placeholder="ユーザー名を入力"
-              className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white/50 focus:outline-none focus:border-aurora-cyan cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-400 mb-2">メールアドレス</label>
-            <input 
-              type="email" 
-              value={userInfo?.email || ''} 
-              readOnly
-              className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-slate-400 cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-400 mb-2">権限ロール</label>
-             <div className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-slate-400">
-               {userInfo?.role || '...'}
-             </div>
-          </div>
-        </div>
+        <form onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.target as HTMLFormElement;
+            const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+            const currentPassword = (form.elements.namedItem('currentPassword') as HTMLInputElement).value;
+            const newPassword = (form.elements.namedItem('newPassword') as HTMLInputElement).value;
+
+            if (!currentPassword) {
+                alert('変更を保存するには現在のパスワードが必要です');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('meo_auth_token');
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/users/me`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({
+                        email,
+                        current_password: currentPassword,
+                        password: newPassword || undefined
+                    })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed to update profile');
+                }
+
+                alert('プロフィールを更新しました');
+                refreshUser();
+                (form.elements.namedItem('currentPassword') as HTMLInputElement).value = '';
+                (form.elements.namedItem('newPassword') as HTMLInputElement).value = '';
+            } catch (error: any) {
+                alert(`エラー: ${error.message}`);
+            }
+        }}>
+            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+                <label className="block text-sm text-slate-400 mb-2">ユーザー名 (ID)</label>
+                <input 
+                type="text" 
+                // @ts-ignore
+                value={userInfo?.id || ''} 
+                readOnly
+                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white/50 focus:outline-none cursor-not-allowed"
+                />
+                <p className="text-xs text-slate-500 mt-1">※ユーザーIDは変更できません</p>
+            </div>
+            <div>
+                <label className="block text-sm text-slate-400 mb-2">メールアドレス</label>
+                <input 
+                type="email" 
+                name="email"
+                defaultValue={userInfo?.email || ''} 
+                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
+                />
+            </div>
+            </div>
+            
+            <div className="border-t border-white/5 pt-6 mt-6">
+                <h3 className="text-md font-bold text-slate-300 mb-4">セキュリティ設定</h3>
+                <div className="grid grid-cols-2 gap-6">
+                     <div>
+                        <label className="block text-sm text-slate-400 mb-2">新しいパスワード (変更する場合のみ)</label>
+                        <input 
+                        type="password" 
+                        name="newPassword"
+                        placeholder="変更しない場合は空欄"
+                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-aurora-cyan mb-2 font-bold">現在のパスワード (必須)</label>
+                        <input 
+                        type="password" 
+                        name="currentPassword"
+                        placeholder="設定を変更するには入力してください"
+                        required
+                        className="w-full bg-slate-900/50 border border-aurora-cyan/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
+                <button 
+                type="submit"
+                className="bg-aurora-cyan/20 text-aurora-cyan border border-aurora-cyan/50 px-6 py-2 rounded-lg hover:bg-aurora-cyan/30 transition-colors font-bold"
+                >
+                変更を保存
+                </button>
+            </div>
+        </form>
       </section>
 
 
