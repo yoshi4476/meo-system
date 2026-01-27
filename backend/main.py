@@ -9,6 +9,14 @@ from datetime import timedelta
 
 models.Base.metadata.create_all(bind=engine)
 
+# Run DB Migration (Add store_id if missing)
+try:
+    import migrate_db
+    print("DEBUG: Running DB migration...")
+    migrate_db.migrate()
+except Exception as e:
+    print(f"WARNING: DB Migration failed: {e}")
+
 API_DESCRIPTION = """
 ## MEO Mastermind AI API 🚀
 

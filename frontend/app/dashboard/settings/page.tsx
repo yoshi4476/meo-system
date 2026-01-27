@@ -71,6 +71,14 @@ export default function SettingsPage() {
         role: data.role || 'STORE_USER'
       }));
       
+      // If user has a selected store, update the state
+      if (data.store && data.store.google_location_id) {
+          // Verify this location exists in the list (or it will be selected once list loads)
+          setSelectedLocationId(data.store.google_location_id);
+      } else if (data.store_id) {
+          // Fallback if needed, though google_location_id is what matches the dropdown
+      }
+      
       // 接続状態を更新
       if (data.is_google_connected) {
         setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
@@ -106,19 +114,57 @@ export default function SettingsPage() {
         if (savedLocation) {
           setSelectedLocationId(savedLocation);
         }
+      } else {
+        const errorText = await response.text();
+        console.error('Locations Fetch error:', response.status, errorText);
+        // @ts-ignore
+        window._lastDebugError = `Locations Error ${response.status}: ${errorText}`;
       }
     } catch (error) {
       console.error('Failed to fetch locations:', error);
+      // @ts-ignore
+      window._lastDebugError = `Locations Exception: ${error.message}`;
     } finally {
       setIsLoadingLocations(false);
     }
   };
 
-  const handleSaveLocation = () => {
+  const handleSaveLocation = async () => {
     if (selectedLocationId) {
-      localStorage.setItem('selected_location_id', selectedLocationId);
-      alert('同期する店舗を保存しました');
-      // ここでバックエンドにも保存するAPIを呼ぶのが理想
+      // Find the full location object
+      const location = locations.find(loc => loc.name === selectedLocationId);
+      if (!location) return;
+
+      try {
+        const token = localStorage.getItem('meo_auth_token');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+        
+        const response = await fetch(`${apiUrl}/google/locations/select`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            locationId: location.name,
+            displayName: location.title, // 'title' from Google API
+            storeCode: location.storeCode
+          })
+        });
+
+        if (response.ok) {
+           localStorage.setItem('selected_location_id', selectedLocationId);
+           alert('店舗情報をシステムに登録しました！');
+           // Reload user info to get the updated store_id
+           fetchUserInfo();
+        } else {
+           const err = await response.text();
+           alert(`保存に失敗しました: ${err}`);
+        }
+      } catch (error) {
+        console.error('Save failed:', error);
+        alert('保存中にエラーが発生しました');
+      }
     }
   };
 

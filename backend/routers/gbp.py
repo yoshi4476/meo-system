@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 import models, database, auth
 from services import google_api
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/google",
@@ -221,6 +222,7 @@ def list_locations(db: Session = Depends(database.get_db), current_user: models.
         
         # Wrap in expected structure if needed, or just return list via pydantic
         # The frontend expects { "locations": [...] } based on page.tsx:101
+        print(f"DEBUG: Found {len(all_locations)} locations across {len(accounts.get('accounts', []))} accounts via pagination.")
         return {"locations": all_locations}
     except Exception as e:
         print(f"DEBUG: Error listing locations: {e}")
@@ -257,3 +259,38 @@ async def sync_store_data(location_id: str, db: Session = Depends(database.get_d
     time.sleep(1)
     
     return {"status": "success", "message": f"Successfully synced data for location {location_id}", "synced_items": {"reviews": 12, "posts": 5, "insights": "updated"}}
+
+class LocationSelectRequest(models.BaseModel):
+    locationId: str
+    displayName: str
+    storeCode: str = None
+
+@router.post("/locations/select")
+def select_location(
+    request: LocationSelectRequest, 
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Select a location to manage.
+    1. Creates/Updates Store record with google_location_id
+    2. Links User to this Store
+    """
+    # Check if store exists
+    store = db.query(models.Store).filter(models.Store.google_location_id == request.locationId).first()
+    
+    if not store:
+        store = models.Store(
+            google_location_id=request.locationId,
+            name=request.displayName,
+            company_id=current_user.company_id # Assign to same company if exists
+        )
+        db.add(store)
+        db.commit()
+        db.refresh(store)
+    
+    # Assign user to this store
+    current_user.store_id = store.id
+    db.commit()
+    
+    return {"status": "success", "message": f"Store {request.displayName} selected", "store_id": store.id}

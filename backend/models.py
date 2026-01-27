@@ -18,8 +18,10 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     role = Column(String)  # 'SUPER_ADMIN', 'COMPANY_ADMIN', 'STORE_USER'
     company_id = Column(String, ForeignKey("companies.id"), nullable=True)
+    store_id = Column(String, ForeignKey("stores.id"), nullable=True)
 
     company = relationship("Company", back_populates="users")
+    store = relationship("Store", back_populates="users") # Changed from one-to-many to many-to-one (User belongs to Store)
 
     @property
     def is_google_connected(self):
@@ -46,6 +48,7 @@ class Store(Base):
     
     company = relationship("Company", back_populates="stores")
     posts = relationship("Post", back_populates="store")
+    users = relationship("User", back_populates="store")
 
 class Post(Base):
     __tablename__ = "posts"

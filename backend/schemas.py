@@ -71,6 +71,8 @@ class User(UserBase):
     id: str
     is_active: bool
     company_id: Optional[str] = None
+    store_id: Optional[str] = None
+    store: Optional[Store] = None # Include full store details
     is_google_connected: bool = False
 
     class Config:
