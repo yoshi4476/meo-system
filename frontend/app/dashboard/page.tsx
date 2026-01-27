@@ -4,8 +4,11 @@ import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MetricCard } from '../../components/dashboard/MetricCard';
 import { setToken } from '../../lib/auth';
+import { useDashboard } from '../../contexts/DashboardContext';
 
 function DashboardContent() {
+
+const { refreshUser } = useDashboard();
   const searchParams = useSearchParams();
   
   useEffect(() => {
@@ -13,10 +16,17 @@ function DashboardContent() {
     const token = searchParams.get('token');
     if (token) {
       setToken(token);
-      // Remove token from URL for security (optional: use router.replace)
       console.log('✅ Token saved to localStorage');
+      // Force refresh user info to pick up the new "connected" status
+      refreshUser();
+      
+      // Clean URL (Optional but recommended)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('token');
+      url.searchParams.delete('status');
+      window.history.replaceState({}, '', url.toString());
     }
-  }, [searchParams]);
+  }, [searchParams, refreshUser]);
 
   return (
     <div className="space-y-8">

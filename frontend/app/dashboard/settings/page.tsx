@@ -569,52 +569,98 @@ export default function SettingsPage() {
 }
 
 function TeamList() {
+    const { userInfo } = useDashboard();
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const isSuperAdmin = userInfo?.role === 'SUPER_ADMIN';
+
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('meo_auth_token');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+            
+            // If Super Admin, use the admin endpoint to see ALL users properly (or just stick to /users/ with improved scope)
+            // The /users/ endpoint now handles scoping, so it should be fine.
+            const res = await fetch(`${apiUrl}/users/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            }
+        } catch (e) {
+            console.error("Failed to load team", e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const token = localStorage.getItem('meo_auth_token');
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-                const res = await fetch(`${apiUrl}/users/`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setUsers(data);
-                }
-            } catch (e) {
-                console.error("Failed to load team", e);
-            } finally {
-                setLoading(false);
+        if (userInfo) {
+             fetchUsers();
+        }
+    }, [userInfo]);
+
+    const handleRoleChange = async (userId: string, newRole: string) => {
+        if (!confirm(`ユーザーの権限を ${newRole} に変更しますか？`)) return;
+
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+            const res = await fetch(`${apiUrl}/admin/users/${userId}/role?role=${newRole}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                alert('権限を変更しました');
+                fetchUsers(); // Reload list
+            } else {
+                const err = await res.text();
+                alert(`変更に失敗しました: ${err}`);
             }
-        };
-        fetchUsers();
-    }, []);
+        } catch (e) {
+            alert(`エラーが発生しました: ${e}`);
+        }
+    };
 
     if (loading) return <div className="text-slate-500 text-sm">読み込み中...</div>;
 
     if (users.length === 0) return <div className="text-slate-500 text-sm">メンバーのみ表示されます</div>;
 
     return (
-        <>
+        <div className="space-y-2">
             {users.map((u) => (
                 <div key={u.id} className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg">
                     <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs">
+                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs text-white">
                         {u.email.substring(0,2).toUpperCase()}
                     </div>
                     <div>
-                        <div className="text-sm font-bold text-white">{u.email}</div>
-                        <div className="text-xs text-slate-400">{u.role}</div>
+                        <div className="text-sm font-bold text-white max-w-[150px] sm:max-w-xs truncate" title={u.email}>{u.email}</div>
+                        <div className="text-xs text-slate-400 flex items-center gap-2">
+                            {isSuperAdmin && u.id !== userInfo?.id ? (
+                                <select 
+                                    value={u.role}
+                                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                                    className="bg-slate-900 border border-slate-700 rounded text-xs px-1 py-0.5 text-aurora-cyan focus:outline-none"
+                                >
+                                    <option value="STORE_USER">STORE_USER</option>
+                                    <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+                                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                                </select>
+                            ) : (
+                                <span>{u.role}</span>
+                            )}
+                        </div>
                     </div>
                     </div>
-                    <span className={`text-xs ${u.is_active ? 'text-green-400' : 'text-slate-400'}`}>
+                    <span className={`text-xs px-2 py-1 rounded-full ${u.is_active ? 'bg-green-500/10 text-green-400' : 'bg-slate-500/10 text-slate-400'}`}>
                         {u.is_active ? 'Active' : 'Inactive'}
                     </span>
                 </div>
             ))}
-        </>
+        </div>
     );
 }
