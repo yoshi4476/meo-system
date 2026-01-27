@@ -1,6 +1,23 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MetricCard } from '../../components/dashboard/MetricCard';
+import { setToken } from '../../lib/auth';
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    // Extract token from URL after Google OAuth redirect
+    const token = searchParams.get('token');
+    if (token) {
+      setToken(token);
+      // Remove token from URL for security (optional: use router.replace)
+      console.log('✅ Token saved to localStorage');
+    }
+  }, [searchParams]);
+
   return (
     <div className="space-y-8">
       {/* ヘッダーセクション */}
