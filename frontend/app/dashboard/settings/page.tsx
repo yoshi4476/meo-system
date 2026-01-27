@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useDashboard } from '../../contexts/DashboardContext';
+import { useDashboard } from '../../../contexts/DashboardContext';
 
 export default function SettingsPage() {
   const { userInfo, refreshUser } = useDashboard();
