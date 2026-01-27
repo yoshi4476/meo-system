@@ -102,8 +102,9 @@ def login_google(state: str = "default"):
                     </ol>
                 </div>
                 
+                
                 <a href="http://localhost:8001/docs" class="btn">📚 詳細なセットアップガイド</a>
-                <a href="http://localhost:3001/dashboard/settings" class="btn btn-secondary">← 設定画面に戻る</a>
+                <a href="{os.getenv('FRONTEND_URL', 'http://localhost:3001')}/dashboard/settings" class="btn btn-secondary">← 設定画面に戻る</a>
             </div>
         </body>
         </html>
