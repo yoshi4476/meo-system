@@ -175,62 +175,59 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # 1. Email Uniqueness Check
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # 2. Super Admin Limit Check
+    if user.role == "SUPER_ADMIN":
+        existing_super_admin = db.query(models.User).filter(models.User.role == "SUPER_ADMIN").first()
+        if existing_super_admin:
+             raise HTTPException(
+                 status_code=400, 
+                 detail="A Super Admin already exists. Only one is allowed per system."
+             )
+
     hashed_password = auth.get_password_hash(user.password)
     db_user = models.User(email=user.email, role=user.role, hashed_password=hashed_password, is_active=True)
+    
+    # Optional context-assignment if requester is logged in (future enhancement)
+    # For now, company_id/store_id must be assigned by Admin via update
+    
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-@app.get("/users/me", response_model=schemas.User)
-async def read_users_me(current_user: schemas.User = Depends(auth.get_current_user)):
-    print(f"DEBUG: /users/me called for {current_user.email}")
-    print(f"DEBUG: is_google_connected property: {current_user.is_google_connected}")
-    if current_user.google_connection:
-            print(f"DEBUG: Connection found. Token Present: {bool(current_user.google_connection.access_token)}")
-            if current_user.google_connection.expiry:
-                print(f"DEBUG: Token Expiry: {current_user.google_connection.expiry}")
-    else:
-            print("DEBUG: No google_connection relationship found (None)")
-    
-    if current_user.store:
-        print(f"DEBUG: Store assigned: {current_user.store.name} ({current_user.store.google_location_id})")
-    else:
-        print("DEBUG: No store assigned")
-
-    return current_user
-
-@app.put("/users/me", response_model=schemas.User)
-def update_user_me(user_update: schemas.UserUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
-    # 1. Verify current password
-    if not auth.verify_password(user_update.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Incorrect password")
-    
-    # 2. Update Email
-    if user_update.email and user_update.email != current_user.email:
-        # Check uniqueness
-        existing_user = db.query(models.User).filter(models.User.email == user_update.email).first()
-        if existing_user:
-             raise HTTPException(status_code=400, detail="Email already registered")
-        current_user.email = user_update.email
-    
-    # 3. Update Password
-    if user_update.password:
-        current_user.hashed_password = auth.get_password_hash(user_update.password)
-    
-    db.commit()
-    db.refresh(current_user)
-    return current_user
-
 @app.get("/users/", response_model=list[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: schemas.User = Depends(auth.get_current_user)):
-     # Only admin can list users - for demo simplicity we allow all auth users for now
-    users = db.query(models.User).offset(skip).limit(limit).all()
-    return users
+def read_users(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    print(f"DEBUG: read_users requested by {current_user.email} ({current_user.role})")
+    
+    if current_user.role == "SUPER_ADMIN":
+        # Super Admin sees everyone
+        users = db.query(models.User).offset(skip).limit(limit).all()
+        return users
+        
+    elif current_user.role == "COMPANY_ADMIN":
+        # Company Admin sees users in their company
+        if not current_user.company_id:
+             return [current_user] # Fallback if no company assigned
+             
+        users = db.query(models.User).filter(
+            models.User.company_id == current_user.company_id
+        ).offset(skip).limit(limit).all()
+        return users
+        
+    else:
+        # Regular user sees only themselves
+        # Or return empty list/403 depending on UX. Returning self for now.
+        return [current_user]
 
 @app.get("/")
 def read_root():

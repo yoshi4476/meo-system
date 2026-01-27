@@ -314,6 +314,17 @@ export default function SettingsPage() {
                 <p className="text-xs text-slate-500 mt-1">※ユーザーIDは変更できません</p>
             </div>
             <div>
+                <label className="block text-sm text-slate-400 mb-2">権限 (Role)</label>
+                <input 
+                type="text" 
+                // @ts-ignore
+                value={userInfo?.role || '設定なし'} 
+                readOnly
+                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-aurora-cyan/80 font-mono focus:outline-none cursor-not-allowed"
+                />
+                <p className="text-xs text-slate-500 mt-1">※権限の変更は管理者に問い合わせてください</p>
+            </div>
+            <div>
                 <label className="block text-sm text-slate-400 mb-2">メールアドレス</label>
                 <input 
                 type="email" 
@@ -539,7 +550,8 @@ export default function SettingsPage() {
             onClick={() => {
               const email = prompt('招待するメールアドレスを入力してください:');
               if (email) {
-                alert(`${email} に招待メールを送信しました`);
+                // TODO: Implement invitation logic
+                alert(`${email} に招待メールを送信しました (モック)`);
               }
             }}
             className="text-sm px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white transition-colors"
@@ -548,28 +560,61 @@ export default function SettingsPage() {
           </button>
         </div>
         <div className="space-y-3">
-          <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs">SM</div>
-              <div>
-                <div className="text-sm font-bold text-white">渋谷店 マネージャー</div>
-                <div className="text-xs text-slate-400">管理者</div>
-              </div>
-            </div>
-            <span className="text-xs text-green-400">Active</span>
-          </div>
-          <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs">AS</div>
-              <div>
-                <div className="text-sm font-bold text-white">アルバイト スタッフ</div>
-                <div className="text-xs text-slate-400">編集者</div>
-              </div>
-            </div>
-            <span className="text-xs text-slate-400">Last seen 2d ago</span>
-          </div>
+            {/* Real Data Integration */}
+            <TeamList />
         </div>
       </section>
     </div>
   );
+}
+
+function TeamList() {
+    const [users, setUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const token = localStorage.getItem('meo_auth_token');
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+                const res = await fetch(`${apiUrl}/users/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setUsers(data);
+                }
+            } catch (e) {
+                console.error("Failed to load team", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    if (loading) return <div className="text-slate-500 text-sm">読み込み中...</div>;
+
+    if (users.length === 0) return <div className="text-slate-500 text-sm">メンバーのみ表示されます</div>;
+
+    return (
+        <>
+            {users.map((u) => (
+                <div key={u.id} className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg">
+                    <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs">
+                        {u.email.substring(0,2).toUpperCase()}
+                    </div>
+                    <div>
+                        <div className="text-sm font-bold text-white">{u.email}</div>
+                        <div className="text-xs text-slate-400">{u.role}</div>
+                    </div>
+                    </div>
+                    <span className={`text-xs ${u.is_active ? 'text-green-400' : 'text-slate-400'}`}>
+                        {u.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+            ))}
+        </>
+    );
 }
