@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MetricCard } from '../../components/dashboard/MetricCard';
 import { setToken } from '../../lib/auth';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const searchParams = useSearchParams();
   
   useEffect(() => {
@@ -198,5 +198,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="text-white p-8">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
