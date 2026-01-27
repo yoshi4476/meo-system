@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useDashboard } from '../../contexts/DashboardContext';
 
 export default function SettingsPage() {
+  const { userInfo, refreshUser } = useDashboard();
+  
   const [notifications, setNotifications] = useState({
     reviews: true,
     reports: true,
@@ -14,84 +17,32 @@ export default function SettingsPage() {
     openai: ''
   });
 
-  const [connectionStatus, setConnectionStatus] = useState({
-    google: 'disconnected', // disconnected, connected, error
-    openai: 'disconnected'
-  });
-
-  // ユーザー情報（本番ではAPIから取得）
-  const [userInfo, setUserInfo] = useState({
-    id: '', // Added to fix type error
-    name: '',
-    email: '',
-    role: 'STORE_USER',
-    is_google_connected: false
-  });
+  // Derived state from global userInfo
+  const connectionStatus = {
+    google: userInfo?.is_google_connected ? 'connected' : 'disconnected',
+    openai: 'disconnected' // Still local for now
+  };
 
   // 店舗選択用
   const [locations, setLocations] = useState<any[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [isLoadingLocations, setIsLoadingLocations] = useState(false);
 
-  const isSuperAdmin = userInfo.role === 'SUPER_ADMIN';
+  const isSuperAdmin = userInfo?.role === 'SUPER_ADMIN';
 
-  // API経由でユーザー情報を取得
-  const fetchUserInfo = async () => {
-    try {
-      const token = localStorage.getItem('meo_auth_token');
-      if (!token) {
-        // @ts-ignore
-        window._lastDebugError = "No token found in localStorage";
-        return;
-      }
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-      console.log(`Fetching user info from: ${apiUrl}/users/me`);
-      
-      const response = await fetch(`${apiUrl}/users/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        // @ts-ignore
-        window._lastDebugError = `HTTP Error ${response.status}: ${errorText}`;
-        console.error('Fetch error:', response.status, errorText);
-        return;
-      }
-
-      const data = await response.json();
-      // @ts-ignore
-      window._lastDebugError = null; // Clear error on success
-
-      setUserInfo(prev => ({
-        ...prev,
-        ...data,
-        role: data.role || 'STORE_USER'
-      }));
-      
-      // If user has a selected store, update the state
-      if (data.store && data.store.google_location_id) {
-          // Verify this location exists in the list (or it will be selected once list loads)
-          setSelectedLocationId(data.store.google_location_id);
-      } else if (data.store_id) {
-          // Fallback if needed, though google_location_id is what matches the dropdown
-      }
-      
-      // 接続状態を更新
-      if (data.is_google_connected) {
-        setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
-        // 接続済みなら店舗一覧を取得
-        fetchGoogleLocations();
-      }
-    } catch (error) {
-      // @ts-ignore
-      window._lastDebugError = `Network/Exception: ${error.message}`;
-      console.error('Failed to fetch user info:', error);
+  // 店舗一覧取得 (userInfoが変わったら再取得)
+  useEffect(() => {
+    if (userInfo?.is_google_connected) {
+      fetchGoogleLocations();
     }
-  };
+  }, [userInfo?.is_google_connected]);
+
+  // 選択済み店舗の反映
+  useEffect(() => {
+    if (userInfo?.store?.google_location_id) {
+       setSelectedLocationId(userInfo.store.google_location_id);
+    }
+  }, [userInfo?.store]);
 
   // Google店舗一覧を取得
   const fetchGoogleLocations = async () => {
@@ -109,12 +60,6 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json();
         setLocations(data.locations || []);
-        
-        // ローカルに保存された選択があれば復元
-        const savedLocation = localStorage.getItem('selected_location_id');
-        if (savedLocation) {
-          setSelectedLocationId(savedLocation);
-        }
       } else {
         const errorText = await response.text();
         console.error('Locations Fetch error:', response.status, errorText);
@@ -157,7 +102,7 @@ export default function SettingsPage() {
            localStorage.setItem('selected_location_id', selectedLocationId);
            alert('店舗情報をシステムに登録しました！');
            // Reload user info to get the updated store_id
-           fetchUserInfo();
+           await refreshUser();
         } else {
            const err = await response.text();
            alert(`保存に失敗しました: ${err}`);
@@ -189,15 +134,15 @@ export default function SettingsPage() {
       
       if (savedUserInfo) {
         try {
-          const parsed = JSON.parse(savedUserInfo);
-          setUserInfo(prev => ({...prev, ...parsed}));
+          // const parsed = JSON.parse(savedUserInfo);
+          // setUserInfo(prev => ({...prev, ...parsed}));
         } catch (e) {
              // ignore
         }
       }
 
-      // APIから最新情報を取得
-      fetchUserInfo();
+      // APIから最新情報を取得 (Previously fetchUserInfo, now handled by DashboardContext)
+      // fetchUserInfo();
     };
 
     loadSettings();
@@ -254,7 +199,7 @@ export default function SettingsPage() {
         </pre>
         <div className="flex gap-2 mt-2">
             <button 
-               onClick={fetchUserInfo}
+               onClick={refreshUser}
                className="text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600"
             >
                最新情報を再取得
@@ -435,7 +380,7 @@ export default function SettingsPage() {
               <a 
                 href={`${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${
                   // @ts-ignore
-                  userInfo.id || 'default'
+                  userInfo?.id || 'default'
                 }`}
                 className="w-full py-3 rounded-lg bg-white text-slate-900 font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
               >
