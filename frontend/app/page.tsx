@@ -40,19 +40,6 @@ export default function Home() {
              保護された接続経由で安全にログインします
           </div>
 
-          {/* デバッグ用：問題解決後に削除 */}
-          <div className="mt-4 p-4 bg-slate-800 rounded border border-red-500 z-[9999] relative">
-            <p className="text-red-400 font-bold mb-2">⚠️ デバッグモード</p>
-            <p className="text-xs text-white break-all mb-2">
-              API URL: {process.env.NEXT_PUBLIC_API_URL || '未設定(NULL)'}
-            </p>
-            <a 
-              href={`${process.env.NEXT_PUBLIC_API_URL || ''}/google/login`}
-              className="text-blue-400 underline block p-2 bg-slate-700 hover:bg-slate-600"
-            >
-              【ここを押してテスト】Googleログイン (テキストリンク)
-            </a>
-          </div>
         </div>
 
       </div>
