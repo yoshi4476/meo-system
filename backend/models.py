@@ -45,6 +45,7 @@ class Store(Base):
     google_location_id = Column(String, nullable=True)
     name = Column(String)
     address = Column(String) # JSON or String
+    gbp_data = Column(JSON, nullable=True) # Full GBP Data
     
     company = relationship("Company", back_populates="stores")
     posts = relationship("Post", back_populates="store")

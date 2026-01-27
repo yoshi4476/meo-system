@@ -38,13 +38,19 @@ def get_location_details(store_id: str, db: Session = Depends(database.get_db), 
     client = google_api.GBPClient(current_user.google_connection.access_token)
     
     try:
-        # google_location_id should be stored in format "locations/12345..." or "accounts/.../locations/..."
-        # The API in google_api.py expects the full resource name relative to base_url if it starts with accounts
-        # or just locations/... if using v1.
-        # Let's assume google_location_id from the list_locations response is the resource name "locations/{id}"
+        # Fetch detailed location info
         details = client.get_location_details(store.google_location_id)
+        
+        # Save to DB for caching/display
+        store.gbp_data = details
+        db.commit()
+        
         return details
     except Exception as e:
+        print(f"Error fetching GBP details: {e}")
+        # Fallback to cached data if available
+        if store.gbp_data:
+            return store.gbp_data
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.patch("/{store_id}")
