@@ -42,7 +42,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(
         status_code=401,
-        detail="Could not validate credentials",
+        detail="Auth Error: Validation Failed (Generic)",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -54,7 +54,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         
         if email is None:
             print("DEBUG AUTH: Email is None")
-            raise credentials_exception
+            raise HTTPException(
+                status_code=401,
+                detail="Auth Error: Token missing email (sub)",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     except JWTError as e:
         print(f"DEBUG AUTH: JWTError: {e}")
         raise HTTPException(
