@@ -189,9 +189,17 @@ async def read_users_me(current_user: schemas.User = Depends(auth.get_current_us
     print(f"DEBUG: /users/me called for {current_user.email}")
     print(f"DEBUG: is_google_connected property: {current_user.is_google_connected}")
     if current_user.google_connection:
-            print(f"DEBUG: Connection found. Token: {current_user.google_connection.access_token[:10]}...")
+            print(f"DEBUG: Connection found. Token Present: {bool(current_user.google_connection.access_token)}")
+            if current_user.google_connection.expiry:
+                print(f"DEBUG: Token Expiry: {current_user.google_connection.expiry}")
     else:
-            print("DEBUG: No google_connection relationship found")
+            print("DEBUG: No google_connection relationship found (None)")
+    
+    if current_user.store:
+        print(f"DEBUG: Store assigned: {current_user.store.name} ({current_user.store.google_location_id})")
+    else:
+        print("DEBUG: No store assigned")
+
     return current_user
 
 @app.get("/users/", response_model=list[schemas.User])
