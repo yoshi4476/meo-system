@@ -74,4 +74,10 @@ def update_user_role(user_id: str, role: str, db: Session = Depends(database.get
     
     user.role = role
     db.commit()
-    return {"message": f"User role updated to {role}"}
+@router.get("/stores")
+def list_all_stores(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.require_super_admin)):
+    """
+    List all stores. Only accessible by SUPER_ADMIN.
+    """
+    stores = db.query(models.Store).offset(skip).limit(limit).all()
+    return stores
