@@ -332,7 +332,10 @@ export default function SettingsPage() {
               <button 
                 onClick={() => {
                     const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-                    window.location.href = `${apiUrl}/google/login?state=user`;
+                    // Use actual user ID if available, otherwise 'default'
+                    // @ts-ignore
+                    const stateParam = userInfo.id || 'default';
+                    window.location.href = `${apiUrl}/google/login?state=${stateParam}`;
                 }}
                 className="w-full py-3 rounded-lg bg-white text-slate-900 font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
               >

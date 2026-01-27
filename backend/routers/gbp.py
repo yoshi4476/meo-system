@@ -160,6 +160,9 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
         if not connection:
             connection = models.GoogleConnection(user_id=user.id)
             db.add(connection)
+            print(f"DEBUG: Created new GoogleConnection for user {user.id}")
+        else:
+             print(f"DEBUG: Updated existing GoogleConnection for user {user.id}")
         
         connection.access_token = tokens.get("access_token")
         connection.refresh_token = tokens.get("refresh_token")
@@ -167,6 +170,7 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
         connection.expiry = datetime.utcnow() + timedelta(seconds=tokens.get("expires_in", 3600))
         
         db.commit()
+        print("DEBUG: Connection committed to DB")
         
         # 4. Generate App Token (JWT) for the Frontend
         access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)

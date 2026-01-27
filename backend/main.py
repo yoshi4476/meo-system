@@ -160,6 +160,12 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.get("/users/me", response_model=schemas.User)
 async def read_users_me(current_user: schemas.User = Depends(auth.get_current_user)):
+    print(f"DEBUG: /users/me called for {current_user.email}")
+    print(f"DEBUG: is_google_connected property: {current_user.is_google_connected}")
+    if current_user.google_connection:
+            print(f"DEBUG: Connection found. Token: {current_user.google_connection.access_token[:10]}...")
+    else:
+            print("DEBUG: No google_connection relationship found")
     return current_user
 
 @app.get("/users/", response_model=list[schemas.User])
