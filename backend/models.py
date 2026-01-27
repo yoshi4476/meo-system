@@ -21,6 +21,10 @@ class User(Base):
 
     company = relationship("Company", back_populates="users")
 
+    @property
+    def is_google_connected(self):
+        return self.google_connection is not None and self.google_connection.access_token is not None
+
 class Company(Base):
     __tablename__ = "companies"
 

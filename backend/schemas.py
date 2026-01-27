@@ -71,6 +71,7 @@ class User(UserBase):
     id: str
     is_active: bool
     company_id: Optional[str] = None
+    is_google_connected: bool = False
 
     class Config:
         from_attributes = True

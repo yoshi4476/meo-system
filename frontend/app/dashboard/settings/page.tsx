@@ -23,40 +23,117 @@ export default function SettingsPage() {
   const [userInfo, setUserInfo] = useState({
     name: '',
     email: '',
-    role: 'STORE_USER' // SUPER_ADMIN, COMPANY_ADMIN, STORE_USER
+    role: 'STORE_USER',
+    is_google_connected: false
   });
 
+  // 店舗選択用
+  const [locations, setLocations] = useState<any[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('');
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+
   const isSuperAdmin = userInfo.role === 'SUPER_ADMIN';
+
+  // API経由でユーザー情報を取得
+  const fetchUserInfo = async () => {
+    try {
+      const token = localStorage.getItem('meo_auth_token');
+      if (!token) return;
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+      const response = await fetch(`${apiUrl}/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserInfo(prev => ({
+          ...prev,
+          ...data,
+          role: data.role || 'STORE_USER'
+        }));
+        
+        // 接続状態を更新
+        if (data.is_google_connected) {
+          setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
+          // 接続済みなら店舗一覧を取得
+          fetchGoogleLocations();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user info:', error);
+    }
+  };
+
+  // Google店舗一覧を取得
+  const fetchGoogleLocations = async () => {
+    try {
+      setIsLoadingLocations(true);
+      const token = localStorage.getItem('meo_auth_token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+      
+      const response = await fetch(`${apiUrl}/google/locations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLocations(data.locations || []);
+        
+        // ローカルに保存された選択があれば復元
+        const savedLocation = localStorage.getItem('selected_location_id');
+        if (savedLocation) {
+          setSelectedLocationId(savedLocation);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch locations:', error);
+    } finally {
+      setIsLoadingLocations(false);
+    }
+  };
+
+  const handleSaveLocation = () => {
+    if (selectedLocationId) {
+      localStorage.setItem('selected_location_id', selectedLocationId);
+      alert('同期する店舗を保存しました');
+      // ここでバックエンドにも保存するAPIを呼ぶのが理想
+    }
+  };
+
 
   useEffect(() => {
     // コンポーネントマウント時にローカルストレージからAPIキーを読み込む
     const loadSettings = () => {
       const savedGoogleKey = localStorage.getItem('google_api_key');
       const savedOpenaiKey = localStorage.getItem('openai_api_key');
-      const savedUserInfo = localStorage.getItem('user_info');
+      const savedUserInfo = localStorage.getItem('user_info'); // Legacy fallback
 
       if (savedGoogleKey) {
         setApiKeys(prev => ({ ...prev, google: savedGoogleKey }));
-        setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
+        // Legacy: API key presence implies connected
+        // setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
       }
       if (savedOpenaiKey) {
         setApiKeys(prev => ({ ...prev, openai: savedOpenaiKey }));
         setConnectionStatus(prev => ({ ...prev, openai: 'connected' }));
       }
+      
       if (savedUserInfo) {
         try {
-          setUserInfo(JSON.parse(savedUserInfo));
+          const parsed = JSON.parse(savedUserInfo);
+          setUserInfo(prev => ({...prev, ...parsed}));
         } catch (e) {
-          console.error('Failed to parse user info', e);
+             // ignore
         }
-      } else {
-        // デフォルト値
-        setUserInfo({
-          name: 'ユーザー',
-          email: 'user@example.com',
-          role: 'SUPER_ADMIN'
-        });
       }
+
+      // APIから最新情報を取得
+      fetchUserInfo();
     };
 
     loadSettings();
@@ -64,14 +141,7 @@ export default function SettingsPage() {
 
   const handleSaveApiKey = (type: 'google' | 'openai') => {
     if (type === 'google') {
-      if (apiKeys.google) {
-        localStorage.setItem('google_api_key', apiKeys.google);
-        setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
-        alert('Google Business Profile APIキーを保存しました');
-      } else {
-        localStorage.removeItem('google_api_key');
-        setConnectionStatus(prev => ({ ...prev, google: 'disconnected' }));
-      }
+        // Deprecated manual key input
     } else {
       if (apiKeys.openai) {
         localStorage.setItem('openai_api_key', apiKeys.openai);
@@ -163,34 +233,16 @@ export default function SettingsPage() {
             <label className="block text-sm text-slate-400 mb-2">メールアドレス</label>
             <input 
               type="email" 
-              value={userInfo.email || ''} 
-              onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="メールアドレスを入力"
-              className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
+              value={userInfo.email} 
+              readOnly
+              className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-slate-400 cursor-not-allowed"
             />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-2">権限ロール</label>
-            <select 
-              value={userInfo.role}
-              onChange={(e) => setUserInfo(prev => ({ ...prev, role: e.target.value }))}
-              className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
-            >
-              <option value="SUPER_ADMIN">最高管理者 (Super Admin)</option>
-              <option value="COMPANY_ADMIN">企業管理者 (Company Admin)</option>
-              <option value="STORE_USER">店舗ユーザー (Store User)</option>
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button 
-              onClick={() => {
-                localStorage.setItem('user_info', JSON.stringify(userInfo));
-                alert('アカウント情報を保存しました');
-              }}
-              className="px-4 py-2 rounded-lg bg-aurora-cyan hover:bg-aurora-cyan/80 text-white font-medium transition-colors"
-            >
-              変更を保存
-            </button>
+             <div className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-slate-400">
+               {userInfo.role}
+             </div>
           </div>
         </div>
       </section>
@@ -213,35 +265,74 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-white">Google Business Profile</h3>
-                  <p className="text-xs text-slate-400">店舗情報、クチコミ、投稿の同期に必要です</p>
+                  <p className="text-xs text-slate-400">店舗情報、クチコミ、投稿の同期に必要な設定です</p>
                 </div>
               </div>
               {getStatusBadge(connectionStatus.google)}
             </div>
             
             {connectionStatus.google === 'connected' ? (
-              <div className="flex gap-2 items-center">
-                 <p className="text-sm text-green-400">✓ Googleアカウントと連携済み</p>
-                 <button 
-                  onClick={() => {
-                    localStorage.removeItem('google_api_key'); // Clear legacy if exists
-                    setConnectionStatus(prev => ({ ...prev, google: 'disconnected' }));
-                  }}
-                  className="text-xs text-slate-400 underline hover:text-white ml-4"
-                 >
-                  連携を解除
-                 </button>
+              <div className="space-y-4">
+                 <div className="flex gap-2 items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <span className="text-green-400 text-xl">✓</span>
+                    <p className="text-sm text-green-400 font-bold">Googleアカウントと連携済み</p>
+                 </div>
+                 
+                 {/* 店舗選択セクション */}
+                 <div className="mt-4 pt-4 border-t border-white/10">
+                   <h4 className="text-white font-bold mb-3">同期する店舗を選択</h4>
+                   
+                   {isLoadingLocations ? (
+                     <div className="text-slate-400 text-sm animate-pulse">店舗情報を取得中...</div>
+                   ) : locations.length > 0 ? (
+                     <div className="space-y-3">
+                       <select 
+                         value={selectedLocationId}
+                         onChange={(e) => setSelectedLocationId(e.target.value)}
+                         className="w-full bg-slate-900 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-aurora-cyan"
+                       >
+                         <option value="">▼ 店舗を選択してください</option>
+                         {locations.map((loc: any) => (
+                           <option key={loc.name} value={loc.name}>
+                             {loc.locationName} ({loc.storeCode || 'コードなし'})
+                           </option>
+                         ))}
+                       </select>
+                       
+                       <button 
+                         onClick={handleSaveLocation}
+                         disabled={!selectedLocationId}
+                         className={`w-full py-2 rounded-lg font-bold transition-colors ${selectedLocationId ? 'bg-aurora-cyan hover:bg-aurora-cyan/80 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                       >
+                         この店舗を設定する
+                       </button>
+                     </div>
+                   ) : (
+                     <div className="text-yellow-400 text-sm">
+                       ⚠️ 管理可能な店舗が見つかりませんでした。Googleビジネスプロフィールの権限を確認してください。
+                     </div>
+                   )}
+                 </div>
+
+                 <div className="text-right mt-2">
+                   <button 
+                    onClick={() => {
+                      if(confirm('本当に連携を解除しますか？')) {
+                        localStorage.removeItem('meo_auth_token'); // For demo purposes mainly
+                        alert('連携解除はバックエンド管理画面から行ってください');
+                      }
+                    }}
+                    className="text-xs text-slate-400 underline hover:text-white"
+                   >
+                    連携を解除
+                   </button>
+                 </div>
               </div>
             ) : (
               <button 
                 onClick={() => {
-                    // バックエンドのGoogle OAuth URLを開く
                     const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
                     window.location.href = `${apiUrl}/google/login?state=user`;
-                    // ステータスを更新（実際にはコールバックで行う）
-                    setTimeout(() => {
-                      setConnectionStatus(prev => ({ ...prev, google: 'connected' }));
-                    }, 3000);
                 }}
                 className="w-full py-3 rounded-lg bg-white text-slate-900 font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
               >
@@ -257,7 +348,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                   </svg>
                 </div>
                 <div>
