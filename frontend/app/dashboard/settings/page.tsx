@@ -181,7 +181,7 @@ export default function SettingsPage() {
           {JSON.stringify({
             connectionStatus,
             userInfo,
-            token: localStorage.getItem('meo_auth_token')?.substring(0, 10) + '...',
+            token: typeof window !== 'undefined' ? localStorage.getItem('meo_auth_token')?.substring(0, 10) + '...' : '(server)',
             apiUrl: process.env.NEXT_PUBLIC_API_URL
           }, null, 2)}
         </pre>
