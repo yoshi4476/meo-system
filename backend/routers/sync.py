@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any
 
 from database import get_db
-from services.sync_service import get_sync_service, GoogleSyncService
+from services.sync_service import GoogleSyncService
 import models, auth
 
 router = APIRouter(
@@ -16,8 +16,7 @@ router = APIRouter(
 async def trigger_manual_sync(
     store_id: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_user),
-    sync_service: GoogleSyncService = Depends(get_sync_service)
+    current_user: models.User = Depends(auth.get_current_user)
 ):
     """
     Trigger manual synchronization for a specific store.
