@@ -6,7 +6,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from backend import models, database # Adjust import based on where this script is run
+try:
+    import models, database
+except ImportError:
+    # Try importing as package if running from parent
+    from backend import models, database
 import argparse
 
 # Usage: python scripts/set_super_admin.py --email user@example.com
