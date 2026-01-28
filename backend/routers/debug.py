@@ -77,39 +77,8 @@ def debug_google_connection(
                              error_detail += f" Body: {e.response.text}"
                         report["api_checks"]["v4_reviews"] = f"Failed: {error_detail}"
                         
-                    # Library-based V4 Check (Manual Discovery)
-                    try:
-                        from googleapiclient.discovery import build
-                        from google.oauth2.credentials import Credentials
-                        
-                        creds = Credentials(token=conn.access_token)
-                        
-                        # Explicit Discovery URL for v4 (Classic)
-                        discovery_url = "https://mybusiness.googleapis.com/$discovery/rest?version=v4"
-                        
-                        # Try to build service with explicit URL
-                        try:
-                            service = build('mybusiness', 'v4', credentials=creds, discoveryServiceUrl=discovery_url)
-                            reviews_result = service.accounts().locations().reviews().list(parent=v4_name).execute()
-                            report["api_checks"]["LIBRARY_discovery_check"] = f"Success! ({len(reviews_result.get('reviews', []))})"
-                        except Exception as e:
-                             report["api_checks"]["LIBRARY_discovery_check"] = f"Failed build: {str(e)}"
-                        
-                        # Just in case: Try 'mybusinessbusinessinformation' for reviews? (Unlikely)
-                        # or 'mybusiness' v1?
-                        try:
-                             discovery_url_v1 = "https://mybusiness.googleapis.com/$discovery/rest?version=v1"
-                             service_v1 = build('mybusiness', 'v1', credentials=creds, discoveryServiceUrl=discovery_url_v1)
-                             # Check if reviews resource exists
-                             if hasattr(service_v1.accounts().locations(), 'reviews'):
-                                  report["api_checks"]["LIBRARY_v1_has_reviews"] = "YES"
-                             else:
-                                  report["api_checks"]["LIBRARY_v1_has_reviews"] = "NO"
-                        except:
-                             report["api_checks"]["LIBRARY_v1_has_reviews"] = "Check Failed"
-
-                    except Exception as e:
-                         report["api_checks"]["LIBRARY_check"] = f"Error: {str(e)}"
+                    # Library check removed due to timeout risks
+                    report["api_checks"]["LIBRARY_check"] = "Skipped (Timeout Prevention)"
 
             except Exception as e:
                 report["api_checks"]["v1_locations"] = f"Failed: {str(e)}"
