@@ -83,7 +83,57 @@ def migrate():
             cursor.execute("ALTER TABLE reviews ADD COLUMN google_review_id TEXT")
             conn.commit()
             print("Migration successful: google_review_id added.")
-            
+        
+        if "reviewer_name" not in review_columns:
+            print("Migrating: Adding reviewer_name to reviews...")
+            cursor.execute("ALTER TABLE reviews ADD COLUMN reviewer_name TEXT")
+            conn.commit()
+            print("Migration successful: reviewer_name added.")
+
+        if "reply_comment" not in review_columns:
+            print("Migrating: Adding reply_comment to reviews...")
+            cursor.execute("ALTER TABLE reviews ADD COLUMN reply_comment TEXT")
+            conn.commit()
+            print("Migration successful: reply_comment added.")
+
+        if "reply_time" not in review_columns:
+            print("Migrating: Adding reply_time to reviews...")
+            cursor.execute("ALTER TABLE reviews ADD COLUMN reply_time DATETIME")
+            conn.commit()
+            print("Migration successful: reply_time added.")
+
+        if "create_time" not in review_columns:
+            print("Migrating: Adding create_time to reviews...")
+            cursor.execute("ALTER TABLE reviews ADD COLUMN create_time DATETIME")
+            conn.commit()
+            print("Migration successful: create_time added.")
+
+        if "update_time" not in review_columns:
+            print("Migrating: Adding update_time to reviews...")
+            cursor.execute("ALTER TABLE reviews ADD COLUMN update_time DATETIME")
+            conn.commit()
+            print("Migration successful: update_time added.")
+
+        # Check media_items table
+        cursor.execute("PRAGMA table_info(media_items)")
+        media_columns = [info[1] for info in cursor.fetchall()]
+        
+        if "google_media_id" not in media_columns:
+            print("Migrating: Adding google_media_id to media_items...")
+            cursor.execute("ALTER TABLE media_items ADD COLUMN google_media_id TEXT")
+            conn.commit()
+            print("Migration successful: google_media_id added.")
+
+        # Check questions table
+        cursor.execute("PRAGMA table_info(questions)")
+        q_columns = [info[1] for info in cursor.fetchall()]
+        
+        if "google_question_id" not in q_columns:
+            print("Migrating: Adding google_question_id to questions...")
+            cursor.execute("ALTER TABLE questions ADD COLUMN google_question_id TEXT")
+            conn.commit()
+            print("Migration successful: google_question_id added.")
+
     except Exception as e:
         print(f"Migration failed: {e}")
         conn.rollback()
