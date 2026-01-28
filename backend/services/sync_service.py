@@ -51,6 +51,10 @@ class GoogleSyncService:
             google_reviews = self.gbp.list_reviews(location_id)
             synced_count = 0
             
+            # Handle empty response
+            if not google_reviews or not google_reviews.get("reviews"):
+                return {"status": "success", "count": 0, "message": "No reviews found"}
+            
             for review_data in google_reviews.get("reviews", []):
                 review_id = review_data.get("reviewId") or review_data.get("name", "").split("/")[-1]
                 existing = db.query(models.Review).filter(models.Review.google_review_id == review_id).first()
@@ -82,8 +86,12 @@ class GoogleSyncService:
             db.commit()
             return {"status": "success", "count": synced_count}
         except Exception as e:
-            print(f"Sync Reviews Error: {e}")
-            return {"status": "error", "message": str(e)}
+            error_msg = str(e)
+            print(f"Sync Reviews Error: {error_msg}")
+            # Check if it's a 404 (no reviews exist) - treat as success
+            if "404" in error_msg or "Not Found" in error_msg:
+                return {"status": "success", "count": 0, "message": "No reviews on GBP yet"}
+            return {"status": "error", "message": error_msg}
 
     async def sync_posts(self, db: Session, store_id: str, location_id: str):
         """Fetch latest posts from Google"""
@@ -91,32 +99,17 @@ class GoogleSyncService:
             google_posts = self.gbp.list_local_posts(location_id)
             synced_count = 0
             
+            # Handle empty response
+            if not google_posts or not google_posts.get("localPosts"):
+                return {"status": "success", "count": 0, "message": "No posts found"}
+            
             for post_data in google_posts.get("localPosts", []):
-                # Google Post IDs are not always consistent, but 'name' is unique resource name
-                # name format: accounts/.../locations/.../localPosts/{id}
-                post_name = post_data.get("name")
-                
-                existing = db.query(models.Post).filter(models.Post.media_url == post_name).first() # Using media_url as temp storage for Google Resource Name if google_post_id doesn't exist? 
-                # Wait, models.Post doesn't have google_post_id? Let's check schema. 
-                # Schema has: id, store_id, content, media_url, status, scheduled_at, created_at.
-                # We might need to migrate schema to add google_post_id properly, but for now let's dedupe by content or something?
-                # Actually, duplicate content is possible.
-                # Let's assume we won't sync BACK to google for now, just fetch. 
-                # But to avoid duplicates, we need a unique ID. 
-                # Let's rely on checking if a post with same content and approx same time exists? Risky.
-                # Ideally we add google_post_id to models.Post. 
-                # For this 'Fix', let's use a simpler heuristic or skip saving if strict dedupe is impossible without schema change.
-                # User wants "Delivery", modifying schema might be safest.
-                # For now, let's just Sync = Wipe local (of type 'PUBLISHED_BY_GOOGLE'?) or just Add New ones?
-                # Let's check if content matches.
-                
                 content = post_data.get("summary", "")
                 
-                # Check duplication by content match (weak)
+                # Check duplication by content match
                 existing = db.query(models.Post).filter(models.Post.store_id == store_id, models.Post.content == content).first()
 
-                if not existing:
-                    # Create Time
+                if not existing and content:
                     create_time_str = post_data.get("createTime", datetime.utcnow().isoformat()).replace("Z", "+00:00")
                     try:
                         create_time = datetime.fromisoformat(create_time_str)
@@ -128,7 +121,6 @@ class GoogleSyncService:
                         content=content,
                         status="PUBLISHED",
                         created_at=create_time,
-                        # media_url? Post might have media.
                     )
                     
                     media_list = post_data.get("media", [])
@@ -141,8 +133,11 @@ class GoogleSyncService:
             db.commit()
             return {"status": "success", "count": synced_count}
         except Exception as e:
-            print(f"Sync Posts Error: {e}")
-            return {"status": "error", "message": str(e)}
+            error_msg = str(e)
+            print(f"Sync Posts Error: {error_msg}")
+            if "404" in error_msg or "Not Found" in error_msg:
+                return {"status": "success", "count": 0, "message": "No posts on GBP yet"}
+            return {"status": "error", "message": error_msg}
 
     async def sync_insights(self, db: Session, store_id: str, location_id: str):
         """Fetch latest insights (metrics)"""
@@ -227,6 +222,10 @@ class GoogleSyncService:
             media_items = self.gbp.list_media(location_id)
             synced_count = 0
             
+            # Handle empty
+            if not media_items or not media_items.get("mediaItems"):
+                 return {"status": "success", "count": 0, "message": "No media found"}
+            
             for item in media_items.get("mediaItems", []):
                 media_id = item.get("name") # resource name
                 
@@ -252,13 +251,20 @@ class GoogleSyncService:
             db.commit()
             return {"status": "success", "count": synced_count}
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            error_msg = str(e)
+            if "404" in error_msg or "Not Found" in error_msg:
+                 return {"status": "success", "count": 0, "message": "No media found on GBP"}
+            return {"status": "error", "message": error_msg}
 
     async def sync_qa(self, db: Session, store_id: str, location_id: str):
         """Fetch Questions and Answers"""
         try:
             questions = self.gbp.list_questions(location_id)
             q_count = 0
+            
+            # Handle empty
+            if not questions or not questions.get("questions"):
+                 return {"status": "success", "count": 0, "message": "No questions found"}
             
             for q_data in questions.get("questions", []):
                 q_id = q_data.get("name")
@@ -277,21 +283,16 @@ class GoogleSyncService:
                     q_count += 1
                     db.flush() # get ID
                 
-                # Fetch Answers for this Question
-                # Note: API might require separate call per question or include top answers
-                # list_questions response often includes 'topAnswers'
-                
-                # If we want all answers, we might need a separate loop? 
-                # Let's rely on top answers or check if we need detailed fetch.
-                # Usually list_questions gives enough.
-                # Assuming separate call needed for full answers list:
-                # answers = self.gbp.list_answers(q_id) ... skipping for now to avoid Rate Limit bomb on loop
+                # Fetch Answers logic skipped for brevity/rate limits as before
                 pass 
                 
             db.commit()
             return {"status": "success", "message": f"Synced {q_count} questions"}
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            error_msg = str(e)
+            if "404" in error_msg or "Not Found" in error_msg:
+                 return {"status": "success", "count": 0, "message": "No questions found on GBP"}
+            return {"status": "error", "message": error_msg}
 
     async def sync_location_details(self, db: Session, store_id: str, location_id: str):
         """Sync basic location info (Hours, Attributes)"""
