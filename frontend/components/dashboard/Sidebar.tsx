@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useDashboard } from '../../contexts/DashboardContext';
 
 const menuItems = [
   { name: 'ダッシュボード', href: '/dashboard', icon: 'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z' },
@@ -135,9 +136,6 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             </Link>
           ))}
         </nav>
-      </div>
-
-      </div>
       </div>
     </aside>
   );

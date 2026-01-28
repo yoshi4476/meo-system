@@ -18,7 +18,9 @@ export default function PostsPage() {
     const { userInfo, isDemoMode } = useDashboard();
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    // ...
+    const [isCreating, setIsCreating] = useState(false);
+    const [newPostContent, setNewPostContent] = useState('');
+    const [newPostMedia, setNewPostMedia] = useState('');
 
     useEffect(() => {
         if (isDemoMode) {

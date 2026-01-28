@@ -8,7 +8,7 @@ import { useDashboard } from '../../contexts/DashboardContext';
 
 function DashboardContent() {
 
-  const { userInfo, isDemoMode } = useDashboard();
+  const { userInfo, isDemoMode, refreshUser } = useDashboard();
   const searchParams = useSearchParams();
 
   // Demo Data Definitions

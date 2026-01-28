@@ -35,7 +35,9 @@ export default function ReviewsPage() {
     const { userInfo, isDemoMode } = useDashboard();
     const [reviews, setReviews] = useState<Review[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    // ...
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
 
     useEffect(() => {
         if (isDemoMode) {
