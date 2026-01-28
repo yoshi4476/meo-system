@@ -183,7 +183,39 @@ export default function ReviewsPage() {
                                         className="w-full bg-slate-900/50 border border-white/10 rounded-lg p-3 text-white h-24 focus:border-aurora-cyan focus:outline-none mb-2"
                                         placeholder="返信内容を入力..."
                                     />
-                                    <div className="flex justify-end">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate/reply`, {
+                                                        method: 'POST',
+                                                        headers: { 
+                                                            'Content-Type': 'application/json',
+                                                            'Authorization': `Bearer ${localStorage.getItem('meo_auth_token')}`
+                                                        },
+                                                        body: JSON.stringify({
+                                                            review_text: review.comment || "",
+                                                            reviewer_name: review.reviewer_name,
+                                                            star_rating: review.star_rating,
+                                                            tone: "polite" 
+                                                        })
+                                                    });
+                                                    if (res.ok) {
+                                                        const data = await res.json();
+                                                        setReplyText(data.content);
+                                                    } else {
+                                                        alert("AI生成に失敗しました");
+                                                    }
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    alert("エラーが発生しました");
+                                                }
+                                            }}
+                                            className="text-xs flex items-center gap-1 text-aurora-purple hover:text-white transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                            AIで返信を生成
+                                        </button>
                                         <button 
                                             onClick={() => handleReply(review.id)}
                                             className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded text-sm hover:bg-cyan-400"

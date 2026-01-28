@@ -132,6 +132,13 @@ class GBPClient:
         url = f"https://mybusiness.googleapis.com/v4/{review_name}/reply"
         data = {"comment": reply_text}
         response = requests.put(url, headers=self._get_headers(), json=data)
+    def list_local_posts(self, location_name: str):
+        """
+        List local posts (updates, events, offers).
+        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        """
+        url = f"https://mybusiness.googleapis.com/v4/{location_name}/localPosts"
+        response = requests.get(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
 
@@ -150,6 +157,68 @@ class GBPClient:
         """
         url = f"https://mybusiness.googleapis.com/v4/{location_name}/localPosts"
         response = requests.post(url, headers=self._get_headers(), json=post_data)
+        response.raise_for_status()
+        return response.json()
+
+    def list_media(self, location_name: str):
+        """
+        List media items (photos, videos).
+        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        """
+        url = f"https://mybusiness.googleapis.com/v4/{location_name}/media"
+        response = requests.get(url, headers=self._get_headers())
+        response.raise_for_status()
+        return response.json()
+
+    def upload_media(self, location_name: str, media_data: dict):
+        """
+        Upload media (photo/video).
+        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        media_data: Dict with mediaFormat, locationAssociation, sourceUrl or bytes
+        """
+        url = f"https://mybusiness.googleapis.com/v4/{location_name}/media"
+        response = requests.post(url, headers=self._get_headers(), json=media_data)
+        response.raise_for_status()
+        return response.json()
+
+    def delete_media(self, media_name: str):
+        """
+        Delete media.
+        media_name: Format "accounts/{accountId}/locations/{locationId}/media/{mediaId}"
+        """
+        url = f"https://mybusiness.googleapis.com/v4/{media_name}"
+        response = requests.delete(url, headers=self._get_headers())
+        response.raise_for_status()
+        return response.json()
+
+    def list_questions(self, location_name: str):
+        """
+        List questions.
+        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        """
+        url = f"https://mybusiness.googleapis.com/v4/{location_name}/questions"
+        response = requests.get(url, headers=self._get_headers())
+        response.raise_for_status()
+        return response.json()
+
+    def list_answers(self, question_name: str):
+        """
+        List answers for a question.
+        question_name: Format "accounts/{accountId}/locations/{locationId}/questions/{questionId}"
+        """
+        url = f"https://mybusiness.googleapis.com/v4/{question_name}/answers"
+        response = requests.get(url, headers=self._get_headers())
+        response.raise_for_status()
+        return response.json()
+
+    def create_answer(self, question_name: str, text: str):
+        """
+        Answer a question.
+        question_name: Format "accounts/{accountId}/locations/{locationId}/questions/{questionId}"
+        """
+        url = f"https://mybusiness.googleapis.com/v4/{question_name}/answers"
+        data = {"text": text}
+        response = requests.post(url, headers=self._get_headers(), json=data)
         response.raise_for_status()
         return response.json()
 

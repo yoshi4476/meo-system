@@ -114,10 +114,88 @@ class Review(Base):
     star_rating = Column(String) # 'FIVE', 'FOUR', etc or Integer
     reply_comment = Column(String, nullable=True)
     reply_time = Column(DateTime, nullable=True)
+
     create_time = Column(DateTime)
     update_time = Column(DateTime)
     
     store = relationship("Store", back_populates="reviews")
+
+class MediaItem(Base):
+    __tablename__ = "media_items"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    store_id = Column(String, ForeignKey("stores.id"), nullable=False)
+    google_media_id = Column(String, nullable=True) # ID from Google
+    
+    media_format = Column(String, default="PHOTO") # PHOTO, VIDEO
+    location_association = Column(String, nullable=True) # PROFILE, COVER, LOGO, etc.
+    
+    google_url = Column(String, nullable=True) # Google hosted URL
+    thumbnail_url = Column(String, nullable=True)
+    
+    description = Column(String, nullable=True)
+    views = Column(Integer, default=0)
+    
+    create_time = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    store = relationship("Store", back_populates="media_items")
+
+
+class Question(Base):
+    __tablename__ = "questions"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    store_id = Column(String, ForeignKey("stores.id"), nullable=False)
+    google_question_id = Column(String, nullable=True)
+    
+    authore_name = Column(String, nullable=True)
+    text = Column(String, nullable=True)
+    upvote_count = Column(Integer, default=0)
+    
+    create_time = Column(DateTime, default=datetime.utcnow)
+    update_time = Column(DateTime, default=datetime.utcnow)
+    
+    store = relationship("Store", back_populates="questions")
+    answers = relationship("Answer", back_populates="question", cascade="all, delete-orphan")
+
+class Answer(Base):
+    __tablename__ = "answers"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    question_id = Column(String, ForeignKey("questions.id"), nullable=False)
+    google_answer_id = Column(String, nullable=True)
+    
+    author_name = Column(String, nullable=True) # "Owner" or user name
+    text = Column(String, nullable=True)
+    upvote_count = Column(Integer, default=0)
+    
+    author_type = Column(String, default="REGULAR_USER") # MERCHANT, REGULAR_USER, LOCAL_GUIDE
+    
+    create_time = Column(DateTime, default=datetime.utcnow)
+    update_time = Column(DateTime, default=datetime.utcnow)
+    
+    question = relationship("Question", back_populates="answers")
+
+class Prompt(Base):
+    __tablename__ = "prompts"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=True) # If null, system default? Or system prompts
+    
+    title = Column(String)
+    content = Column(String) # The actual prompt text
+    category = Column(String) # POST_GENERATION, REVIEW_REPLY
+    
+    is_locked = Column(Boolean, default=False) # "Lock" feature
+    is_system = Column(Boolean, default=False)
+    
+    create_time = Column(DateTime, default=datetime.utcnow)
+    update_time = Column(DateTime, default=datetime.utcnow)
+
+Store.questions = relationship("Question", back_populates="store", cascade="all, delete-orphan")
+
+Store.media_items = relationship("MediaItem", back_populates="store", cascade="all, delete-orphan")
 
 # Add relationships to User and Store
 User.google_connection = relationship("GoogleConnection", back_populates="user", uselist=False)
