@@ -118,18 +118,32 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           return;
       }
 
+      const token = localStorage.getItem('meo_auth_token');
+      if (!token) {
+          alert("認証トークンが見つかりません。再度ログインしてください。");
+          window.location.href = '/';
+          return;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+          alert("API URLが設定されていません。管理者に連絡してください。");
+          console.error("NEXT_PUBLIC_API_URL is not defined");
+          return;
+      }
+
       try {
-          const token = localStorage.getItem('meo_auth_token');
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-          
-          alert("同期を開始しました...完了まで数秒かかります。");
-          
           const requestUrl = `${apiUrl}/sync/${userInfo.store_id}`;
           console.log("Syncing to:", requestUrl);
           
+          alert("同期を開始しました...完了まで数秒かかります。");
+          
           const res = await fetch(requestUrl, {
               method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}` }
+              headers: { 
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+              }
           });
           
           if (res.ok) {
@@ -145,17 +159,19 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
                   window.location.reload(); 
               }
           } else {
-              console.error("Sync Failed:", res.status, res.statusText);
+              const errorText = await res.text();
+              console.error("Sync Failed:", res.status, res.statusText, errorText);
               if (res.status === 401) {
                   alert("セッションが切れました。再度ログインしてください。");
                   window.location.href = '/';
                   return;
               }
-              alert(`同期リクエストに失敗しました (Status: ${res.status})\nURL: ${requestUrl}`);
+              alert(`同期エラー (${res.status}):\n${errorText || res.statusText}\n\nAPI URL: ${apiUrl}`);
           }
-      } catch (e) {
-          console.error(e);
-          alert(`通信エラーが発生しました: ${e}`);
+      } catch (e: any) {
+          console.error("Sync network error:", e);
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+          alert(`通信エラー:\n${e.message}\n\n接続先: ${apiUrl}\n\nバックエンドが起動しているか確認してください。`);
       }
   };
 
