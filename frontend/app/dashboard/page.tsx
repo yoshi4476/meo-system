@@ -91,7 +91,7 @@ function DashboardContent() {
             title={stat.label} 
             value={stat.value} 
             change={stat.change} 
-            trend={stat.trend as 'up' | 'down' | 'flat'}
+            trend={stat.trend as 'up' | 'down' | 'neutral'}
             icon={stat.icon}
             />
         ))}
