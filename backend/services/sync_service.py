@@ -11,19 +11,36 @@ class GoogleSyncService:
         
     async def sync_all(self, db: Session, store_id: str, location_id: str):
         """Orchestrate full sync for a store"""
+        
+        # Resolve v4 name (accounts/{accountId}/locations/{locationId})
+        # location_id from DB is strictly 'locations/XXX' (v1 format)
+        # We need to find the Account ID to construct v4 name.
+        
+        v4_location_name = location_id # Fallback
+        try:
+            accounts_data = self.gbp.list_accounts()
+            # Heuristic: Use the first account. In complex setups, we might need checking which account owns the location.
+            # But usually the user has one relevant account or the first one works as the 'viewer'.
+            if accounts_data.get("accounts"):
+                account_name = accounts_data["accounts"][0]["name"] # accounts/123...
+                location_suffix = location_id.split("/")[-1]
+                v4_location_name = f"{account_name}/locations/{location_suffix}"
+        except Exception as e:
+            print(f"Warning: Could not resolve account ID for v4 APIs: {e}")
+        
         results = {
-            "reviews": await self.sync_reviews(db, store_id, location_id),
-            "posts": await self.sync_posts(db, store_id, location_id),
-            "insights": await self.sync_insights(db, store_id, location_id),
-            "media": await self.sync_media(db, store_id, location_id),
-            "qa": await self.sync_qa(db, store_id, location_id),
-            "location": await self.sync_location_details(db, store_id, location_id),
+            "reviews": await self.sync_reviews(db, store_id, v4_location_name),
+            "posts": await self.sync_posts(db, store_id, v4_location_name),
+            "insights": await self.sync_insights(db, store_id, location_id), # Insights uses v1 (locations/XXX)
+            "media": await self.sync_media(db, store_id, v4_location_name),
+            "qa": await self.sync_qa(db, store_id, v4_location_name),
+            "location": await self.sync_location_details(db, store_id, location_id), # Business Info uses v1
             "synced_at": datetime.now().isoformat()
         }
         # Update store's last_synced_at in DB
         store = db.query(models.Store).filter(models.Store.id == store_id).first()
         if store:
-             store.last_synced_at = datetime.now()
+             store.last_synced_at = datetime.utcnow()
              db.commit()
              
         return results
