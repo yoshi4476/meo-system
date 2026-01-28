@@ -73,6 +73,24 @@ def debug_google_connection(
                     except Exception as e:
                         report["api_checks"]["v4_reviews"] = f"Failed: {str(e)}"
                         
+                    # Experimental V1 Checks
+                    try:
+                        # Try mybusinessreviews.googleapis.com
+                        # Format: accounts/{accountId}/locations/{locationId}/reviews
+                        # We need the naked IDs
+                        acc_id = acc_name.split('/')[-1]
+                        
+                        # Test URL 1: mybusinessreviews.googleapis.com/v1/...
+                        url1 = f"https://mybusinessreviews.googleapis.com/v1/accounts/{acc_id}/locations/{loc_id}/reviews"
+                        resp1 = client.session.get(url1)
+                        if resp1.status_code == 200:
+                            report["api_checks"]["EXTRA_v1_reviews_A"] = f"Working! ({len(resp1.json().get('reviews', []))})"
+                        else:
+                            report["api_checks"]["EXTRA_v1_reviews_A"] = f"Not Found ({resp1.status_code})"
+                            
+                    except Exception as e:
+                         report["api_checks"]["EXTRA_v1_reviews_check"] = f"Error: {str(e)}"
+
             except Exception as e:
                 report["api_checks"]["v1_locations"] = f"Failed: {str(e)}"
     except Exception as e:
