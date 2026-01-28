@@ -77,27 +77,42 @@ def debug_google_connection(
                     except Exception as e:
                         report["api_checks"]["v4_reviews"] = f"Failed: {str(e)}"
                         
-                    # Library-based V4 Check (The "Official" Way)
+                    except Exception as e:
+                        report["api_checks"]["v4_reviews"] = f"Failed: {str(e)}"
+                        
+                    # Library-based V4 Check (Manual Discovery)
                     try:
                         from googleapiclient.discovery import build
                         from google.oauth2.credentials import Credentials
                         
-                        # Create Credentials object
                         creds = Credentials(token=conn.access_token)
                         
-                        # Build Service
-                        # Note: discovery.build might fail if API is disabled or not found
-                        service = build('mybusiness', 'v4', credentials=creds)
+                        # Explicit Discovery URL for v4 (Classic)
+                        discovery_url = "https://mybusiness.googleapis.com/$discovery/rest?version=v4"
                         
-                        # Account Info (from name)
-                        # accounts/{accountId}/locations/{locationId}
-                        # The client lib expects: service.accounts().locations().reviews().list(parent=...).execute()
+                        # Try to build service with explicit URL
+                        try:
+                            service = build('mybusiness', 'v4', credentials=creds, discoveryServiceUrl=discovery_url)
+                            reviews_result = service.accounts().locations().reviews().list(parent=v4_name).execute()
+                            report["api_checks"]["LIBRARY_discovery_check"] = f"Success! ({len(reviews_result.get('reviews', []))})"
+                        except Exception as e:
+                             report["api_checks"]["LIBRARY_discovery_check"] = f"Failed build: {str(e)}"
                         
-                        reviews_result = service.accounts().locations().reviews().list(parent=v4_name).execute()
-                        report["api_checks"]["LIBRARY_v4_check"] = f"Working! ({len(reviews_result.get('reviews', []))})"
-                        
+                        # Just in case: Try 'mybusinessbusinessinformation' for reviews? (Unlikely)
+                        # or 'mybusiness' v1?
+                        try:
+                             discovery_url_v1 = "https://mybusiness.googleapis.com/$discovery/rest?version=v1"
+                             service_v1 = build('mybusiness', 'v1', credentials=creds, discoveryServiceUrl=discovery_url_v1)
+                             # Check if reviews resource exists
+                             if hasattr(service_v1.accounts().locations(), 'reviews'):
+                                  report["api_checks"]["LIBRARY_v1_has_reviews"] = "YES"
+                             else:
+                                  report["api_checks"]["LIBRARY_v1_has_reviews"] = "NO"
+                        except:
+                             report["api_checks"]["LIBRARY_v1_has_reviews"] = "Check Failed"
+
                     except Exception as e:
-                         report["api_checks"]["LIBRARY_v4_check"] = f"Error: {str(e)}"
+                         report["api_checks"]["LIBRARY_check"] = f"Error: {str(e)}"
 
             except Exception as e:
                 report["api_checks"]["v1_locations"] = f"Failed: {str(e)}"
