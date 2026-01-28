@@ -122,7 +122,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           
           alert("同期を開始しました...完了まで数秒かかります。");
           
-          const res = await fetch(`${apiUrl}/sync/${userInfo.store_id}`, {
+          const requestUrl = `${apiUrl}/sync/${userInfo.store_id}`;
+          console.log("Syncing to:", requestUrl);
+          
+          const res = await fetch(requestUrl, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -140,7 +143,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
                   window.location.reload(); 
               }
           } else {
-              alert(`同期リクエストに失敗しました (Status: ${res.status})`);
+              console.error("Sync Failed:", res.status, res.statusText);
+              alert(`同期リクエストに失敗しました (Status: ${res.status})\nURL: ${requestUrl}`);
           }
       } catch (e) {
           console.error(e);
