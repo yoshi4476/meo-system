@@ -14,19 +14,34 @@ class GoogleSyncService:
         
         # Resolve v4 name (accounts/{accountId}/locations/{locationId})
         # location_id from DB is strictly 'locations/XXX' (v1 format)
-        # We need to find the Account ID to construct v4 name.
         
-        v4_location_name = location_id # Fallback
+        v4_location_name = None
+        resolve_error = None
+        
         try:
             accounts_data = self.gbp.list_accounts()
-            # Heuristic: Use the first account. In complex setups, we might need checking which account owns the location.
-            # But usually the user has one relevant account or the first one works as the 'viewer'.
             if accounts_data.get("accounts"):
+                # Use the first account. 
+                # Ideally check which account actually owns the location but listing all locations per account is expensive.
+                # Assuming the authorized user has access via the first account returned.
                 account_name = accounts_data["accounts"][0]["name"] # accounts/123...
                 location_suffix = location_id.split("/")[-1]
                 v4_location_name = f"{account_name}/locations/{location_suffix}"
+            else:
+                 resolve_error = "No Google Accounts found for this user."
         except Exception as e:
-            print(f"Warning: Could not resolve account ID for v4 APIs: {e}")
+            resolve_error = f"Failed to list accounts: {e}"
+            
+        # If we couldn't resolve v4 name, we cannot proceed with v4 APIs (Reviews, Posts, Media, QA)
+        if not v4_location_name:
+             # We can still sync Insights/Location which use v1 (location_id)
+             print(f"Warning: {resolve_error}. Skipping v4 dependent syncs.")
+             # But we should probably alert the user?
+             # For now, let's try to proceed with v1 only, or fail?
+             # User expects Reviews. If we can't get reviews, we should error.
+             if resolve_error:
+                 return {"status": "error", "message": f"Google Account ID Resolution Failed: {resolve_error}"}
+             return {"status": "error", "message": "Google Account ID not found."}
         
         results = {
             "reviews": await self.sync_reviews(db, store_id, v4_location_name),
@@ -37,6 +52,7 @@ class GoogleSyncService:
             "location": await self.sync_location_details(db, store_id, location_id), # Business Info uses v1
             "synced_at": datetime.now().isoformat()
         }
+        
         # Update store's last_synced_at in DB
         store = db.query(models.Store).filter(models.Store.id == store_id).first()
         if store:
