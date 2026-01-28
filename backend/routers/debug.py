@@ -82,7 +82,8 @@ def debug_google_connection(
                         
                         # Test URL 1: mybusinessreviews.googleapis.com/v1/...
                         url1 = f"https://mybusinessreviews.googleapis.com/v1/accounts/{acc_id}/locations/{loc_id}/reviews"
-                        resp1 = client.session.get(url1)
+                        import requests
+                        resp1 = requests.get(url1, headers=client._get_headers())
                         if resp1.status_code == 200:
                             report["api_checks"]["EXTRA_v1_reviews_A"] = f"Working! ({len(resp1.json().get('reviews', []))})"
                         else:
