@@ -46,6 +46,7 @@ class Store(Base):
     name = Column(String)
     address = Column(String) # JSON or String
     gbp_data = Column(JSON, nullable=True) # Full GBP Data
+    last_synced_at = Column(DateTime, nullable=True) # When last synced with Google
     
     company = relationship("Company", back_populates="stores")
     posts = relationship("Post", back_populates="store")
