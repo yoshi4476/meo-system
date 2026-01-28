@@ -21,6 +21,8 @@ type DashboardContextType = {
   isLoading: boolean;
   error: string | null;
   refreshUser: () => Promise<void>;
+  isDemoMode: boolean;
+  toggleDemoMode: () => void;
 };
 
 const DashboardContext = createContext<DashboardContextType>({
@@ -28,6 +30,8 @@ const DashboardContext = createContext<DashboardContextType>({
   isLoading: true,
   error: null,
   refreshUser: async () => {},
+  isDemoMode: false,
+  toggleDemoMode: () => {},
 });
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
@@ -75,8 +79,24 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, [fetchUser]);
 
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // Check for saved demo preference on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('is_demo_mode');
+    if (saved === 'true') setIsDemoMode(true);
+  }, []);
+
+  const toggleDemoMode = () => {
+    setIsDemoMode(prev => {
+      const next = !prev;
+      localStorage.setItem('is_demo_mode', String(next));
+      return next;
+    });
+  };
+
   return (
-    <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser }}>
+    <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser, isDemoMode, toggleDemoMode }}>
       {children}
     </DashboardContext.Provider>
   );

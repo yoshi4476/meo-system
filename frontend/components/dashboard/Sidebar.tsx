@@ -29,6 +29,8 @@ const settingsItems = [
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
+  const { isDemoMode, toggleDemoMode } = useDashboard();
+
   return (
     <aside className="w-64 h-screen bg-deep-navy/95 backdrop-blur-xl border-r border-white/10 flex flex-col relative z-50">
       <div className="flex-1 overflow-y-auto">
@@ -60,7 +62,27 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
           </select>
         </div>
         
-        {/* メインメニュー */}
+        {/* デモモード切替 */}
+      <div className="px-6 py-2 mb-2">
+         <div className="flex items-center justify-between bg-slate-900/50 p-3 rounded-lg border border-white/5">
+            <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-medium">デモモード</span>
+                {isDemoMode && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-aurora-cyan opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-aurora-cyan"></span></span>}
+            </div>
+            <button 
+              onClick={toggleDemoMode}
+              className={`${isDemoMode ? 'bg-aurora-cyan' : 'bg-slate-700'} relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
+            >
+               <span className="sr-only">Toggle demo mode</span>
+               <span
+                 aria-hidden="true"
+                 className={`${isDemoMode ? 'translate-x-4' : 'translate-x-0'} pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+               />
+            </button>
+         </div>
+      </div>
+      
+      {/* メインメニュー */}
         <nav className="p-4 space-y-1">
           <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">メイン</p>
           {menuItems.map((item) => (
@@ -115,17 +137,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         </nav>
       </div>
 
-      <div className="p-4 mt-auto">
-        <div className="glass-card p-4 rounded-xl">
-          <p className="text-xs text-slate-400 mb-2">MEO総合スコア</p>
-          <div className="flex items-end gap-2">
-            <span className="text-2xl font-bold text-white">A+</span>
-            <span className="text-xs text-aurora-cyan mb-1">前月比+12%</span>
-          </div>
-          <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
-            <div className="bg-linear-to-r from-aurora-purple to-aurora-cyan h-full w-[85%] rounded-full"></div>
-          </div>
-        </div>
+      </div>
       </div>
     </aside>
   );

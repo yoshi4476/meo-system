@@ -15,18 +15,28 @@ type Post = {
 };
 
 export default function PostsPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isCreating, setIsCreating] = useState(false);
-    const [newPostContent, setNewPostContent] = useState('');
-    const [newPostMedia, setNewPostMedia] = useState('');
+    // ...
 
     useEffect(() => {
+        if (isDemoMode) {
+            setPosts([
+                { id: '1', content: '【春の限定メニュー🌸】\n桜餅風味のラテが新登場！期間限定ですのでお見逃しなく。\n#カフェ #春限定 #桜スイーツ', status: 'PUBLISHED', created_at: new Date().toISOString(), media_url: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?auto=format&fit=crop&w=300&q=80' },
+                { id: '2', content: 'ゴールデンウィークの営業時間のお知らせ📅\nGW期間中は休まず営業いたします。混雑が予想されますのでご予約はお早めに！', status: 'SCHEDULED', scheduled_at: '2025-04-29T09:00:00', created_at: new Date(Date.now() - 86400000).toISOString() },
+                { id: '3', content: 'スタッフ募集中！\n私たちと一緒に働きませんか？詳細はWebサイトまで。', status: 'DRAFT', created_at: new Date(Date.now() - 172800000).toISOString() },
+            ]);
+            setIsLoading(false);
+            return;
+        }
+
         if (userInfo?.store_id) {
             fetchPosts();
+        } else {
+            setIsLoading(false);
         }
-    }, [userInfo]);
+    }, [userInfo, isDemoMode]);
 
     const fetchPosts = async () => {
         setIsLoading(true);

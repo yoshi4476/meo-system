@@ -8,9 +8,28 @@ import { useDashboard } from '../../contexts/DashboardContext';
 
 function DashboardContent() {
 
-const { refreshUser } = useDashboard();
+  const { userInfo, isDemoMode } = useDashboard();
   const searchParams = useSearchParams();
-  
+
+  // Demo Data Definitions
+  const demoStats = [
+      { label: '表示回数', value: '12,450', change: '+15.3%', trend: 'up', icon: 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z' },
+      { label: '検索クエリ', value: '4,821', change: '+5.2%', trend: 'up', icon: 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z' },
+      { label: 'ルート検索', value: '892', change: '-2.1%', trend: 'down', icon: 'M21.71 11.29l-9-9c-.39-.39-1.02-.39-1.41 0l-9 9c-.39.39-.39 1.02 0 1.41l9 9c.39.39 1.02.39 1.41 0l9-9c.39-.38.39-1.01 0-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z' },
+      { label: 'ウェブサイト', value: '1,203', change: '+8.7%', trend: 'up', icon: 'M15 13V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4h-4v-2zM7 7h2v2H7V7zm2 10H7v-2h2v2zm2-2H7v-2h4v2zm0-4H7V7h4v4zm2 8v-9h6v9h-6zm0-8v-2h4v2h-4zm2 8v-2h2v2h-2zm0-4v-2h2v2h-2z' },
+  ];
+
+  const zeroStats = [
+    { label: '表示回数', value: '0', change: '0%', trend: 'neutral', icon: demoStats[0].icon },
+    { label: '検索クエリ', value: '0', change: '0%', trend: 'neutral', icon: demoStats[1].icon },
+    { label: 'ルート検索', value: '0', change: '0%', trend: 'neutral', icon: demoStats[2].icon },
+    { label: 'ウェブサイト', value: '0', change: '0%', trend: 'neutral', icon: demoStats[3].icon },
+  ];
+
+  // Logic to switch between real and demo (Real logic would fetch data here, for now using zero as placeholder for Real)
+  // Since we haven't implemented real metrics fetching yet for these specific cards in this file, we default to zero or demo.
+  const stats = isDemoMode ? demoStats : zeroStats;
+
   useEffect(() => {
     // Extract token from URL after Google OAuth redirect
     const token = searchParams.get('token');
@@ -33,8 +52,8 @@ const { refreshUser } = useDashboard();
       {/* ヘッダーセクション */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">ダッシュボード</h1>
-          <p className="text-slate-400 mt-1">おかえりなさい、渋谷店マネージャー様</p>
+          <h1 className="text-3xl font-bold text-white">ダッシュボード {isDemoMode && <span className="text-sm bg-aurora-cyan/20 text-aurora-cyan px-2 py-1 rounded ml-2">DEMO MODE</span>}</h1>
+          <p className="text-slate-400 mt-1">おかえりなさい、{userInfo?.email?.split('@')[0] || 'ゲスト'}様</p>
         </div>
         <div className="flex gap-3">
            <a href="/dashboard/reports" className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-sm font-medium">
@@ -53,9 +72,12 @@ const { refreshUser } = useDashboard();
             🤖
           </div>
           <div>
-            <h3 className="font-bold text-white mb-1">おはようございます！今日のタスクは3件です</h3>
+            <h3 className="font-bold text-white mb-1">おはようございます！今日のタスクは{isDemoMode ? '3' : '0'}件です</h3>
             <p className="text-slate-300 text-sm">
-              新しいクチコミが1件届いています。また、先週の投稿パフォーマンスが好調です。詳細は<a href="/dashboard/insights" className="text-aurora-cyan underline">インサイト</a>をご確認ください。
+              {isDemoMode 
+                ? '新しいクチコミが1件届いています。また、先週の投稿パフォーマンスが好調です。詳細はインサイトをご確認ください。' 
+                : '現在、通知はありません。Googleビジネスプロフィールと連携してデータを取得しましょう。'}
+                {isDemoMode && <a href="/dashboard/insights" className="text-aurora-cyan underline ml-1">インサイト</a>}
             </p>
           </div>
         </div>
@@ -63,34 +85,16 @@ const { refreshUser } = useDashboard();
 
       {/* KPIグリッド */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard 
-          title="表示回数" 
-          value="12,450" 
-          change="+15.3%" 
-          trend="up"
-          icon="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-        />
-        <MetricCard 
-          title="検索クエリ" 
-          value="4,821" 
-          change="+5.2%" 
-          trend="up"
-          icon="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
-        />
-        <MetricCard 
-          title="ルート検索" 
-          value="892" 
-          change="-2.1%" 
-          trend="down"
-           icon="M21.71 11.29l-9-9c-.39-.39-1.02-.39-1.41 0l-9 9c-.39.39-.39 1.02 0 1.41l9 9c.39.39 1.02.39 1.41 0l9-9c.39-.38.39-1.01 0-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z"
-        />
-        <MetricCard 
-          title="ウェブサイトクリック" 
-          value="1,203" 
-          change="+8.7%" 
-          trend="up"
-          icon="M15 13V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4h-4v-2zM7 7h2v2H7V7zm2 10H7v-2h2v2zm2-2H7v-2h4v2zm0-4H7V7h4v4zm2 8v-9h6v9h-6zm0-8v-2h4v2h-4zm2 8v-2h2v2h-2zm0-4v-2h2v2h-2z"
-        />
+        {stats.map((stat, i) => (
+            <MetricCard 
+            key={i}
+            title={stat.label} 
+            value={stat.value} 
+            change={stat.change} 
+            trend={stat.trend as 'up' | 'down' | 'flat'}
+            icon={stat.icon}
+            />
+        ))}
       </div>
 
       {/* AIアクションカードセクション */}

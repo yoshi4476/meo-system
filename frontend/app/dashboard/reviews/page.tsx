@@ -32,18 +32,28 @@ const StarRating = ({ rating }: { rating: string }) => {
 };
 
 export default function ReviewsPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [reviews, setReviews] = useState<Review[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isSyncing, setIsSyncing] = useState(false);
-    const [replyingTo, setReplyingTo] = useState<string | null>(null);
-    const [replyText, setReplyText] = useState('');
+    // ...
 
     useEffect(() => {
+        if (isDemoMode) {
+             setReviews([
+                { id: '1', reviewer_name: '山田 太郎', star_rating: 'FIVE', comment: '店員さんの対応がとても丁寧で良かったです。また利用したいです。', create_time: new Date().toISOString() },
+                { id: '2', reviewer_name: 'Suzuki Hanako', star_rating: 'FOUR', comment: '料理は美味しかったですが、提供が少し遅かったです。', create_time: new Date(Date.now() - 86400000).toISOString(), reply_comment: 'この度はご来店ありがとうございます。提供時間についてご不便をおかけし申し訳ございません。改善に努めてまいります。', reply_time: new Date().toISOString() },
+                { id: '3', reviewer_name: '田中 健', star_rating: 'FIVE', comment: '最高でした！', create_time: new Date(Date.now() - 172800000).toISOString() },
+            ]);
+            setIsLoading(false);
+            return;
+        }
+
         if (userInfo?.store_id) {
             fetchReviews();
+        } else {
+             setIsLoading(false);
         }
-    }, [userInfo]);
+    }, [userInfo, isDemoMode]);
 
     const fetchReviews = async () => {
         setIsLoading(true);
@@ -57,6 +67,7 @@ export default function ReviewsPage() {
             }
         } catch (e) {
             console.error(e);
+            setReviews([]);
         } finally {
             setIsLoading(false);
         }
