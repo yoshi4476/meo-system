@@ -454,23 +454,30 @@ export default function SettingsPage() {
                   
                   if (!uid) {
                     console.log("UserInfo missing, attempting refresh...");
-                    await refreshUser();
-                    
-                    const token = localStorage.getItem('meo_auth_token');
-                    if (!token) {
-                         alert('セッションが切断されています。ログインし直してください。');
-                         return;
-                    }
-
-                    // Try to fetch ID directly to proceed immediately
+                    // Try to fetch ID directly
                     try {
+                        const token = localStorage.getItem('meo_auth_token');
+                        if (!token) {
+                             alert('セッションが切断されています。ログインし直してください。');
+                             window.location.href = '/';
+                             return;
+                        }
+
                         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
                         const meRes = await fetch(`${apiUrl}/users/me`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
+                        
                         if (meRes.ok) {
                             const me = await meRes.json();
                             uid = me.id;
+                            // Update global context too if possible
+                        } else if (meRes.status === 401) {
+                            alert('認証の有効期限が切れました。再度ログインしてください。');
+                            window.location.href = '/';
+                            return;
+                        } else {
+                             console.error("Fetch user failed:", meRes.status);
                         }
                     } catch(e) {
                          console.error("Failed to fetch user info for login redirect", e);
@@ -480,7 +487,7 @@ export default function SettingsPage() {
                   if (uid) {
                       window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${uid}`;
                   } else {
-                      alert('ユーザー情報を取得できませんでした。ページを更新して再度お試しください。');
+                      alert('ユーザー情報を取得できませんでした。\nネットワーク接続を確認するか、一度ログアウトして再ログインしてください。');
                   }
                 }}
                 className="w-full py-3 rounded-lg bg-white text-slate-900 font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"

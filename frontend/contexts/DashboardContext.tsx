@@ -93,7 +93,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       } else {
         console.error('Failed to fetch user:', response.status);
         if (response.status === 401) {
-             // localStorage.removeItem('meo_auth_token'); 
+             localStorage.removeItem('meo_auth_token'); 
+             window.location.href = '/';
+             return;
         }
       }
     } catch (err) {
