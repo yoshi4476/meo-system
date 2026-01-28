@@ -23,6 +23,7 @@ type DashboardContextType = {
   refreshUser: () => Promise<void>;
   isDemoMode: boolean;
   toggleDemoMode: () => void;
+  syncData: () => Promise<void>;
 };
 
 const DashboardContext = createContext<DashboardContextType>({
@@ -32,6 +33,7 @@ const DashboardContext = createContext<DashboardContextType>({
   refreshUser: async () => {},
   isDemoMode: false,
   toggleDemoMode: () => {},
+  syncData: async () => {},
 });
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
@@ -102,6 +104,34 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isDemoMode]); // Re-run if mode changes
 
+  const syncData = async () => {
+      if (isDemoMode) {
+          await new Promise(r => setTimeout(r, 2000));
+          alert("デモモード: 同期が完了しました（シミュレーション）");
+          return;
+      }
+
+      if (!userInfo?.store_id) return;
+
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+          const res = await fetch(`${apiUrl}/sync/${userInfo.store_id}`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+              alert("Google同期が完了しました！");
+              // Refresh user/data if needed
+          } else {
+              alert("同期に失敗しました");
+          }
+      } catch (e) {
+          console.error(e);
+          alert("エラーが発生しました");
+      }
+  };
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
@@ -123,7 +153,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser, isDemoMode, toggleDemoMode }}>
+    <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser, isDemoMode, toggleDemoMode, syncData }}>
       {children}
     </DashboardContext.Provider>
   );

@@ -30,7 +30,7 @@ const settingsItems = [
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
-  const { isDemoMode, toggleDemoMode } = useDashboard();
+  const { isDemoMode, toggleDemoMode, syncData } = useDashboard();
 
   return (
     <aside className="w-64 h-screen bg-deep-navy/95 backdrop-blur-xl border-r border-white/10 flex flex-col relative z-50">
@@ -62,26 +62,42 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             <option>すべての店舗</option>
           </select>
         </div>
-        
-        {/* デモモード切替 */}
-      <div className="px-6 py-2 mb-2">
-         <div className="flex items-center justify-between bg-slate-900/50 p-3 rounded-lg border border-white/5">
-            <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 font-medium">デモモード</span>
-                {isDemoMode && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-aurora-cyan opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-aurora-cyan"></span></span>}
-            </div>
-            <button 
-              onClick={toggleDemoMode}
-              className={`${isDemoMode ? 'bg-aurora-cyan' : 'bg-slate-700'} relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
+
+        {/* Sync & Demo Mode */}
+        <div className="p-4 border-b border-white/10 space-y-3">
+            {/* Sync Button */}
+            <button
+                onClick={() => {
+                   if(confirm("Googleビジネスプロフィールと同期しますか？")) {
+                       syncData();
+                   }
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg transition-colors border border-white/5"
             >
-               <span className="sr-only">Toggle demo mode</span>
-               <span
-                 aria-hidden="true"
-                 className={`${isDemoMode ? 'translate-x-4' : 'translate-x-0'} pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-               />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span className="text-sm font-bold">Google同期</span>
             </button>
-         </div>
-      </div>
+
+             {/* Demo Mode Toggle */}
+             <div className="flex items-center justify-between bg-slate-800 p-3 rounded-lg border border-white/5">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">デモモード</span>
+                    {isDemoMode && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-aurora-cyan opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-aurora-cyan"></span></span>}
+                </div>
+                <button 
+                  onClick={toggleDemoMode}
+                  className={`${isDemoMode ? 'bg-aurora-cyan' : 'bg-slate-700'} relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
+                >
+                   <span className="sr-only">Toggle demo mode</span>
+                   <span
+                     aria-hidden="true"
+                     className={`${isDemoMode ? 'translate-x-4' : 'translate-x-0'} pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                   />
+                </button>
+             </div>
+        </div>
       
       {/* メインメニュー */}
         <nav className="p-4 space-y-1">
