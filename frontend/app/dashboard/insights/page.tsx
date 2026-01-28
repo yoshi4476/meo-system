@@ -18,6 +18,23 @@ export default function InsightsPage() {
     const [data, setData] = useState<{ period: string, metrics: MetricSeries[] } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const fetchInsights = async () => {
+         setIsLoading(true);
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/insights/${userInfo?.store_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setData(await res.json());
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (isDemoMode) {
              // Generate 28 days of dummy data
@@ -54,23 +71,6 @@ export default function InsightsPage() {
              setIsLoading(false);
         }
     }, [userInfo, isDemoMode]);
-
-    const fetchInsights = async () => {
-         setIsLoading(true);
-        try {
-            const token = localStorage.getItem('meo_auth_token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/insights/${userInfo?.store_id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setData(await res.json());
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     if (!userInfo?.store_id) return <div className="p-8 text-slate-400">店舗を選択してください</div>;
 

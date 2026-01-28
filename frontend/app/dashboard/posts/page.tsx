@@ -22,6 +22,23 @@ export default function PostsPage() {
     const [newPostContent, setNewPostContent] = useState('');
     const [newPostMedia, setNewPostMedia] = useState('');
 
+    const fetchPosts = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/?store_id=${userInfo?.store_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setPosts(await res.json());
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (isDemoMode) {
             setPosts([
@@ -39,23 +56,6 @@ export default function PostsPage() {
             setIsLoading(false);
         }
     }, [userInfo, isDemoMode]);
-
-    const fetchPosts = async () => {
-        setIsLoading(true);
-        try {
-            const token = localStorage.getItem('meo_auth_token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/?store_id=${userInfo?.store_id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setPosts(await res.json());
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleCreatePost = async (e: React.FormEvent) => {
         e.preventDefault();

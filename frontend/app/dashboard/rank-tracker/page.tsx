@@ -21,6 +21,15 @@ export default function RankTrackerPage() {
     const [selectedKeywordId, setSelectedKeywordId] = useState<string | null>(null);
     const [history, setHistory] = useState<any[]>([]);
     
+    const fetchKeywords = async () => {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/?store_id=${userInfo?.store_id}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }
+        });
+        if(res.ok) {
+            setKeywords(await res.json());
+        }
+    };
+
     // Fetch keywords
     useEffect(() => {
         if (isDemoMode) {
@@ -35,12 +44,18 @@ export default function RankTrackerPage() {
         if(userInfo?.store_id) fetchKeywords();
     }, [userInfo, isDemoMode]);
 
-    const fetchKeywords = async () => {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/?store_id=${userInfo?.store_id}`, {
+    const fetchHistory = async (id: string) => {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/history/${id}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }
         });
         if(res.ok) {
-            setKeywords(await res.json());
+            const data = await res.json();
+            // Transform for chart
+            const formated = data.map((d: any) => ({
+                date: format(new Date(d.check_date), 'MM/dd'),
+                rank: d.rank === 0 ? 21 : d.rank // 0 means unranked, map to 21 for chart
+            }));
+            setHistory(formated);
         }
     };
 
@@ -68,21 +83,6 @@ export default function RankTrackerPage() {
             }
         }
     }, [selectedKeywordId, isDemoMode]);
-
-    const fetchHistory = async (id: string) => {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/history/${id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }
-        });
-        if(res.ok) {
-            const data = await res.json();
-            // Transform for chart
-            const formated = data.map((d: any) => ({
-                date: format(new Date(d.check_date), 'MM/dd'),
-                rank: d.rank === 0 ? 21 : d.rank // 0 means unranked, map to 21 for chart
-            }));
-            setHistory(formated);
-        }
-    };
 
     const handleAddKeyword = async (e: React.FormEvent) => {
         e.preventDefault();
