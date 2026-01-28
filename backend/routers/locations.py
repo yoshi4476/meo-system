@@ -90,7 +90,7 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
     update_mask = ",".join(mask_parts)
     
     try:
-        updated_location = client.update_location_details(store.google_location_id, update_mask, data)
+        updated_location = client.update_location(store.google_location_id, data, update_mask)
         
         # Sync back basics to local DB if title changed
         if update_data.title:
