@@ -99,11 +99,12 @@ class GoogleSyncService:
                     if review_data.get("reviewReply", {}).get("comment"):
                         existing.reply_comment = review_data.get("reviewReply", {}).get("comment")
 
-            db.commit()
             return {"status": "success", "count": synced_count}
         except Exception as e:
             error_msg = str(e)
             print(f"Sync Reviews Error: {error_msg}")
+            if "403" in error_msg and "Forbidden" in error_msg:
+                 return {"status": "error", "message": "Google My Business API (Classic) not enabled. Please enable it in Cloud Console."}
             # Check if it's a 404 (no reviews exist) - treat as success
             if "404" in error_msg or "Not Found" in error_msg:
                 return {"status": "success", "count": 0, "message": "No reviews on GBP yet"}
@@ -151,6 +152,8 @@ class GoogleSyncService:
         except Exception as e:
             error_msg = str(e)
             print(f"Sync Posts Error: {error_msg}")
+            if "403" in error_msg and "Forbidden" in error_msg:
+                 return {"status": "error", "message": "Google My Business API (Classic) not enabled."}
             if "404" in error_msg or "Not Found" in error_msg:
                 return {"status": "success", "count": 0, "message": "No posts on GBP yet"}
             return {"status": "error", "message": error_msg}
@@ -268,6 +271,8 @@ class GoogleSyncService:
             return {"status": "success", "count": synced_count}
         except Exception as e:
             error_msg = str(e)
+            if "403" in error_msg and "Forbidden" in error_msg:
+                 return {"status": "error", "message": "Google My Business API (Classic) not enabled."}
             if "404" in error_msg or "Not Found" in error_msg:
                  return {"status": "success", "count": 0, "message": "No media found on GBP"}
             return {"status": "error", "message": error_msg}
@@ -306,6 +311,8 @@ class GoogleSyncService:
             return {"status": "success", "message": f"Synced {q_count} questions"}
         except Exception as e:
             error_msg = str(e)
+            if "403" in error_msg and "Forbidden" in error_msg:
+                 return {"status": "error", "message": "Google My Business API (Classic) not enabled."}
             if "404" in error_msg or "Not Found" in error_msg:
                  return {"status": "success", "count": 0, "message": "No questions found on GBP"}
             return {"status": "error", "message": error_msg}

@@ -39,6 +39,7 @@ def debug_google_connection(
     
     report["db_connection"] = "Found"
     report["token_expiry"] = str(conn.expiry)
+    report["token_scopes"] = conn.scopes
     
     # 2. Token Status
     if not conn.access_token:
