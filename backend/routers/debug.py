@@ -72,13 +72,10 @@ def debug_google_connection(
                         reviews = client.list_reviews(v4_name)
                         report["api_checks"]["v4_reviews"] = f"Success ({len(reviews.get('reviews', []))} reviews)"
                     except Exception as e:
-                        report["api_checks"]["v4_reviews"] = f"Failed: {str(e)}"
-                        
-                    except Exception as e:
-                        report["api_checks"]["v4_reviews"] = f"Failed: {str(e)}"
-                        
-                    except Exception as e:
-                        report["api_checks"]["v4_reviews"] = f"Failed: {str(e)}"
+                        error_detail = str(e)
+                        if hasattr(e, 'response') and e.response is not None:
+                             error_detail += f" Body: {e.response.text}"
+                        report["api_checks"]["v4_reviews"] = f"Failed: {error_detail}"
                         
                     # Library-based V4 Check (Manual Discovery)
                     try:
