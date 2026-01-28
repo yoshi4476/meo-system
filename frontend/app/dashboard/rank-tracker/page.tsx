@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 
 type Keyword = {
