@@ -14,15 +14,46 @@ type MetricSeries = {
 };
 
 export default function InsightsPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [data, setData] = useState<{ period: string, metrics: MetricSeries[] } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (isDemoMode) {
+             // Generate 28 days of dummy data
+             const generateSeries = (min: number, max: number) => {
+                 return Array.from({ length: 28 }, (_, i) => {
+                     const d = new Date();
+                     d.setDate(d.getDate() - (27 - i));
+                     return {
+                         date: { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() },
+                         value: Math.floor(Math.random() * (max - min) + min).toString()
+                     };
+                 });
+             };
+
+             setData({
+                 period: '過去28日間',
+                 metrics: [
+                     { dailyMetric: 'BUSINESS_IMPRESSIONS_DESKTOP_SEARCH', dailyMetricTimeSeries: generateSeries(50, 200) },
+                     { dailyMetric: 'BUSINESS_IMPRESSIONS_MOBILE_SEARCH', dailyMetricTimeSeries: generateSeries(100, 400) },
+                     { dailyMetric: 'BUSINESS_IMPRESSIONS_DESKTOP_MAPS', dailyMetricTimeSeries: generateSeries(200, 500) },
+                     { dailyMetric: 'BUSINESS_IMPRESSIONS_MOBILE_MAPS', dailyMetricTimeSeries: generateSeries(800, 1500) },
+                     { dailyMetric: 'WEBSITE_CLICKS', dailyMetricTimeSeries: generateSeries(10, 50) },
+                     { dailyMetric: 'DRIVING_DIRECTIONS_CLICKS', dailyMetricTimeSeries: generateSeries(5, 30) },
+                     { dailyMetric: 'CALL_CLICKS', dailyMetricTimeSeries: generateSeries(1, 10) },
+                 ]
+             });
+             setIsLoading(false);
+             return;
+        }
+
         if (userInfo?.store_id) {
             fetchInsights();
+        } else {
+             setIsLoading(false);
         }
-    }, [userInfo]);
+    }, [userInfo, isDemoMode]);
 
     const fetchInsights = async () => {
          setIsLoading(true);

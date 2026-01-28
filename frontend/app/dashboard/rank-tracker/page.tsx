@@ -14,7 +14,7 @@ type Keyword = {
 };
 
 export default function RankTrackerPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [keywords, setKeywords] = useState<Keyword[]>([]);
     const [newKeyword, setNewKeyword] = useState('');
     const [newLocation, setNewLocation] = useState('東京都渋谷区');
@@ -23,8 +23,17 @@ export default function RankTrackerPage() {
     
     // Fetch keywords
     useEffect(() => {
+        if (isDemoMode) {
+            setKeywords([
+                { id: '1', text: '渋谷 カフェ', location: '東京都渋谷区', current_rank: 3, prev_rank: 5 },
+                { id: '2', text: '渋谷 ランチ', location: '東京都渋谷区', current_rank: 8, prev_rank: 7 },
+                { id: '3', text: '渋谷 スイーツ', location: '東京都渋谷区', current_rank: 1, prev_rank: 1 },
+                { id: '4', text: '表参道 カフェ', location: '東京都港区', current_rank: 12, prev_rank: 15 },
+            ]);
+            return;
+        }
         if(userInfo?.store_id) fetchKeywords();
-    }, [userInfo]);
+    }, [userInfo, isDemoMode]);
 
     const fetchKeywords = async () => {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/?store_id=${userInfo?.store_id}`, {
@@ -38,9 +47,27 @@ export default function RankTrackerPage() {
     // Fetch history when keyword selected
     useEffect(() => {
         if(selectedKeywordId) {
-            fetchHistory(selectedKeywordId);
+            if (isDemoMode) {
+                // Generate dummy history
+                const dummyHistory = Array.from({ length: 14 }, (_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - (13 - i));
+                    // Random rank roughly around current rank (3) but varying
+                    const baseRank = 3;
+                    const noise = Math.floor(Math.random() * 5) - 2; 
+                    let rank = baseRank + noise;
+                    if (rank < 1) rank = 1;
+                    return {
+                        date: format(d, 'MM/dd'),
+                        rank: rank
+                    };
+                });
+                setHistory(dummyHistory);
+            } else {
+                fetchHistory(selectedKeywordId);
+            }
         }
-    }, [selectedKeywordId]);
+    }, [selectedKeywordId, isDemoMode]);
 
     const fetchHistory = async (id: string) => {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/history/${id}`, {
