@@ -33,7 +33,49 @@ const StarRating = ({ rating }: { rating: string }) => {
 
 export default function ReviewsPage() {
     const { userInfo, isDemoMode, syncData } = useDashboard();
-    // ... (other state)
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
+
+    const fetchReviews = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/?store_id=${userInfo?.store_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setReviews(await res.json());
+            }
+        } catch (e) {
+            console.error(e);
+            setReviews([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isDemoMode) {
+             setReviews([
+                { id: '1', reviewer_name: '田中 健太', star_rating: 'FIVE', comment: '落ち着いた雰囲気で、コーヒーもとても美味しかったです。また利用させていただきます。', create_time: new Date().toISOString() },
+                { id: '2', reviewer_name: 'Sarah Jenkins', star_rating: 'FOUR', comment: 'Great coffee but a bit crowded during lunch.', create_time: new Date(Date.now() - 86400000).toISOString(), reply_comment: 'Thank you for visiting! We are planning to expand our seating area soon.', reply_time: new Date().toISOString() },
+                { id: '3', reviewer_name: '山本 さくら', star_rating: 'FIVE', comment: '店員さんの笑顔が素敵でした！桜餅ラテも最高🌸', create_time: new Date(Date.now() - 172800000).toISOString() },
+                { id: '4', reviewer_name: '高橋 誠', star_rating: 'THREE', comment: 'Wi-Fiが少し遅かったのが気になりました。', create_time: new Date(Date.now() - 259200000).toISOString(), reply_comment: '貴重なご意見ありがとうございます。Wi-Fi環境の改善を検討いたします。', reply_time: new Date().toISOString() },
+                { id: '5', reviewer_name: 'MEO User', star_rating: 'FIVE', comment: '仕事が捗る最高のカフェです。', create_time: new Date(Date.now() - 432000000).toISOString() },
+            ]);
+            setIsLoading(false);
+            return;
+        }
+
+        if (userInfo?.store_id) {
+            fetchReviews();
+        } else {
+             setIsLoading(false);
+        }
+    }, [userInfo, isDemoMode]);
 
     const handleSync = async () => {
         setIsSyncing(true);
