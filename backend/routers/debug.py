@@ -74,24 +74,30 @@ def debug_google_connection(
                     except Exception as e:
                         report["api_checks"]["v4_reviews"] = f"Failed: {str(e)}"
                         
-                    # Experimental V1 Checks
-                    try:
-                        # Try mybusinessreviews.googleapis.com
-                        # Format: accounts/{accountId}/locations/{locationId}/reviews
-                        # We need the naked IDs
-                        acc_id = acc_name.split('/')[-1]
-                        
-                        # Test URL 1: mybusinessreviews.googleapis.com/v1/...
-                        url1 = f"https://mybusinessreviews.googleapis.com/v1/accounts/{acc_id}/locations/{loc_id}/reviews"
-                        import requests
-                        resp1 = requests.get(url1, headers=client._get_headers())
-                        if resp1.status_code == 200:
-                            report["api_checks"]["EXTRA_v1_reviews_A"] = f"Working! ({len(resp1.json().get('reviews', []))})"
-                        else:
-                            report["api_checks"]["EXTRA_v1_reviews_A"] = f"Not Found ({resp1.status_code})"
-                            
                     except Exception as e:
-                         report["api_checks"]["EXTRA_v1_reviews_check"] = f"Error: {str(e)}"
+                        report["api_checks"]["v4_reviews"] = f"Failed: {str(e)}"
+                        
+                    # Library-based V4 Check (The "Official" Way)
+                    try:
+                        from googleapiclient.discovery import build
+                        from google.oauth2.credentials import Credentials
+                        
+                        # Create Credentials object
+                        creds = Credentials(token=conn.access_token)
+                        
+                        # Build Service
+                        # Note: discovery.build might fail if API is disabled or not found
+                        service = build('mybusiness', 'v4', credentials=creds)
+                        
+                        # Account Info (from name)
+                        # accounts/{accountId}/locations/{locationId}
+                        # The client lib expects: service.accounts().locations().reviews().list(parent=...).execute()
+                        
+                        reviews_result = service.accounts().locations().reviews().list(parent=v4_name).execute()
+                        report["api_checks"]["LIBRARY_v4_check"] = f"Working! ({len(reviews_result.get('reviews', []))})"
+                        
+                    except Exception as e:
+                         report["api_checks"]["LIBRARY_v4_check"] = f"Error: {str(e)}"
 
             except Exception as e:
                 report["api_checks"]["v1_locations"] = f"Failed: {str(e)}"
