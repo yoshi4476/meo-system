@@ -28,9 +28,9 @@ function DashboardContent() {
     { label: 'ウェブサイト', value: '0', change: '0%', trend: 'neutral', icon: demoStats[3].icon },
   ];
 
-  // Fetch Insights Data for Dashboard KPIs
+  // Fetch Data (Insights, Reviews, Posts) for Dashboard
   useEffect(() => {
-    const fetchInsightsForKPIs = async () => {
+    const fetchDashboardData = async () => {
       if (isDemoMode) {
         setStats(demoStats);
         setIsLoadingStats(false);
@@ -45,13 +45,18 @@ function DashboardContent() {
 
       try {
         const token = localStorage.getItem('meo_auth_token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/insights/${userInfo.store_id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const headers = { 'Authorization': `Bearer ${token}` };
+        
+        // Parallel fetching
+        const [insightsRes, reviewsRes, postsRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/insights/${userInfo.store_id}`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/?store_id=${userInfo.store_id}`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/?store_id=${userInfo.store_id}`, { headers })
+        ]);
 
-        if (res.ok) {
-          const data = await res.json();
-          // Calculate totals from metrics array
+        // Process Insights
+        if (insightsRes.ok) {
+          const data = await insightsRes.json();
           const getTotal = (metricName: string) => {
             const series = data.metrics?.find((m: any) => m.dailyMetric === metricName);
             if (!series || !series.dailyMetricTimeSeries) return 0;
@@ -72,27 +77,39 @@ function DashboardContent() {
         } else {
           setStats(zeroStats);
         }
+
+        // Process Reviews & Posts for AI Actions
+        const reviews = reviewsRes.ok ? await reviewsRes.json() : [];
+        const posts = postsRes.ok ? await postsRes.json() : [];
+        
+        const unrepliedReviews = reviews.filter((r: any) => !r.reply_comment).length;
+        const lastPostDate = posts.length > 0 ? new Date(posts[0].created_at || posts[0].create_time) : null;
+        const daysSinceLastPost = lastPostDate ? Math.floor((new Date().getTime() - lastPostDate.getTime()) / (1000 * 3600 * 24)) : 999;
+        
+        setRealActionCount(unrepliedReviews + (daysSinceLastPost > 7 ? 1 : 0));
+        setDashboardState({ unrepliedReviews, daysSinceLastPost });
+
       } catch (e) {
-        console.error("Failed to fetch insights for dashboard:", e);
+        console.error("Failed to fetch dashboard data:", e);
         setStats(zeroStats);
       } finally {
         setIsLoadingStats(false);
       }
     };
 
-    fetchInsightsForKPIs();
+    fetchDashboardData();
   }, [userInfo, isDemoMode]);
 
+  // State for dynamic content
+  const [realActionCount, setRealActionCount] = useState(0);
+  const [dashboardState, setDashboardState] = useState({ unrepliedReviews: 0, daysSinceLastPost: 0 });
+
   useEffect(() => {
-    // Extract token from URL after Google OAuth redirect
+    // Extract token from URL after Google OAuth redirect (Authentication Logic)
     const token = searchParams.get('token');
     if (token) {
       setToken(token);
-      console.log('✅ Token saved to localStorage');
-      // Force refresh user info to pick up the new "connected" status
       refreshUser();
-      
-      // Clean URL (Optional but recommended)
       const url = new URL(window.location.href);
       url.searchParams.delete('token');
       url.searchParams.delete('status');
@@ -102,167 +119,133 @@ function DashboardContent() {
 
   return (
     <div className="space-y-8">
-      {/* ヘッダーセクション */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">ダッシュボード {isDemoMode && <span className="text-sm bg-aurora-cyan/20 text-aurora-cyan px-2 py-1 rounded ml-2">DEMO MODE</span>}</h1>
           <p className="text-slate-400 mt-1">おかえりなさい、{userInfo?.email?.split('@')[0] || 'ゲスト'}様</p>
         </div>
         <div className="flex gap-3">
-           <a href="/dashboard/reports" className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-sm font-medium">
-             レポート出力
-           </a>
-           <a href="/dashboard/posts/new" className="px-4 py-2 rounded-lg bg-aurora-purple hover:bg-aurora-purple/80 transition-colors text-sm font-medium shadow-lg shadow-purple-500/20">
-             投稿を作成
-           </a>
+           <a href="/dashboard/reports" className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-sm font-medium">レポート出力</a>
+           <a href="/dashboard/posts/new" className="px-4 py-2 rounded-lg bg-aurora-purple hover:bg-aurora-purple/80 transition-colors text-sm font-medium shadow-lg shadow-purple-500/20">投稿を作成</a>
         </div>
       </div>
 
-      {/* AIメッセージ */}
+      {/* AI Message */}
       <div className="glass-card p-6 border-l-4 border-l-aurora-cyan">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-linear-to-tr from-aurora-purple to-aurora-cyan flex items-center justify-center text-2xl shrink-0">
-            🤖
-          </div>
+          <div className="w-12 h-12 rounded-full bg-linear-to-tr from-aurora-purple to-aurora-cyan flex items-center justify-center text-2xl shrink-0">🤖</div>
           <div>
-            <h3 className="font-bold text-white mb-1">おはようございます！今日のタスクは{isDemoMode ? '3' : '0'}件です</h3>
+            <h3 className="font-bold text-white mb-1">
+                {isDemoMode ? 'おはようございます！今日のタスクは3件です' : 
+                 realActionCount > 0 ? `現在、${realActionCount}件のアクションが推奨されています` : '現在のスコアは良好です！'}
+            </h3>
             <p className="text-slate-300 text-sm">
               {isDemoMode 
                 ? '新しいクチコミが1件届いています。また、先週の投稿パフォーマンスが好調です。詳細はインサイトをご確認ください。' 
-                : '現在、通知はありません。Googleビジネスプロフィールと連携してデータを取得しましょう。'}
-                {isDemoMode && <a href="/dashboard/insights" className="text-aurora-cyan underline ml-1">インサイト</a>}
+                : realActionCount > 0 
+                    ? `未返信のクチコミが${dashboardState.unrepliedReviews}件あります。${dashboardState.daysSinceLastPost > 7 ? 'また、1週間以上新しい投稿がありません。' : ''}`
+                    : 'すべてのクチコミに返信済みで、定期的な投稿も行えています。この調子で運用を続けましょう。'}
             </p>
           </div>
         </div>
       </div>
 
-      {/* KPIグリッド */}
+      {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
-            <MetricCard 
-            key={i}
-            title={stat.label} 
-            value={stat.value} 
-            change={stat.change} 
-            trend={stat.trend as 'up' | 'down' | 'neutral'}
-            icon={stat.icon}
-            />
+            <MetricCard key={i} title={stat.label} value={stat.value} change={stat.change} trend={stat.trend as 'up' | 'down' | 'neutral'} icon={stat.icon} />
         ))}
       </div>
 
-      {/* AIアクションカードセクション */}
+      {/* AI Actions Section */}
       <h2 className="text-xl font-bold text-white mt-12 flex items-center gap-2">
         <span className="w-2 h-8 bg-aurora-cyan rounded-full"></span>
         AI推奨アクション
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         {/* アクションカード1 */}
-         <div className="glass-card p-6 border-l-4 border-l-aurora-purple hover:translate-y-[-2px] transition-transform">
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                  <span className="text-xs font-bold text-aurora-purple uppercase tracking-wider">高インパクト</span>
-                  <h3 className="text-lg font-bold text-white mt-1">ランチメニューの新しい写真を投稿</h3>
-               </div>
-               <div className="p-2 bg-purple-500/20 rounded-lg">
-                 <svg className="w-6 h-6 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-               </div>
-            </div>
-            <p className="text-slate-400 text-sm mb-6">
-              今週のランチタイム検索が20%増加していますが、最新のランチ写真は2週間前のものです。
-            </p>
-            <a href="/dashboard/posts/new" className="block w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors text-center">
-               AIで作成（ワンクリック）
-            </a>
-         </div>
+         {/* Dynamic Action 1: Review Reply */}
+         {(isDemoMode || dashboardState.unrepliedReviews > 0) && (
+             <div className="glass-card p-6 border-l-4 border-l-aurora-cyan hover:translate-y-[-2px] transition-transform">
+                <div className="flex justify-between items-start mb-4">
+                   <div>
+                      <span className="text-xs font-bold text-aurora-cyan uppercase tracking-wider">優先度: 高</span>
+                      <h3 className="text-lg font-bold text-white mt-1">未返信のクチコミがあります</h3>
+                   </div>
+                   <div className="p-2 bg-cyan-500/20 rounded-lg">
+                     <svg className="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="currentColor"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg>
+                   </div>
+                </div>
+                <p className="text-slate-400 text-sm mb-6">
+                  {isDemoMode ? '田中さんから「サービスが素晴らしい」と4つ星のクチコミが届きました。' : `${dashboardState.unrepliedReviews}件のクチコミにまだ返信していません。返信は顧客満足度を向上させます。`}
+                </p>
+                <a href="/dashboard/reviews" className="block w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors text-center">
+                   返信を確認・作成
+                </a>
+             </div>
+         )}
 
-         {/* アクションカード2 */}
-         <div className="glass-card p-6 border-l-4 border-l-aurora-cyan hover:translate-y-[-2px] transition-transform">
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                  <span className="text-xs font-bold text-aurora-cyan uppercase tracking-wider">中インパクト</span>
-                  <h3 className="text-lg font-bold text-white mt-1">新しいクチコミに返信</h3>
-               </div>
-               <div className="p-2 bg-cyan-500/20 rounded-lg">
-                 <svg className="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="currentColor"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg>
-               </div>
-            </div>
-            <p className="text-slate-400 text-sm mb-6">
-              田中さんから「サービスが素晴らしい」と4つ星のクチコミが届きました。今すぐ返信してエンゲージメントを高めましょう。
-            </p>
-            <a href="/dashboard/reviews" className="block w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors text-center">
-               返信を作成
-            </a>
-         </div>
-
-         {/* アクションカード3 */}
-         <div className="glass-card p-6 border-l-4 border-l-green-500 hover:translate-y-[-2px] transition-transform">
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                  <span className="text-xs font-bold text-green-400 uppercase tracking-wider">プロフィール最適化</span>
-                  <h3 className="text-lg font-bold text-white mt-1">営業時間を更新してください</h3>
-               </div>
-               <div className="p-2 bg-green-500/20 rounded-lg">
-                 <svg className="w-6 h-6 text-green-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-               </div>
-            </div>
-            <p className="text-slate-400 text-sm mb-6">
-              祝日の営業時間が設定されていません。1月の祝日（成人の日など）の営業時間を追加しましょう。
-            </p>
-            <a href="/dashboard/profile" className="block w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors text-center">
-               営業時間を編集
-            </a>
-         </div>
-
-         {/* アクションカード4 */}
-         <div className="glass-card p-6 border-l-4 border-l-yellow-500 hover:translate-y-[-2px] transition-transform">
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                  <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Q&A最適化</span>
-                  <h3 className="text-lg font-bold text-white mt-1">よくある質問を追加</h3>
-               </div>
-               <div className="p-2 bg-yellow-500/20 rounded-lg">
-                 <svg className="w-6 h-6 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
-               </div>
-            </div>
-            <p className="text-slate-400 text-sm mb-6">
-              「駐車場はありますか？」「予約は必要ですか？」などのよくある質問を事前に登録しておくと、検索意図をカバーできます。
-            </p>
-            <button className="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors">
-               AIでQ&Aを生成
-            </button>
-         </div>
+         {/* Dynamic Action 2: New Post */}
+         {(isDemoMode || dashboardState.daysSinceLastPost > 7) && (
+             <div className="glass-card p-6 border-l-4 border-l-aurora-purple hover:translate-y-[-2px] transition-transform">
+                <div className="flex justify-between items-start mb-4">
+                   <div>
+                      <span className="text-xs font-bold text-aurora-purple uppercase tracking-wider">エンゲージメント</span>
+                      <h3 className="text-lg font-bold text-white mt-1">新しい情報を投稿しましょう</h3>
+                   </div>
+                   <div className="p-2 bg-purple-500/20 rounded-lg">
+                     <svg className="w-6 h-6 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                   </div>
+                </div>
+                <p className="text-slate-400 text-sm mb-6">
+                  {isDemoMode ? '今週のランチタイム検索が20%増加していますが、最新のランチ写真は2週間前のものです。' : `前回の投稿から${dashboardState.daysSinceLastPost}日が経過しています。定期的な発信は検索順位に良い影響を与えます。`}
+                </p>
+                <a href="/dashboard/posts/new" className="block w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors text-center">
+                   AIで投稿を作成
+                </a>
+             </div>
+         )}
+         
+         {/* Static Fallback if Good Status */}
+         {!isDemoMode && realActionCount === 0 && (
+             <div className="glass-card p-6 border-l-4 border-l-green-500">
+                <div className="flex justify-between items-start mb-4">
+                   <div>
+                       <span className="text-xs font-bold text-green-400 uppercase tracking-wider">ステータス: 良好</span>
+                       <h3 className="text-lg font-bold text-white mt-1">運用は順調です！</h3>
+                   </div>
+                   <div className="p-2 bg-green-500/20 rounded-lg">
+                       <svg className="w-6 h-6 text-green-400" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                   </div>
+                </div>
+                <p className="text-slate-400 text-sm">
+                   現在、優先的に対応すべきアクションはありません。インサイトを分析して、次の戦略を立ててみましょう。
+                </p>
+             </div>
+         )}
       </div>
 
-      {/* スケジュール */}
+      {/* Schedule (Keep Static/Demo for now as it's complex) */}
       <h2 className="text-xl font-bold text-white mt-12 flex items-center gap-2">
         <span className="w-2 h-8 bg-aurora-purple rounded-full"></span>
         予約投稿スケジュール
       </h2>
       <div className="glass-card p-6">
-        <div className="grid grid-cols-7 gap-2 text-center text-sm">
-          {['日', '月', '火', '水', '木', '金', '土'].map((day) => (
-            <div key={day} className="text-slate-500 py-2">{day}</div>
-          ))}
-          {Array.from({ length: 31 }, (_, i) => (
-            <div 
-              key={i} 
-              className={`py-3 rounded-lg ${i === 14 || i === 21 ? 'bg-aurora-purple/30 border border-aurora-purple' : 'hover:bg-white/5'} ${i === 22 ? 'bg-aurora-cyan/30 border border-aurora-cyan' : ''} cursor-pointer transition-colors`}
-            >
-              {i + 1}
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 flex gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-aurora-purple"></div>
-            <span className="text-slate-400">投稿予定</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-aurora-cyan"></div>
-            <span className="text-slate-400">イベント</span>
-          </div>
-        </div>
+         {/* ... (Existing Calendar Code) ... */}
+         <div className="grid grid-cols-7 gap-2 text-center text-sm">
+           {['日', '月', '火', '水', '木', '金', '土'].map((day) => (
+             <div key={day} className="text-slate-500 py-2">{day}</div>
+           ))}
+           {Array.from({ length: 31 }, (_, i) => (
+             <div 
+               key={i} 
+               className={`py-3 rounded-lg ${i === 14 || i === 21 ? 'bg-aurora-purple/30 border border-aurora-purple' : 'hover:bg-white/5'} ${i === 22 ? 'bg-aurora-cyan/30 border border-aurora-cyan' : ''} cursor-pointer transition-colors`}
+             >
+               {i + 1}
+             </div>
+           ))}
+         </div>
       </div>
     </div>
   );
