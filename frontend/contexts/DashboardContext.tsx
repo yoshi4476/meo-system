@@ -144,6 +144,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               }
           } else {
               console.error("Sync Failed:", res.status, res.statusText);
+              if (res.status === 401) {
+                  alert("セッションが切れました。再度ログインしてください。");
+                  window.location.href = '/';
+                  return;
+              }
               alert(`同期リクエストに失敗しました (Status: ${res.status})\nURL: ${requestUrl}`);
           }
       } catch (e) {
