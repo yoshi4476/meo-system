@@ -42,7 +42,7 @@ type LocationDetails = {
 };
 
 export default function ProfilePage() {
-    const { userInfo, isLoading: userLoading } = useDashboard();
+    const { userInfo, isLoading: userLoading, isDemoMode } = useDashboard();
     const [details, setDetails] = useState<LocationDetails | null>(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -67,6 +67,42 @@ export default function ProfilePage() {
         setLoading(true);
         setError(null);
         try {
+            if (isDemoMode) {
+                 await new Promise(resolve => setTimeout(resolve, 800));
+                 setDetails({
+                     name: 'locations/1234567890',
+                     title: 'MEO Cafe 渋谷店 (Demo)',
+                     storeCode: 'DEMO-001',
+                     websiteUri: 'https://example.com',
+                     phoneNumbers: { primaryPhone: '03-1234-5678' },
+                     regularHours: {
+                         periods: [
+                             { openDay: 'Monday', openTime: '0900', closeDay: 'Monday', closeTime: '2000' },
+                             { openDay: 'Tuesday', openTime: '0900', closeDay: 'Tuesday', closeTime: '2000' },
+                             { openDay: 'Wednesday', openTime: '0900', closeDay: 'Wednesday', closeTime: '2000' },
+                             { openDay: 'Thursday', openTime: '0900', closeDay: 'Thursday', closeTime: '2000' },
+                             { openDay: 'Friday', openTime: '0900', closeDay: 'Friday', closeTime: '2200' },
+                             { openDay: 'Saturday', openTime: '1000', closeDay: 'Saturday', closeTime: '2200' },
+                             { openDay: 'Sunday', openTime: '1000', closeDay: 'Sunday', closeTime: '2000' },
+                         ]
+                     },
+                     categories: {
+                         primaryCategory: { displayName: 'カフェ', categoryId: 'cafe' },
+                         additionalCategories: [{ displayName: '喫茶店', categoryId: 'coffee_shop' }]
+                     },
+                     profile: { description: '渋谷駅徒歩5分の落ち着いたカフェです。自家焙煎のコーヒーと手作りケーキが自慢です。Wi-Fi完備でリモートワークにも最適。' },
+                     latlng: { latitude: 35.658034, longitude: 139.701636 },
+                     metadata: { mapsUri: 'https://goo.gl/maps/example' }
+                 });
+                 setFormData({
+                    title: 'MEO Cafe 渋谷店 (Demo)',
+                    description: '渋谷駅徒歩5分の落ち着いたカフェです。自家焙煎のコーヒーと手作りケーキが自慢です。Wi-Fi完備でリモートワークにも最適。',
+                    websiteUri: 'https://example.com',
+                    primaryPhone: '03-1234-5678',
+                });
+                return;
+            }
+
             const token = localStorage.getItem('meo_auth_token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/${storeId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }

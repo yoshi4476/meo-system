@@ -588,7 +588,7 @@ export default function SettingsPage() {
 }
 
 function TeamList() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const isSuperAdmin = userInfo?.role === 'SUPER_ADMIN';
@@ -616,10 +616,20 @@ function TeamList() {
     };
 
     useEffect(() => {
+        if (isDemoMode) {
+            setUsers([
+                { id: '1', email: 'owner@example.com', role: 'COMPANY_ADMIN', is_active: true },
+                { id: '2', email: 'staff@example.com', role: 'STORE_USER', is_active: true },
+                { id: '3', email: 'manager@example.com', role: 'STORE_USER', is_active: true }
+            ]);
+            setLoading(false);
+            return;
+        }
+
         if (userInfo) {
              fetchUsers();
         }
-    }, [userInfo]);
+    }, [userInfo, isDemoMode]);
 
     const handleRoleChange = async (userId: string, newRole: string) => {
         if (!confirm(`ユーザーの権限を ${newRole} に変更しますか？`)) return;

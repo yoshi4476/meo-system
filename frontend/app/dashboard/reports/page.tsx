@@ -4,12 +4,20 @@ import { useState } from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
 
 export default function ReportsPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [isGenerating, setIsGenerating] = useState(false);
 
     const handleDownload = async () => {
-        if (!userInfo?.store_id) return;
         setIsGenerating(true);
+        
+        if (isDemoMode) {
+             await new Promise(r => setTimeout(r, 2000));
+             alert("デモモード: レポート（サンプル）がダウンロードされました");
+             setIsGenerating(false);
+             return;
+        }
+
+        if (!userInfo?.store_id) return;
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/download/${userInfo.store_id}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }

@@ -11,13 +11,23 @@ type Store = {
 };
 
 export default function AdminStoresPage() {
-  const { userInfo } = useDashboard();
+  const { userInfo, isDemoMode } = useDashboard();
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStores = async () => {
+      if (isDemoMode) {
+          setStores([
+              { id: 's1', name: 'MEO Cafe 渋谷店', google_location_id: 'loc-001', company_id: 'c1' },
+              { id: 's2', name: 'MEO Cafe 新宿店', google_location_id: 'loc-002', company_id: 'c1' },
+              { id: 's3', name: 'MEO Cafe 池袋店', google_location_id: 'loc-003', company_id: 'c1' },
+          ]);
+          setIsLoading(false);
+          return;
+      }
+
       try {
         const token = localStorage.getItem('meo_auth_token');
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
@@ -33,7 +43,6 @@ export default function AdminStoresPage() {
           setStores(data);
         } else {
           const err = await response.text();
-          // 403 logic usually means not super admin
           setError(`Error ${response.status}: ${err}`);
         }
       } catch (e: any) {
@@ -43,14 +52,13 @@ export default function AdminStoresPage() {
       }
     };
 
-    if (userInfo?.role === 'SUPER_ADMIN') {
-      fetchStores();
+    if (isDemoMode || userInfo?.role === 'SUPER_ADMIN') {
+        fetchStores();
     } else if (userInfo) {
-       // Not admin
        setIsLoading(false);
        setError("権限がありません (Super Admin required)");
     }
-  }, [userInfo]);
+  }, [userInfo, isDemoMode]);
 
   if (isLoading) return <div className="p-8 text-slate-400">読み込み中...</div>;
 

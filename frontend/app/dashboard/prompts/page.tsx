@@ -13,7 +13,7 @@ type Prompt = {
 };
 
 export default function PromptsPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -27,11 +27,21 @@ export default function PromptsPage() {
 
     useEffect(() => {
         fetchPrompts();
-    }, []);
+    }, [isDemoMode]);
 
     const fetchPrompts = async () => {
         setLoading(true);
         try {
+            if (isDemoMode) {
+                setPrompts([
+                    { id: '1', title: 'フレンドリーな返信', content: 'ありがとうございます！またのご来店をお待ちしております。', category: 'REVIEW_REPLY', is_locked: true, is_system: true },
+                    { id: '2', title: '新商品のお知らせ', content: '季節限定の新作が登場しました！ぜひお試しください。', category: 'POST_GENERATION', is_locked: false, is_system: false },
+                    { id: '3', title: '謝罪（フォーマル）', content: 'この度は不快な思いをさせてしまい申し訳ございません。', category: 'REVIEW_REPLY', is_locked: true, is_system: true },
+                ]);
+                setLoading(false);
+                return;
+            }
+
             const token = localStorage.getItem('meo_auth_token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -45,6 +55,14 @@ export default function PromptsPage() {
             setLoading(false);
         }
     };
+    // Redoing this content block to include isDemoMode properly in the full function replacement if I can, 
+    // but I am targeting specific block. 
+    // Let's replace the whole component start effectively in next steps.
+    // For now, let's just make fetchPrompts robust or return mock if token missing?
+    
+    // Actually, I should update the whole component logic to use useDashboard correctly.
+    // Let me update the top part of the file first to get isDemoMode.
+    return; // cancelling this tool call to do it right
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

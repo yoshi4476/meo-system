@@ -16,7 +16,7 @@ type MediaItem = {
 };
 
 export default function PhotosPage() {
-  const { userInfo } = useDashboard();
+  const { userInfo, isDemoMode } = useDashboard();
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -37,6 +37,31 @@ export default function PhotosPage() {
   const fetchMedia = async () => {
     try {
       setLoading(true);
+
+      if (isDemoMode) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const demoImages = [
+              'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=500&auto=format&fit=crop&q=60',
+              'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=500&auto=format&fit=crop&q=60',
+              'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&auto=format&fit=crop&q=60',
+              'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500&auto=format&fit=crop&q=60',
+              'https://images.unsplash.com/photo-1507133750069-419571604855?w=500&auto=format&fit=crop&q=60'
+          ];
+          setMediaItems(demoImages.map((url, i) => ({
+              id: `demo-${i}`,
+              google_media_id: `g-${i}`,
+              media_format: 'PHOTO',
+              location_association: 'FOOD_AND_MENU',
+              google_url: url,
+              thumbnail_url: url,
+              description: 'Demo Photo',
+              views: Math.floor(Math.random() * 1000) + 100,
+              create_time: new Date().toISOString()
+          })));
+          setLoading(false);
+          return;
+      }
+
       const token = localStorage.getItem('meo_auth_token');
       if (!token || !storeId) return;
 

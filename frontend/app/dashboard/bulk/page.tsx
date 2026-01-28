@@ -9,20 +9,14 @@ type Store = {
 };
 
 export default function BulkPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [stores, setStores] = useState<Store[]>([]);
     const [selectedStores, setSelectedStores] = useState<Set<string>>(new Set());
     const [postContent, setPostContent] = useState('');
     const [isSending, setIsSending] = useState(false);
 
-    useEffect(() => {
-        fetchStores();
-    }, []);
-
     const fetchStores = async () => {
         // Fetch all stores available to user (Company Admin or Super Admin)
-        // Currently we don't have a direct endpoint for "all my stores", 
-        // relying on /stores/ endpoint which usually returns list for admin.
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stores/`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }
@@ -33,6 +27,19 @@ export default function BulkPage() {
             }
         } catch(e) {}
     };
+
+    useEffect(() => {
+        if (isDemoMode) {
+            setStores([
+                { id: '1', name: '渋谷店 (Demo)' },
+                { id: '2', name: '新宿店 (Demo)' },
+                { id: '3', name: '池袋店 (Demo)' },
+                { id: '4', name: '横浜店 (Demo)' },
+            ]);
+        } else {
+            fetchStores();
+        }
+    }, [isDemoMode]);
 
     const toggleStore = (id: string) => {
         const next = new Set(selectedStores);

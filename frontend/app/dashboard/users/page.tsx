@@ -12,13 +12,23 @@ type User = {
 };
 
 export default function AdminUsersPage() {
-  const { userInfo } = useDashboard();
+  const { userInfo, isDemoMode } = useDashboard();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
+      if (isDemoMode) {
+          setUsers([
+              { id: 'u1', email: 'admin@example.com', role: 'SUPER_ADMIN', is_active: true },
+              { id: 'u2', email: 'store1@example.com', role: 'STORE_USER', is_active: true, store_id: 's1' },
+              { id: 'u3', email: 'store2@example.com', role: 'STORE_USER', is_active: false, store_id: 's2' },
+          ]);
+          setIsLoading(false);
+          return;
+      }
+
       try {
         const token = localStorage.getItem('meo_auth_token');
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
@@ -43,13 +53,13 @@ export default function AdminUsersPage() {
       }
     };
 
-    if (userInfo?.role === 'SUPER_ADMIN') {
+    if (isDemoMode || userInfo?.role === 'SUPER_ADMIN') {
       fetchUsers();
     } else if (userInfo) {
        setIsLoading(false);
        setError("権限がありません (Super Admin required)");
     }
-  }, [userInfo]);
+  }, [userInfo, isDemoMode]);
 
   if (isLoading) return <div className="p-8 text-slate-400">読み込み中...</div>;
 

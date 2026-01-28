@@ -23,7 +23,7 @@ type Question = {
 };
 
 export default function QAPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [questions, setQuestions] = useState<Question[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -39,6 +39,24 @@ export default function QAPage() {
     const fetchExpectedQuestions = async () => {
         setIsLoading(true);
         try {
+            if (isDemoMode) {
+                 await new Promise(resolve => setTimeout(resolve, 800));
+                 setQuestions([
+                     {
+                         id: '1', author_name: '田中 太郎', text: '駐車場のサービス券はありますか？', create_time: new Date().toISOString(), upvote_count: 2,
+                         answers: [
+                             { id: 'a1', text: 'はい、2000円以上のご利用で1時間サービス券をお渡ししています。', author_name: 'オーナー', author_type: 'MERCHANT', create_time: new Date().toISOString() }
+                         ]
+                     },
+                     {
+                         id: '2', author_name: '鈴木 花子', text: 'ベビーカーでの入店は可能ですか？', create_time: new Date(Date.now() - 86400000).toISOString(), upvote_count: 5,
+                         answers: [] // Unanswered
+                     }
+                 ]);
+                 setIsLoading(false);
+                 return;
+            }
+
             const token = localStorage.getItem('meo_auth_token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/qa/?store_id=${userInfo?.store_id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }

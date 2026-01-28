@@ -12,13 +12,26 @@ type SentimentData = {
 };
 
 export default function SentimentPage() {
-    const { userInfo } = useDashboard();
+    const { userInfo, isDemoMode } = useDashboard();
     const [data, setData] = useState<SentimentData | null>(null);
     const [loading, setLoading] = useState(false);
 
     const handleAnalyze = async () => {
         setLoading(true);
         try {
+            if (isDemoMode) {
+                // Mock AI Delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                setData({
+                    summary: '全体的にポジティブな評価が多く、特に「スタッフの対応」と「店内の雰囲気」が高く評価されています。一方で、週末の混雑時の提供時間に関する指摘が散見されます。',
+                    sentiment_score: 78,
+                    positive_points: ['スタッフの笑顔が素敵', '落ち着いた雰囲気', 'コーヒーが美味しい'],
+                    negative_points: ['提供までの時間が長い', '席の間隔が狭い'],
+                    action_plan: 'ピークタイムのスタッフィングを見直し、提供スピードを改善しましょう。また、席の配置を工夫して快適性を向上させることを推奨します。'
+                });
+                return;
+            }
+
             const token = localStorage.getItem('meo_auth_token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/analyze/sentiment`, {
                 method: 'POST',
