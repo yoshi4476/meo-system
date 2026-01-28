@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MetricCard } from '../../components/dashboard/MetricCard';
 import { setToken } from '../../lib/auth';
@@ -10,6 +10,8 @@ function DashboardContent() {
 
   const { userInfo, isDemoMode, refreshUser } = useDashboard();
   const searchParams = useSearchParams();
+  const [stats, setStats] = useState<{label: string; value: string; change: string; trend: string; icon: string}[]>([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // Demo Data Definitions
   const demoStats = [
@@ -26,14 +28,60 @@ function DashboardContent() {
     { label: 'ウェブサイト', value: '0', change: '0%', trend: 'neutral', icon: demoStats[3].icon },
   ];
 
-  // Real data fetching would go here. For now, we rely on isDemoMode to switch between "Empty/Loading" and "Demo Data".
-  // In a real implementation effectively: const { data } = useQuery(...)
-  
-  const currentStats = isDemoMode ? demoStats : zeroStats; // Logic simplifed for now
-  
-  // If we had real data:
-  // const stats = data ? transform(data) : (isDemoMode ? demoStats : zeroStats);
-  const stats = currentStats;
+  // Fetch Insights Data for Dashboard KPIs
+  useEffect(() => {
+    const fetchInsightsForKPIs = async () => {
+      if (isDemoMode) {
+        setStats(demoStats);
+        setIsLoadingStats(false);
+        return;
+      }
+
+      if (!userInfo?.store_id) {
+        setStats(zeroStats);
+        setIsLoadingStats(false);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('meo_auth_token');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/insights/${userInfo.store_id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          // Calculate totals from metrics array
+          const getTotal = (metricName: string) => {
+            const series = data.metrics?.find((m: any) => m.dailyMetric === metricName);
+            if (!series || !series.dailyMetricTimeSeries) return 0;
+            return series.dailyMetricTimeSeries.reduce((acc: number, curr: any) => acc + parseInt(curr.value || '0'), 0);
+          };
+
+          const totalViews = getTotal('BUSINESS_IMPRESSIONS_MOBILE_MAPS') + getTotal('BUSINESS_IMPRESSIONS_MOBILE_SEARCH');
+          const totalSearchImpressions = getTotal('BUSINESS_IMPRESSIONS_MOBILE_SEARCH');
+          const totalDirections = getTotal('DRIVING_DIRECTIONS_CLICKS');
+          const totalWebsite = getTotal('WEBSITE_CLICKS');
+
+          setStats([
+            { ...demoStats[0], value: totalViews.toLocaleString(), change: 'N/A', trend: 'neutral' },
+            { ...demoStats[1], value: totalSearchImpressions.toLocaleString(), change: 'N/A', trend: 'neutral' },
+            { ...demoStats[2], value: totalDirections.toLocaleString(), change: 'N/A', trend: 'neutral' },
+            { ...demoStats[3], value: totalWebsite.toLocaleString(), change: 'N/A', trend: 'neutral' },
+          ]);
+        } else {
+          setStats(zeroStats);
+        }
+      } catch (e) {
+        console.error("Failed to fetch insights for dashboard:", e);
+        setStats(zeroStats);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    fetchInsightsForKPIs();
+  }, [userInfo, isDemoMode]);
 
   useEffect(() => {
     // Extract token from URL after Google OAuth redirect
