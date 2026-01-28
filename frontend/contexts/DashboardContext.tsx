@@ -155,7 +155,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
                   const errorMsg = errors.map(([k, v]: [string, any]) => `${k}: ${v.message}`).join('\n');
                   alert(`一部の同期に失敗しました:\n${errorMsg}`);
               } else {
-                  alert("Google同期が正常に完了しました！ページを更新します。");
+                  // Construct success message with counts
+                  const counts = Object.entries(result).map(([k, v]: [string, any]) => {
+                      if (v && typeof v.count === 'number') return `${k}: ${v.count}件`;
+                      if (k === 'synced_at') return null;
+                      return `${k}: OK`;
+                  }).filter(Boolean).join('\n');
+                  
+                  alert(`Google同期が正常に完了しました！\n\n${counts}\n\nページを更新します。`);
                   window.location.reload(); 
               }
           } else {
