@@ -244,6 +244,10 @@ class GBPClient:
         response.raise_for_status()
         return response.json()
 
+    def update_location(self, location_name: str, data: dict, update_mask: str):
+        """
+        Update location data.
+        """
         url = f"{self.base_url}/{location_name}"
         params = {"updateMask": update_mask}
         response = requests.patch(url, headers=self._get_headers(), params=params, json=data)
