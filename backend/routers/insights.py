@@ -33,16 +33,62 @@ def get_insights(store_id: str, db: Session = Depends(database.get_db), current_
     start_date = {"year": start_date_dt.year, "month": start_date_dt.month, "day": start_date_dt.day}
     end_date = {"year": end_date_dt.year, "month": end_date_dt.month, "day": end_date_dt.day}
     
-    try:
-        data = client.fetch_performance_metrics(store.google_location_id, start_date, end_date)
+    # Fetch from local DB (Synced Data)
+    insights = db.query(models.Insight).filter(
+        models.Insight.store_id == store_id
+    ).order_by(models.Insight.date.asc()).all()
+    
+    # Format for Frontend (match Google API structure approx or simplify)
+    # Frontend expects: { metrics: [ { dailyMetric: "KEY", dailyMetricTimeSeries: [{date, value}] } ] }
+    
+    if not insights:
+        return {"period": "No Data", "metrics": []}
+
+    # Reshape Data
+    data_map = {
+        "BUSINESS_IMPRESSIONS_DESKTOP_MAPS": [],
+        "BUSINESS_IMPRESSIONS_MOBILE_MAPS": [], # We split in DB? Only stored total views_maps. Let's send same to both or split generic?
+        # Actually DB has: views_maps, views_search.
+        # Google provides breakdown. If we only stored aggregate, we can't fully reconstruct breakdown perfectly.
+        # But we can map "views_maps" -> "BUSINESS_IMPRESSIONS_DESKTOP_MAPS" (or just rename frontend calls?)
+        # Let's map 1:1 where possible.
+        "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH": [],
+        "BUSINESS_IMPRESSIONS_MOBILE_SEARCH": [],
+        "WEBSITE_CLICKS": [],
+        "CALL_CLICKS": [],
+        "DRIVING_DIRECTIONS_CLICKS": []
+    }
+    
+    # DB 'views_maps' combines desktop/mobile. We'll assign it to 'MOBILE_MAPS' for simplicity or split?
+    # Let's assign to MOBILE_MAPS effectively.
+    
+    for i in insights:
+        d = {"year": i.date.year, "month": i.date.month, "day": i.date.day}
         
-        # Process data for frontend
-        # Google returns list of MultiDailyMetricTimeSeries
-        # We want to aggregate or simplify
-        return {
-            "period": f"{start_date_dt.strftime('%Y-%m-%d')} - {end_date_dt.strftime('%Y-%m-%d')}",
-            "metrics": data.get("multiDailyMetricTimeSeries", [])
-        }
-    except Exception as e:
-        print(f"Insights Error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        # Maps
+        if i.views_maps is not None:
+             data_map["BUSINESS_IMPRESSIONS_MOBILE_MAPS"].append({"date": d, "value": str(i.views_maps)})
+             
+        # Search
+        if i.views_search is not None:
+             data_map["BUSINESS_IMPRESSIONS_MOBILE_SEARCH"].append({"date": d, "value": str(i.views_search)})
+             
+        # Actions
+        if i.actions_website is not None:
+             data_map["WEBSITE_CLICKS"].append({"date": d, "value": str(i.actions_website)})
+             
+        if i.actions_phone is not None:
+             data_map["CALL_CLICKS"].append({"date": d, "value": str(i.actions_phone)})
+             
+        if i.actions_driving_directions is not None:
+             data_map["DRIVING_DIRECTIONS_CLICKS"].append({"date": d, "value": str(i.actions_driving_directions)})
+
+    metrics = []
+    for k, v in data_map.items():
+        if v:
+            metrics.append({"dailyMetric": k, "dailyMetricTimeSeries": v})
+
+    return {
+        "period": "Last 30 Days (Synced)",
+        "metrics": metrics
+    }
