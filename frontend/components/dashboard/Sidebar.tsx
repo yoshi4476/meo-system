@@ -30,90 +30,92 @@ const settingsItems = [
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
-    <aside className="w-64 h-screen bg-deep-navy/95 backdrop-blur-xl border-r border-white/10 overflow-y-auto relative">
-      <div className="p-6 border-b border-white/10 flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-aurora-purple to-aurora-cyan">
-            MEO Mastermind
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">エンタープライズ版</p>
+    <aside className="w-64 h-screen bg-deep-navy/95 backdrop-blur-xl border-r border-white/10 flex flex-col relative z-50">
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-aurora-purple to-aurora-cyan">
+              MEO Mastermind
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">エンタープライズ版</p>
+          </div>
+          {/* Mobile Close Button */}
+          {onClose && (
+            <button onClick={onClose} className="md:hidden text-slate-400 hover:text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
-        {/* Mobile Close Button */}
-        {onClose && (
-          <button onClick={onClose} className="md:hidden text-slate-400 hover:text-white">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
+
+        {/* 店舗切替 */}
+        <div className="p-4 border-b border-white/10">
+          <label className="text-xs text-slate-500 mb-2 block">店舗を選択</label>
+          <select className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-aurora-cyan">
+            <option>渋谷店</option>
+            <option>新宿店</option>
+            <option>池袋店</option>
+            <option>すべての店舗</option>
+          </select>
+        </div>
+        
+        {/* メインメニュー */}
+        <nav className="p-4 space-y-1">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">メイン</p>
+          {menuItems.map((item) => (
+            <Link 
+              key={item.name} 
+              href={item.href}
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
+            >
+              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-aurora-cyan transition-colors" viewBox="0 0 24 24">
+                <path d={item.icon} />
+              </svg>
+              <span className="font-medium text-sm">{item.name}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* ツール */}
+        <nav className="p-4 pt-0 space-y-1">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">ツール</p>
+          {toolsItems.map((item) => (
+            <Link 
+              key={item.name} 
+              href={item.href}
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
+            >
+              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-aurora-purple transition-colors" viewBox="0 0 24 24">
+                <path d={item.icon} />
+              </svg>
+              <span className="font-medium text-sm">{item.name}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* 設定 */}
+        <nav className="p-4 pt-0 space-y-1">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">設定</p>
+          {settingsItems.map((item) => (
+            <Link 
+              key={item.name} 
+              href={item.href}
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
+            >
+              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-green-400 transition-colors" viewBox="0 0 24 24">
+                <path d={item.icon} />
+              </svg>
+              <span className="font-medium text-sm">{item.name}</span>
+            </Link>
+          ))}
+        </nav>
       </div>
 
-      {/* 店舗切替 */}
-      <div className="p-4 border-b border-white/10">
-        <label className="text-xs text-slate-500 mb-2 block">店舗を選択</label>
-        <select className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-aurora-cyan">
-          <option>渋谷店</option>
-          <option>新宿店</option>
-          <option>池袋店</option>
-          <option>すべての店舗</option>
-        </select>
-      </div>
-      
-      {/* メインメニュー */}
-      <nav className="p-4 space-y-1">
-        <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">メイン</p>
-        {menuItems.map((item) => (
-          <Link 
-            key={item.name} 
-            href={item.href}
-            onClick={onClose}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
-          >
-            <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-aurora-cyan transition-colors" viewBox="0 0 24 24">
-              <path d={item.icon} />
-            </svg>
-            <span className="font-medium text-sm">{item.name}</span>
-          </Link>
-        ))}
-      </nav>
-
-      {/* ツール */}
-      <nav className="p-4 pt-0 space-y-1">
-        <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">ツール</p>
-        {toolsItems.map((item) => (
-          <Link 
-            key={item.name} 
-            href={item.href}
-            onClick={onClose}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
-          >
-            <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-aurora-purple transition-colors" viewBox="0 0 24 24">
-              <path d={item.icon} />
-            </svg>
-            <span className="font-medium text-sm">{item.name}</span>
-          </Link>
-        ))}
-      </nav>
-
-      {/* 設定 */}
-      <nav className="p-4 pt-0 space-y-1">
-        <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">設定</p>
-        {settingsItems.map((item) => (
-          <Link 
-            key={item.name} 
-            href={item.href}
-            onClick={onClose}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
-          >
-            <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-green-400 transition-colors" viewBox="0 0 24 24">
-              <path d={item.icon} />
-            </svg>
-            <span className="font-medium text-sm">{item.name}</span>
-          </Link>
-        ))}
-      </nav>
-
-      <div className="absolute bottom-0 w-full p-4">
+      <div className="p-4 mt-auto">
         <div className="glass-card p-4 rounded-xl">
           <p className="text-xs text-slate-400 mb-2">MEO総合スコア</p>
           <div className="flex items-end gap-2">
