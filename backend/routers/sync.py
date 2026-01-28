@@ -38,7 +38,7 @@ async def trigger_manual_sync(
          return {"status": "skipped", "message": "Store not connected to Google Business Profile"}
 
     # 3. Perform Sync
-    results = await sync_service.sync_all(store_id, store.google_location_id)
+    results = await sync_service.sync_all(db, store_id, store.google_location_id)
     
     # 4. Update models.Store.last_synced_at
     # store.last_synced_at = datetime.now()

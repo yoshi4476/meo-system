@@ -111,24 +111,40 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           return;
       }
 
-      if (!userInfo?.store_id) return;
+      if (!userInfo?.store_id) {
+          alert("エラー: 店舗IDが見つかりません。店舗を選択してください。");
+          return;
+      }
 
       try {
           const token = localStorage.getItem('meo_auth_token');
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+          
+          alert("同期を開始しました...完了まで数秒かかります。");
+          
           const res = await fetch(`${apiUrl}/sync/${userInfo.store_id}`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${token}` }
           });
+          
           if (res.ok) {
-              alert("Google同期が完了しました！");
-              // Refresh user/data if needed
+              const result = await res.json();
+              // Check for internal errors in the result object
+              const errors = Object.entries(result).filter(([k, v]: [string, any]) => v?.status === 'error');
+              
+              if (errors.length > 0) {
+                  const errorMsg = errors.map(([k, v]: [string, any]) => `${k}: ${v.message}`).join('\n');
+                  alert(`一部の同期に失敗しました:\n${errorMsg}`);
+              } else {
+                  alert("Google同期が正常に完了しました！ページを更新します。");
+                  window.location.reload(); 
+              }
           } else {
-              alert("同期に失敗しました");
+              alert(`同期リクエストに失敗しました (Status: ${res.status})`);
           }
       } catch (e) {
           console.error(e);
-          alert("エラーが発生しました");
+          alert(`通信エラーが発生しました: ${e}`);
       }
   };
 
