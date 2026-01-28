@@ -170,6 +170,8 @@ export default function SettingsPage() {
       </div>
 
       {/* DEBUG SECTION */}
+      {/* DEBUG SECTION - Hidden for Delivery */}
+      {/* 
       <section className="glass-card p-4 border border-yellow-500/30 bg-yellow-900/10">
         <h3 className="text-yellow-400 font-bold mb-2">🔧 デバッグ情報</h3>
         <pre className="text-xs text-slate-300 overflow-auto max-h-40 bg-black/50 p-2 rounded">
@@ -211,6 +213,7 @@ export default function SettingsPage() {
             </button>
         </div>
       </section>
+      */}
 
       {/* 管理者専用: API管理セクション */}
       {isSuperAdmin && (
