@@ -81,6 +81,15 @@ export default function PhotosPage() {
   };
 
   const handleSync = async () => {
+    if (isDemoMode) {
+        setSyncing(true);
+        await new Promise(r => setTimeout(r, 1500));
+        setSyncing(false);
+        alert('デモモード: 写真を同期しました');
+        fetchMedia(); // Reload demo data
+        return;
+    }
+
     if (!storeId) return;
     try {
       setSyncing(true);
@@ -124,7 +133,16 @@ export default function PhotosPage() {
             >
                 {syncing ? 'Googleと同期中...' : 'Googleと同期'}
             </button>
-            <button className="px-4 py-2 rounded-lg bg-aurora-cyan text-white font-bold hover:bg-aurora-cyan/80">
+            <button 
+                onClick={() => {
+                    if (isDemoMode) {
+                        alert('デモモード: 写真アップロード機能 (モック)');
+                        return;
+                    }
+                    alert('実装予定機能です');
+                }}
+                className="px-4 py-2 rounded-lg bg-aurora-cyan text-white font-bold hover:bg-aurora-cyan/80"
+            >
                 + 写真をアップロード
             </button>
         </div>

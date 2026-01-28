@@ -26,9 +26,14 @@ function DashboardContent() {
     { label: 'ウェブサイト', value: '0', change: '0%', trend: 'neutral', icon: demoStats[3].icon },
   ];
 
-  // Logic to switch between real and demo (Real logic would fetch data here, for now using zero as placeholder for Real)
-  // Since we haven't implemented real metrics fetching yet for these specific cards in this file, we default to zero or demo.
-  const stats = isDemoMode ? demoStats : zeroStats;
+  // Real data fetching would go here. For now, we rely on isDemoMode to switch between "Empty/Loading" and "Demo Data".
+  // In a real implementation effectively: const { data } = useQuery(...)
+  
+  const currentStats = isDemoMode ? demoStats : zeroStats; // Logic simplifed for now
+  
+  // If we had real data:
+  // const stats = data ? transform(data) : (isDemoMode ? demoStats : zeroStats);
+  const stats = currentStats;
 
   useEffect(() => {
     // Extract token from URL after Google OAuth redirect

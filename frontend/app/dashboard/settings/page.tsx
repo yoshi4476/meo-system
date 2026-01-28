@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useDashboard } from '../../../contexts/DashboardContext';
 
 export default function SettingsPage() {
-  const { userInfo, refreshUser } = useDashboard();
+  const { userInfo, refreshUser, isDemoMode } = useDashboard();
   
   const [notifications, setNotifications] = useState({
     reviews: true,
@@ -19,8 +19,8 @@ export default function SettingsPage() {
 
   // Derived state from global userInfo
   const connectionStatus = {
-    google: userInfo?.is_google_connected ? 'connected' : 'disconnected',
-    openai: 'disconnected' // Still local for now
+    google: (isDemoMode || userInfo?.is_google_connected) ? 'connected' : 'disconnected',
+    openai: (isDemoMode || apiKeys.openai) ? 'connected' : 'disconnected'
   };
 
   // 店舗選択用
@@ -118,32 +118,23 @@ export default function SettingsPage() {
   useEffect(() => {
     // コンポーネントマウント時にローカルストレージからAPIキーを読み込む
     const loadSettings = () => {
+      if (isDemoMode) {
+          setApiKeys({
+              google: 'demo-google-key-xxxxx',
+              openai: 'sk-demo-openai-key-xxxxx'
+          });
+          return;
+      }
+
       const savedGoogleKey = localStorage.getItem('google_api_key');
       const savedOpenaiKey = localStorage.getItem('openai_api_key');
-      const savedUserInfo = localStorage.getItem('user_info'); // Legacy fallback
-
-      if (savedGoogleKey) {
-        setApiKeys(prev => ({ ...prev, google: savedGoogleKey }));
-      }
-      if (savedOpenaiKey) {
-        setApiKeys(prev => ({ ...prev, openai: savedOpenaiKey }));
-      }
-      
-      if (savedUserInfo) {
-        try {
-          // const parsed = JSON.parse(savedUserInfo);
-          // setUserInfo(prev => ({...prev, ...parsed}));
-        } catch (e) {
-             // ignore
-        }
-      }
-
-      // APIから最新情報を取得 (Previously fetchUserInfo, now handled by DashboardContext)
-      // fetchUserInfo();
+      // ... existing logic
+      if (savedGoogleKey) setApiKeys(prev => ({ ...prev, google: savedGoogleKey }));
+      if (savedOpenaiKey) setApiKeys(prev => ({ ...prev, openai: savedOpenaiKey }));
     };
 
     loadSettings();
-  }, []);
+  }, [isDemoMode]);
 
   const handleSaveApiKey = (type: 'google' | 'openai') => {
     if (type === 'google') {
@@ -459,23 +450,38 @@ export default function SettingsPage() {
             ) : (
               <button 
                 onClick={async () => {
-                  if (!userInfo?.id) {
+                  let uid = userInfo?.id;
+                  
+                  if (!uid) {
                     console.log("UserInfo missing, attempting refresh...");
                     await refreshUser();
-                    // Check again after refresh
-                    // Note: We can't easily check 'userInfo' state immediately here due to closure, 
-                    // but we can check if the promise resolved successfully or check localstorage
-                    // For now, let's alert if it persists.
+                    
                     const token = localStorage.getItem('meo_auth_token');
                     if (!token) {
                          alert('セッションが切断されています。ログインし直してください。');
-                         // window.location.href = '/login'; // If we had a login page
                          return;
                     }
-                    alert('ユーザー情報を再取得しました。もう一度ボタンを押してください。');
-                    return;
+
+                    // Try to fetch ID directly to proceed immediately
+                    try {
+                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+                        const meRes = await fetch(`${apiUrl}/users/me`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (meRes.ok) {
+                            const me = await meRes.json();
+                            uid = me.id;
+                        }
+                    } catch(e) {
+                         console.error("Failed to fetch user info for login redirect", e);
+                    }
                   }
-                  window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${userInfo.id}`;
+
+                  if (uid) {
+                      window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${uid}`;
+                  } else {
+                      alert('ユーザー情報を取得できませんでした。ページを更新して再度お試しください。');
+                  }
                 }}
                 className="w-full py-3 rounded-lg bg-white text-slate-900 font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
               >

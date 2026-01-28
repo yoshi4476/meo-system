@@ -20,6 +20,7 @@ export default function RankTrackerPage() {
     const [newLocation, setNewLocation] = useState('東京都渋谷区');
     const [selectedKeywordId, setSelectedKeywordId] = useState<string | null>(null);
     const [history, setHistory] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     
     const fetchKeywords = async () => {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/?store_id=${userInfo?.store_id}`, {
@@ -86,6 +87,20 @@ export default function RankTrackerPage() {
 
     const handleAddKeyword = async (e: React.FormEvent) => {
         e.preventDefault();
+        if(isDemoMode) {
+            const mockId = `demo-${Date.now()}`;
+            setKeywords([...keywords, { 
+                id: mockId, 
+                text: newKeyword, 
+                location: newLocation, 
+                current_rank: null, 
+                prev_rank: null 
+            }]);
+            setNewKeyword('');
+            alert('デモモード: キーワードを追加しました');
+            return;
+        }
+
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/?store_id=${userInfo?.store_id}`, {
                 method: 'POST',
@@ -104,6 +119,14 @@ export default function RankTrackerPage() {
 
     const handleDelete = async (id: string) => {
         if(!confirm("削除しますか？")) return;
+        
+        if (isDemoMode) {
+            setKeywords(keywords.filter(k => k.id !== id));
+            if (selectedKeywordId === id) setSelectedKeywordId(null);
+            alert('デモモード: キーワードを削除しました');
+            return;
+        }
+
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/${id}`, {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }
@@ -112,6 +135,21 @@ export default function RankTrackerPage() {
     };
 
     const handleCheckNow = async () => {
+        if (isDemoMode) {
+            setIsLoading(true); // Assuming there's a loading state, if not, just wait
+            // Simulate 'checking'
+            await new Promise(r => setTimeout(r, 2000));
+            // Update ranks strictly for demo visual effect
+            setKeywords(keywords.map(k => ({
+                ...k,
+                prev_rank: k.current_rank,
+                current_rank: k.current_rank ? Math.max(1, k.current_rank + (Math.random() > 0.5 ? -1 : 1)) : Math.floor(Math.random() * 20) + 1
+            })));
+            setIsLoading(false);
+            alert("デモモード: 順位チェックが完了しました！");
+            return;
+        }
+
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ranks/check/${userInfo?.store_id}`, {
             method: 'POST',
              headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }

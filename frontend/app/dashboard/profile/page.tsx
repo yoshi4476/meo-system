@@ -126,6 +126,16 @@ export default function ProfilePage() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (isDemoMode) {
+            setSaving(true);
+            await new Promise(r => setTimeout(r, 1500));
+            setSaving(false);
+            setFormData(prev => ({...prev, title: prev.title.replace(' (Updated)', '') + ' (Updated)' }));
+            alert('デモモード: 店舗情報 (タイトル, Web, TEL) を更新しました！\n(※実際のGoogleビジネスプロフィールには反映されません)');
+            return;
+        }
+
         if (!userInfo?.store_id) return;
         
         setSaving(true);

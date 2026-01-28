@@ -38,8 +38,36 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // Check for saved demo preference on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('is_demo_mode');
+    if (saved === 'true') {
+        setIsDemoMode(true);
+    }
+  }, []);
 
   const fetchUser = useCallback(async () => {
+    // If in Demo Mode, return mock user immediately
+    if (localStorage.getItem('is_demo_mode') === 'true') {
+        setUserInfo({
+            id: 'demo-user-id',
+            name: 'デモ ユーザー',
+            email: 'demo@example.com',
+            role: 'SUPER_ADMIN',
+            is_google_connected: true,
+            store_id: 'demo-store-id',
+            store: {
+                id: 'demo-store-id',
+                name: 'MEO Cafe 渋谷店 (Demo)',
+                google_location_id: 'locations/demo'
+            }
+        });
+        setIsLoading(false);
+        return;
+    }
+
     try {
       setIsLoading(true);
       const token = typeof window !== 'undefined' ? localStorage.getItem('meo_auth_token') : null;
@@ -61,10 +89,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setUserInfo(data);
         setError(null);
       } else {
-        // If 401, maybe clear token? For now just log
         console.error('Failed to fetch user:', response.status);
         if (response.status === 401) {
-            // localStorage.removeItem('meo_auth_token'); // Optional: Auto-logout
+             // localStorage.removeItem('meo_auth_token'); 
         }
       }
     } catch (err) {
@@ -73,24 +100,24 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isDemoMode]); // Re-run if mode changes
 
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
-  const [isDemoMode, setIsDemoMode] = useState(false);
-
-  // Check for saved demo preference on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('is_demo_mode');
-    if (saved === 'true') setIsDemoMode(true);
-  }, []);
-
   const toggleDemoMode = () => {
     setIsDemoMode(prev => {
       const next = !prev;
       localStorage.setItem('is_demo_mode', String(next));
+      if (next) {
+         // Entering demo mode
+         fetchUser(); // Will pick up mock data
+      } else {
+         // Exiting demo mode
+         setUserInfo(null); // Clear mock data
+         window.location.href = '/'; // Redirect to login to be safe or just refresh
+      }
       return next;
     });
   };

@@ -60,9 +60,11 @@ export default function ReviewsPage() {
     useEffect(() => {
         if (isDemoMode) {
              setReviews([
-                { id: '1', reviewer_name: '山田 太郎', star_rating: 'FIVE', comment: '店員さんの対応がとても丁寧で良かったです。また利用したいです。', create_time: new Date().toISOString() },
-                { id: '2', reviewer_name: 'Suzuki Hanako', star_rating: 'FOUR', comment: '料理は美味しかったですが、提供が少し遅かったです。', create_time: new Date(Date.now() - 86400000).toISOString(), reply_comment: 'この度はご来店ありがとうございます。提供時間についてご不便をおかけし申し訳ございません。改善に努めてまいります。', reply_time: new Date().toISOString() },
-                { id: '3', reviewer_name: '田中 健', star_rating: 'FIVE', comment: '最高でした！', create_time: new Date(Date.now() - 172800000).toISOString() },
+                { id: '1', reviewer_name: '田中 健太', star_rating: 'FIVE', comment: '落ち着いた雰囲気で、コーヒーもとても美味しかったです。また利用させていただきます。', create_time: new Date().toISOString() },
+                { id: '2', reviewer_name: 'Sarah Jenkins', star_rating: 'FOUR', comment: 'Great coffee but a bit crowded during lunch.', create_time: new Date(Date.now() - 86400000).toISOString(), reply_comment: 'Thank you for visiting! We are planning to expand our seating area soon.', reply_time: new Date().toISOString() },
+                { id: '3', reviewer_name: '山本 さくら', star_rating: 'FIVE', comment: '店員さんの笑顔が素敵でした！桜餅ラテも最高🌸', create_time: new Date(Date.now() - 172800000).toISOString() },
+                { id: '4', reviewer_name: '高橋 誠', star_rating: 'THREE', comment: 'Wi-Fiが少し遅かったのが気になりました。', create_time: new Date(Date.now() - 259200000).toISOString(), reply_comment: '貴重なご意見ありがとうございます。Wi-Fi環境の改善を検討いたします。', reply_time: new Date().toISOString() },
+                { id: '5', reviewer_name: 'MEO User', star_rating: 'FIVE', comment: '仕事が捗る最高のカフェです。', create_time: new Date(Date.now() - 432000000).toISOString() },
             ]);
             setIsLoading(false);
             return;
@@ -98,6 +100,22 @@ export default function ReviewsPage() {
 
     const handleReply = async (reviewId: string) => {
         if (!replyText) return;
+        
+        if (isDemoMode) {
+            alert('デモモード: 返信を投稿しました！');
+            // Mock update UI
+            const newReviews = reviews.map(r => {
+                if (r.id === reviewId) {
+                    return { ...r, reply_comment: replyText, reply_time: new Date().toISOString() };
+                }
+                return r;
+            });
+            setReviews(newReviews);
+            setReplyingTo(null);
+            setReplyText('');
+            return;
+        }
+
         try {
             const token = localStorage.getItem('meo_auth_token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reviews/${reviewId}/reply`, {
@@ -199,6 +217,12 @@ export default function ReviewsPage() {
                                     <div className="flex justify-between items-center mb-2">
                                         <button
                                             onClick={async () => {
+                                                if(isDemoMode) {
+                                                    await new Promise(r => setTimeout(r, 1500));
+                                                    setReplyText(`${review.reviewer_name}様、ご来店ありがとうございます。\n\n${review.star_rating === 'FIVE' || review.star_rating === '5' ? '高評価をいただき大変嬉しく思います！桜餅ラテは春限定の人気メニューですので、気に入っていただけて光栄です。' : '貴重なご意見ありがとうございます。ご指摘いただいた点はスタッフ共有し、改善に努めてまいります。'}\n\nまたのご来店を心よりお待ちしております。\nMEO Cafe 渋谷店 店長`);
+                                                    return;
+                                                }
+
                                                 try {
                                                     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate/reply`, {
                                                         method: 'POST',

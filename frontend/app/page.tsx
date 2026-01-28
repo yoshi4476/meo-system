@@ -36,6 +36,18 @@ export default function Home() {
              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.99 19.27 5 15.1 5 10c0-5.1 8.99-9.1 13.95-9.1 2.65 0 4.79.97 6.63 2.64l2.05-2.05C24.47 1.05 19.33 0 13.95 0 6.25 0 0 6.25 0 13.95S6.25 27.9 13.95 27.9c6.98 0 12.91-5.11 12.91-12.91 0-1.29-.15-2.34-.69-3.89z"/></svg>
              Googleでログイン
           </a>
+          
+          <button
+            onClick={() => {
+                localStorage.setItem('is_demo_mode', 'true');
+                window.location.href = '/dashboard';
+            }}
+            className="w-full py-3 rounded-lg border border-white/20 hover:bg-white/10 text-white font-medium transition-all relative z-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+          >
+            <span>🚀</span>
+            デモモードで試す
+          </button>
+          
           <div className="text-xs text-slate-500">
              保護された接続経由で安全にログインします
           </div>

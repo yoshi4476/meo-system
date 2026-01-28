@@ -72,6 +72,15 @@ export default function QAPage() {
     };
 
     const handleSync = async () => {
+        if (isDemoMode) {
+            setIsSyncing(true);
+            await new Promise(r => setTimeout(r, 1500));
+            setIsSyncing(false);
+            alert('デモモード: Q&Aを同期しました');
+            fetchExpectedQuestions();
+            return;
+        }
+
         setIsSyncing(true);
         try {
             const token = localStorage.getItem('meo_auth_token');
@@ -94,6 +103,27 @@ export default function QAPage() {
 
     const handleReply = async (questionId: string) => {
         if (!replyText) return;
+        
+        if (isDemoMode) {
+            alert('デモモード: 回答を投稿しました');
+            const newQuestions = questions.map(q => {
+                if (q.id === questionId) {
+                    return {
+                        ...q,
+                        answers: [
+                            ...q.answers,
+                            { id: `demo-ans-${Date.now()}`, text: replyText, author_name: 'オーナー', author_type: 'MERCHANT', create_time: new Date().toISOString() }
+                        ]
+                    };
+                }
+                return q;
+            });
+            setQuestions(newQuestions);
+            setReplyingTo(null);
+            setReplyText('');
+            return;
+        }
+
         try {
             const token = localStorage.getItem('meo_auth_token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/qa/${questionId}/answer`, {

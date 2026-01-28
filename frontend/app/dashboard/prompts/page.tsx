@@ -55,14 +55,7 @@ export default function PromptsPage() {
             setLoading(false);
         }
     };
-    // Redoing this content block to include isDemoMode properly in the full function replacement if I can, 
-    // but I am targeting specific block. 
-    // Let's replace the whole component start effectively in next steps.
-    // For now, let's just make fetchPrompts robust or return mock if token missing?
-    
-    // Actually, I should update the whole component logic to use useDashboard correctly.
-    // Let me update the top part of the file first to get isDemoMode.
-    return; // cancelling this tool call to do it right
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
