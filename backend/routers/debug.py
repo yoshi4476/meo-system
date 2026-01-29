@@ -60,39 +60,15 @@ def debug_google_connection(
             
             # 3.2 Locations (V1)
             # 3.2 Locations (V1)
-            try:
-                locs = client.list_locations(acc_name)
-                report["api_checks"]["v1_locations"] = f"Success ({len(locs.get('locations', []))} locations)"
-                
-                if locs.get('locations'):
-                    # 3.3 Reviews API Discovery (Replaces hanging v4 check)
-                    try:
-                        import requests
-                        disco_url = "https://discovery.googleapis.com/discovery/v1/apis"
-                        resp = requests.get(disco_url, timeout=10)
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            items = data.get("items", [])
-                            found_apis = []
-                            for item in items:
-                                name = item.get("name", "")
-                                if "business" in name or "mybusiness" in name:
-                                    found_apis.append(f"{name} ({item.get('version')})")
-                            
-                            report["api_checks"]["AVAILABLE_APIS"] = ", ".join(found_apis) or "None found"
-                            
-                            v4_exists = any(i.get("name") == "mybusiness" and i.get("version") == "v4" for i in items)
-                            report["api_checks"]["IS_V4_LISTED"] = str(v4_exists)
-                            
-                        else:
-                            report["api_checks"]["DISCOVERY_FETCH"] = f"Failed: {resp.status_code}"
-                    except Exception as e:
-                        report["api_checks"]["DISCOVERY_FETCH"] = f"Error: {str(e)}"
-                        
-                    report["api_checks"]["v4_reviews"] = "Skipped (Diagnosing API Availability)"
-
-            except Exception as e:
-                report["api_checks"]["v1_locations"] = f"Failed to list locations: {str(e)}"
+            # 3.2 Locations (V1) - ISOLATION TEST: SKIPPED
+            # try:
+            #     locs = client.list_locations(acc_name)
+            #     # ...
+            # except:
+            #     pass
+            
+            report["api_checks"]["v1_locations"] = "Skipped (Isolation Test)"
+            report["api_checks"]["v4_reviews"] = "Skipped (Isolation Test)"
     except Exception as e:
          report["api_checks"]["v1_accounts"] = f"Failed: {str(e)}"
 
