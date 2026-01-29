@@ -59,11 +59,13 @@ def debug_google_connection(
             acc_name = accounts['accounts'][0]['name']
             
             # 3.2 Locations (V1)
-                    except Exception as e:
-                        report["api_checks"]["v1_locations"] = f"Failed to list locations: {str(e)}"
-
+            # 3.2 Locations (V1)
+            try:
+                locs = client.list_locations(acc_name)
+                report["api_checks"]["v1_locations"] = f"Success ({len(locs.get('locations', []))} locations)"
+                
+                if locs.get('locations'):
                     # 3.3 Reviews API Discovery (Replaces hanging v4 check)
-                    # We search the global discovery directory to find what APIs are actually available/visible
                     try:
                         import requests
                         disco_url = "https://discovery.googleapis.com/discovery/v1/apis"
@@ -79,7 +81,6 @@ def debug_google_connection(
                             
                             report["api_checks"]["AVAILABLE_APIS"] = ", ".join(found_apis) or "None found"
                             
-                            # Check if the elusive 'mybusiness' v4 is in there?
                             v4_exists = any(i.get("name") == "mybusiness" and i.get("version") == "v4" for i in items)
                             report["api_checks"]["IS_V4_LISTED"] = str(v4_exists)
                             
@@ -88,8 +89,10 @@ def debug_google_connection(
                     except Exception as e:
                         report["api_checks"]["DISCOVERY_FETCH"] = f"Error: {str(e)}"
                         
-                    # Skip manual v4 check to prevent hang
                     report["api_checks"]["v4_reviews"] = "Skipped (Diagnosing API Availability)"
+
+            except Exception as e:
+                report["api_checks"]["v1_locations"] = f"Failed to list locations: {str(e)}"
     except Exception as e:
          report["api_checks"]["v1_accounts"] = f"Failed: {str(e)}"
 
