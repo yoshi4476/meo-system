@@ -271,8 +271,8 @@ class GBPClient:
             "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
             "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
             "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
-            # "WEBSITE_CLICKS", # Temporarily disabled for stability
-            # "CALL_CLICKS"     # Temporarily disabled for stability
+            "WEBSITE_CLICKS", 
+            "CALL_CLICKS"     
             # "DRIVING_DIRECTIONS_CLICKS" # Removed: Causes 400 Error
         ]
         
