@@ -59,29 +59,37 @@ def debug_google_connection(
             acc_name = accounts['accounts'][0]['name']
             
             # 3.2 Locations (V1)
-            try:
-                locs = client.list_locations(acc_name)
-                report["api_checks"]["v1_locations"] = f"Success ({len(locs.get('locations', []))} locations)"
-                
-                if locs.get('locations'):
-                    # 3.3 Reviews (V4)
-                    loc_id = locs['locations'][0]['name'].split('/')[-1]
-                    v4_name = f"{acc_name}/locations/{loc_id}"
-                    
-                    try:
-                        reviews = client.list_reviews(v4_name)
-                        report["api_checks"]["v4_reviews"] = f"Success ({len(reviews.get('reviews', []))} reviews)"
                     except Exception as e:
-                        error_detail = str(e)
-                        if hasattr(e, 'response') and e.response is not None:
-                             error_detail += f" Body: {e.response.text}"
-                        report["api_checks"]["v4_reviews"] = f"Failed: {error_detail}"
-                        
-                    # Library check removed due to timeout risks
-                    report["api_checks"]["LIBRARY_check"] = "Skipped (Timeout Prevention)"
+                        report["api_checks"]["v1_locations"] = f"Failed to list locations: {str(e)}"
 
-            except Exception as e:
-                report["api_checks"]["v1_locations"] = f"Failed: {str(e)}"
+                    # 3.3 Reviews API Discovery (Replaces hanging v4 check)
+                    # We search the global discovery directory to find what APIs are actually available/visible
+                    try:
+                        import requests
+                        disco_url = "https://discovery.googleapis.com/discovery/v1/apis"
+                        resp = requests.get(disco_url, timeout=10)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            items = data.get("items", [])
+                            found_apis = []
+                            for item in items:
+                                name = item.get("name", "")
+                                if "business" in name or "mybusiness" in name:
+                                    found_apis.append(f"{name} ({item.get('version')})")
+                            
+                            report["api_checks"]["AVAILABLE_APIS"] = ", ".join(found_apis) or "None found"
+                            
+                            # Check if the elusive 'mybusiness' v4 is in there?
+                            v4_exists = any(i.get("name") == "mybusiness" and i.get("version") == "v4" for i in items)
+                            report["api_checks"]["IS_V4_LISTED"] = str(v4_exists)
+                            
+                        else:
+                            report["api_checks"]["DISCOVERY_FETCH"] = f"Failed: {resp.status_code}"
+                    except Exception as e:
+                        report["api_checks"]["DISCOVERY_FETCH"] = f"Error: {str(e)}"
+                        
+                    # Skip manual v4 check to prevent hang
+                    report["api_checks"]["v4_reviews"] = "Skipped (Diagnosing API Availability)"
     except Exception as e:
          report["api_checks"]["v1_accounts"] = f"Failed: {str(e)}"
 
