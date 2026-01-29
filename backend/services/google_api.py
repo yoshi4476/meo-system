@@ -77,7 +77,7 @@ class GBPClient:
             if next_page_token:
                 params["pageToken"] = next_page_token
                 
-            response = requests.get(url, headers=self._get_headers(), params=params)
+            response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
             
@@ -101,7 +101,7 @@ class GBPClient:
             if next_page_token:
                 current_params["pageToken"] = next_page_token
                 
-            response = requests.get(url, headers=self._get_headers(), params=current_params)
+            response = requests.get(url, headers=self._get_headers(), params=current_params, timeout=10)
             response.raise_for_status()
             data = response.json()
             
@@ -120,7 +120,7 @@ class GBPClient:
         location_name: Format "accounts/{accountId}/locations/{locationId}"
         """
         url = f"https://mybusiness.googleapis.com/v4/{location_name}/reviews"
-        response = requests.get(url, headers=self._get_headers())
+        response = requests.get(url, headers=self._get_headers(), timeout=10)
         response.raise_for_status()
         return response.json()
 
