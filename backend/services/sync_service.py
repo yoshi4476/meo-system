@@ -102,10 +102,15 @@ class GoogleSyncService:
             return {"status": "success", "count": synced_count}
         except Exception as e:
             error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                     error_msg += f" | Details: {e.response.text}"
+                except:
+                     pass
             print(f"Sync Reviews Error: {error_msg}")
+            
             if "403" in error_msg and "Forbidden" in error_msg:
                  return {"status": "error", "message": "Google My Business API (Classic) not enabled. Please enable it in Cloud Console."}
-            # Check if it's a 404 (no reviews exist) - treat as success
             if "404" in error_msg or "Not Found" in error_msg:
                 return {"status": "success", "count": 0, "message": "No reviews on GBP yet"}
             return {"status": "error", "message": error_msg}
@@ -151,6 +156,11 @@ class GoogleSyncService:
             return {"status": "success", "count": synced_count}
         except Exception as e:
             error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                     error_msg += f" | Details: {e.response.text}"
+                except:
+                     pass
             print(f"Sync Posts Error: {error_msg}")
             if "403" in error_msg and "Forbidden" in error_msg:
                  return {"status": "error", "message": "Google My Business API (Classic) not enabled."}
@@ -232,8 +242,14 @@ class GoogleSyncService:
             db.commit()
             return {"status": "success", "message": f"Metrics updated for {len(daily_data)} days", "count": synced_count}
         except Exception as e:
-            print(f"Sync Insights Error: {e}")
-            return {"status": "error", "message": str(e)}
+            error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                     error_msg += f" | Details: {e.response.text}"
+                except:
+                     pass
+            print(f"Sync Insights Error: {error_msg}")
+            return {"status": "error", "message": error_msg}
 
     async def sync_media(self, db: Session, store_id: str, location_id: str):
         """Fetch photos/videos"""
@@ -271,6 +287,11 @@ class GoogleSyncService:
             return {"status": "success", "count": synced_count}
         except Exception as e:
             error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                     error_msg += f" | Details: {e.response.text}"
+                except:
+                     pass
             if "403" in error_msg and "Forbidden" in error_msg:
                  return {"status": "error", "message": "Google My Business API (Classic) not enabled."}
             if "404" in error_msg or "Not Found" in error_msg:
@@ -311,6 +332,11 @@ class GoogleSyncService:
             return {"status": "success", "message": f"Synced {q_count} questions"}
         except Exception as e:
             error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                     error_msg += f" | Details: {e.response.text}"
+                except:
+                     pass
             if "403" in error_msg and "Forbidden" in error_msg:
                  return {"status": "error", "message": "Google My Business API (Classic) not enabled."}
             if "404" in error_msg or "Not Found" in error_msg:
