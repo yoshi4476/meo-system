@@ -42,14 +42,31 @@ def debug_google_connection(
     report["token_scopes"] = conn.scopes
     
     # 2. Token Status
-    if not conn.access_token:
-        report["token_status"] = "Missing Access Token"
-        return report
+    if conn and conn.access_token:
+        report["token_status"] = "Present"
+        report["token_expiry"] = str(conn.expiry)
+        report["token_scopes"] = conn.scopes # Kept original 'scopes' for consistency
+        
+        # Token Inspection (Check Client ID mismatch)
+        try:
+            import requests
+            ti_resp = requests.get(f"https://oauth2.googleapis.com/tokeninfo?access_token={conn.access_token}", timeout=5)
+            if ti_resp.status_code == 200:
+                ti_data = ti_resp.json()
+                report["token_metadata"] = {
+                    "issued_to": ti_data.get("issued_to"),
+                    "details": "Compare 'issued_to' with your Cloud Console Client ID"
+                }
+        except:
+             report["token_metadata"] = "Failed to inspect"
 
-    # Check Expiry
-    if conn.expiry and conn.expiry < datetime.now():
-        report["token_status"] = "Expired"
-        report["api_checks"]["Init"] = "Skipped (Token Expired - Please Reconnect)"
+        # Check for expiration
+        if conn.expiry and conn.expiry < datetime.now():
+             report["token_status"] = "Expired"
+             report["api_checks"]["Init"] = "Skipped (Token Expired - Please Reconnect)"
+             return report # Added return here to match original logic
+    else:
+        report["token_status"] = "Missing Access Token" # Added this else block to match original logic
         return report
 
     client = google_api.GBPClient(conn.access_token)
