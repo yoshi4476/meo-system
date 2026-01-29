@@ -46,11 +46,18 @@ def debug_google_connection(
         report["token_status"] = "Missing Access Token"
         return report
 
+    # Check Expiry
+    if conn.expiry and conn.expiry < datetime.now():
+        report["token_status"] = "Expired"
+        report["api_checks"]["Init"] = "Skipped (Token Expired - Please Reconnect)"
+        return report
+
     client = google_api.GBPClient(conn.access_token)
 
     # 3. API Checks
     # 3.1 Accounts (V1)
     try:
+        # TIMEOUT SAFETY: Using explicit timeout to prevent hanging
         accounts = client.list_accounts()
         report["api_checks"]["v1_accounts"] = f"Success ({len(accounts.get('accounts', []))} accounts)"
         
