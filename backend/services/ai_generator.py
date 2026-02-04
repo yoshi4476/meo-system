@@ -7,8 +7,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 class AIClient:
     def __init__(self, api_key: str = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        # Using gemini-1.5-flash for speed and efficiency
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        # Using gemini-2.0-flash for speed and efficiency (updated from 1.5)
+        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
     def generate_text(self, system_prompt: str, user_prompt: str):
         if not self.api_key:
