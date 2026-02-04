@@ -4,6 +4,7 @@ import models, database, auth
 from services import google_api
 from pydantic import BaseModel
 from typing import Optional, List, Dict
+from datetime import datetime, timedelta
 
 router = APIRouter(
     prefix="/locations",
