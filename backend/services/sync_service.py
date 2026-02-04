@@ -196,6 +196,10 @@ class GoogleSyncService:
             
             synced_count = 0
             
+            # Handle empty response
+            if not metrics_data:
+                return {"status": "success", "count": 0, "message": "No metrics data returned from API"}
+            
             # API returns list of { metric: "KEY", dailyMetricTimeSeries: [ { date:..., value:... } ] }
             # We need to pivot this to Store One Record Per Day Per Store in `models.Insight`
             
@@ -207,6 +211,8 @@ class GoogleSyncService:
                 
                 for day_val in metric_series.get("dailyMetricTimeSeries", []):
                     d = day_val.get("date")
+                    if not d or not d.get("year"):
+                        continue  # Skip if date is None or incomplete
                     date_str = f"{d['year']}-{d['month']}-{d['day']}"
                     val = int(day_val.get("value", 0))
                     
