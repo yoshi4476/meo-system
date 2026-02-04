@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import database, models, auth
-from services import google_api, ai_generator
+from services import google_api
 from datetime import datetime
 
 router = APIRouter(
@@ -9,18 +9,6 @@ router = APIRouter(
     tags=["debug"],
     responses={404: {"description": "Not found"}},
 )
-
-@router.get("/ai-model")
-def debug_ai_model():
-    """
-    現在使用中のAIモデル情報を返す。Renderデプロイ確認用。
-    """
-    client = ai_generator.AIClient()
-    return {
-        "model_url": client.base_url,
-        "model_version": "gemini-2.0-flash",
-        "deploy_timestamp": datetime.utcnow().isoformat()
-    }
 
 @router.get("/google")
 def debug_google_connection(
