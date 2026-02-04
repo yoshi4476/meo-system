@@ -155,11 +155,9 @@ app.include_router(ai.router)
 app.include_router(ranks.router)
 app.include_router(bulk.router)
 app.include_router(reports.router)
-app.include_router(reports.router)
 app.include_router(sync.router)
 app.include_router(optimization.router)
 app.include_router(messages.router)
-app.include_router(qr.router)
 from routers import debug
 app.include_router(debug.router)
 

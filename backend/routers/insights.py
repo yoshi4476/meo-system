@@ -178,7 +178,29 @@ def get_search_keywords(store_id: str, db: Session = Depends(database.get_db), c
     
     client = google_api.GBPClient(connection.access_token)
     
-    # Get last month's keywords
+    # Resolve correct location name (v1 or v4 format depending on what API needs, 
+    # but Performance API documentation says 'locations/{locationId}'.
+    # However, sometimes we need to be careful with the ID. 
+    # Let's try to verify or resolve if we suspect issues, similar to QA.)
+    
+    # Actually, Performance API `locations/{locationId}` refers to the obfuscated ID.
+    # If store.google_location_id is `locations/123...`, it SHOULD work.
+    
+    # Retrying logic: If first attempt fails, maybe try to resolve via accounts?
+    # Or maybe the token scopes?
+    
+    target_location_name = store.google_location_id
+    
+    # Logic to fetch keywords
+    def fetch_keywords_for_month(year, month):
+        try:
+             res = client.fetch_search_keywords(target_location_name, year, month)
+             return res
+        except Exception as e:
+            print(f"Fetch keywords failed for {year}-{month}: {e}")
+            return None
+
+    # Try last month
     now = datetime.now()
     if now.month == 1:
         target_year = now.year - 1
@@ -186,10 +208,37 @@ def get_search_keywords(store_id: str, db: Session = Depends(database.get_db), c
     else:
         target_year = now.year
         target_month = now.month - 1
-    
-    try:
-        keywords_data = client.fetch_search_keywords(store.google_location_id, target_year, target_month)
         
+    keywords_data = fetch_keywords_for_month(target_year, target_month)
+    
+    # If failed or empty, try 2 months ago? 
+    # Sometimes data is delayed.
+    if not keywords_data or not keywords_data.get("searchKeywordsCounts"):
+        # Try 2 months ago
+        if target_month == 1:
+            prev_year = target_year - 1
+            prev_month = 12
+        else:
+            prev_year = target_year
+            prev_month = target_month - 1
+            
+        print(f"Retrying keywords for {prev_year}-{prev_month}")
+        keywords_data_prev = fetch_keywords_for_month(prev_year, prev_month)
+        if keywords_data_prev and keywords_data_prev.get("searchKeywordsCounts"):
+            keywords_data = keywords_data_prev
+            target_year = prev_year
+            target_month = prev_month
+            
+    if not keywords_data:
+         # Final fallback: return empty with error message if it was an error
+         return {
+            "period": "データ取得失敗",
+            "keywords": [],
+            "total_keywords": 0,
+            "error": "Google APIからデータを取得できませんでした。権限または期間外の可能性があります。"
+        }
+
+    try:
         # Format response
         keywords = []
         for kw in keywords_data.get("searchKeywordsCounts", []):
@@ -210,9 +259,8 @@ def get_search_keywords(store_id: str, db: Session = Depends(database.get_db), c
             "total_keywords": len(keywords)
         }
     except Exception as e:
-        # Return empty result if API call fails
         return {
-            "period": "データなし",
+            "period": "データ処理エラー",
             "keywords": [],
             "total_keywords": 0,
             "error": str(e)
