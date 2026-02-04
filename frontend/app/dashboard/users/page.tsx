@@ -53,13 +53,35 @@ export default function AdminUsersPage() {
       }
     };
 
-    if (isDemoMode || userInfo?.role === 'SUPER_ADMIN') {
+    if (isDemoMode || (userInfo && (userInfo.role === 'SUPER_ADMIN' || userInfo.role === 'COMPANY_ADMIN'))) {
       fetchUsers();
     } else if (userInfo) {
        setIsLoading(false);
-       setError("権限がありません (Super Admin required)");
+       setError("権限がありません (Super Admin or Company Admin required)");
     }
   }, [userInfo, isDemoMode]);
+
+  const handleCreateUser = () => {
+      // Simple Prompt UI for MVP
+      const email = prompt("メールアドレス:");
+      if (!email) return;
+      const password = prompt("パスワード:");
+      if (!password) return;
+      const role = prompt("ロール (COMPANY_ADMIN / STORE_USER):", "STORE_USER");
+      
+      const token = localStorage.getItem('meo_auth_token');
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/admin/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ email, password, role })
+      }).then(async res => {
+          if(res.ok) window.location.reload();
+          else {
+              const err = await res.json();
+              alert("作成失敗: " + err.detail);
+          }
+      });
+  };
 
   if (isLoading) return <div className="p-8 text-slate-400">読み込み中...</div>;
 
@@ -81,8 +103,16 @@ export default function AdminUsersPage() {
            <h1 className="text-3xl font-bold text-white">ユーザー管理</h1>
            <p className="text-slate-400 mt-1">システムに登録されている全ユーザーのアカウント情報</p>
         </div>
-        <div className="bg-slate-800 px-4 py-2 rounded text-slate-300">
-           合計: <span className="text-white font-bold ml-1">{users.length}</span> ユーザー
+        <div className="flex gap-4">
+            <button 
+                onClick={handleCreateUser}
+                className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors"
+            >
+                + ユーザーを追加
+            </button>
+            <div className="bg-slate-800 px-4 py-2 rounded text-slate-300 flex items-center">
+               合計: <span className="text-white font-bold ml-1">{users.length}</span> ユーザー
+            </div>
         </div>
       </div>
 

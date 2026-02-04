@@ -20,7 +20,29 @@ class LocationUpdate(BaseModel):
     
     # Add other fields as needed
 
-@router.get("/{store_id}")
+@router.get("/")
+def list_available_locations(db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """
+    List all stores accessible to the current user.
+    Used for Sidebar store selector.
+    """
+    if current_user.role == "SUPER_ADMIN":
+        stores = db.query(models.Store).all()
+        return [{"id": s.id, "name": s.name} for s in stores]
+        
+    elif current_user.role == "COMPANY_ADMIN":
+        if not current_user.company_id:
+            return []
+        stores = db.query(models.Store).filter(models.Store.company_id == current_user.company_id).all()
+        return [{"id": s.id, "name": s.name} for s in stores]
+        
+    else: # STORE_USER
+        if not current_user.store_id:
+            return [] # Or return empty
+        store = db.query(models.Store).filter(models.Store.id == current_user.store_id).first()
+        if store:
+            return [{"id": store.id, "name": store.name}]
+        return []
 def get_location_details(store_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
     Get location details directly from Google Business Profile.

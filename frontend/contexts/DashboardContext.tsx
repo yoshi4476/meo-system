@@ -24,6 +24,7 @@ type DashboardContextType = {
   isDemoMode: boolean;
   toggleDemoMode: () => void;
   syncData: () => Promise<void>;
+  availableStores: { id: string; name: string }[];
 };
 
 const DashboardContext = createContext<DashboardContextType>({
@@ -34,6 +35,7 @@ const DashboardContext = createContext<DashboardContextType>({
   isDemoMode: false,
   toggleDemoMode: () => {},
   syncData: async () => {},
+  availableStores: [],
 });
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
@@ -212,17 +214,53 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+
+  const [availableStores, setAvailableStores] = useState<{id: string, name: string}[]>([]);
+
+  const fetchAvailableStores = useCallback(async () => {
+      if (typeof window === 'undefined') return;
+      if (isDemoMode) {
+          setAvailableStores([
+              { id: 's1', name: 'MEO Cafe 渋谷店 (Demo)' },
+              { id: 's2', name: 'MEO Cafe 新宿店 (Demo)' },
+              { id: 's3', name: 'MEO Cafe 池袋店 (Demo)' }
+          ]);
+          return;
+      }
+      
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          if (!token) return;
+          
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+          const res = await fetch(`${apiUrl}/locations/`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (res.ok) {
+              const data = await res.json();
+              setAvailableStores(data);
+          }
+      } catch (e) {
+          console.error("Failed to fetch available stores:", e);
+      }
+  }, [isDemoMode]);
+
+  useEffect(() => {
+    fetchAvailableStores();
+  }, [fetchAvailableStores]);
+
   // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
     return (
-      <DashboardContext.Provider value={{ userInfo: null, isLoading: true, error: null, refreshUser: async () => {}, isDemoMode: false, toggleDemoMode: () => {}, syncData: async () => {} }}>
+      <DashboardContext.Provider value={{ userInfo: null, isLoading: true, error: null, refreshUser: async () => {}, isDemoMode: false, toggleDemoMode: () => {}, syncData: async () => {}, availableStores: [] }}>
         {children}
       </DashboardContext.Provider>
     );
   }
 
   return (
-    <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser, isDemoMode, toggleDemoMode, syncData }}>
+    <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser, isDemoMode, toggleDemoMode, syncData, availableStores }}>
       {children}
     </DashboardContext.Provider>
   );

@@ -52,32 +52,121 @@ def update_system_settings(settings: SystemSettingsUpdate, current_user: models.
     
     return {"message": "Settings updated successfully", "updated_fields": [k for k, v in settings.model_dump().items() if v is not None]}
 
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    role: str
+    store_id: Optional[str] = None
+
+class StoreCreate(BaseModel):
+    name: str
+
 @router.get("/users")
-def list_all_users(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.require_super_admin)):
+def list_all_users(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
-    List all users. Only accessible by SUPER_ADMIN.
+    List users. SUPER_ADMIN sees all. COMPANY_ADMIN sees company users.
     """
-    users = db.query(models.User).offset(skip).limit(limit).all()
-    return users
+    if current_user.role == "SUPER_ADMIN":
+        users = db.query(models.User).offset(skip).limit(limit).all()
+        return users
+    elif current_user.role == "COMPANY_ADMIN":
+        if not current_user.company_id:
+             return [current_user]
+        users = db.query(models.User).filter(models.User.company_id == current_user.company_id).offset(skip).limit(limit).all()
+        return users
+    else:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+@router.post("/users")
+def create_user(user: UserCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """
+    Create a new user.
+    """
+    if current_user.role not in ["SUPER_ADMIN", "COMPANY_ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Check email
+    if db.query(models.User).filter(models.User.email == user.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # RBAC logic for assignment
+    company_id = user.company_id if hasattr(user, 'company_id') else None # Not in model yet, assume creation inherits or explicit
+    
+    if current_user.role == "COMPANY_ADMIN":
+        company_id = current_user.company_id
+        if user.role == "SUPER_ADMIN":
+             raise HTTPException(status_code=403, detail="Cannot create Super Admin")
+
+    hashed_password = auth.get_password_hash(user.password)
+    new_user = models.User(
+        email=user.email, 
+        role=user.role, 
+        hashed_password=hashed_password, 
+        company_id=company_id,
+        store_id=user.store_id,
+        is_active=True
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
 
 @router.patch("/users/{user_id}/role")
-def update_user_role(user_id: str, role: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.require_super_admin)):
+def update_user_role(user_id: str, role: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
-    Update a user's role. Only accessible by SUPER_ADMIN.
+    Update role.
     """
-    if role not in ["SUPER_ADMIN", "COMPANY_ADMIN", "STORE_USER"]:
-        raise HTTPException(status_code=400, detail="Invalid role")
-    
+    if current_user.role not in ["SUPER_ADMIN", "COMPANY_ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+         raise HTTPException(status_code=404, detail="User not found")
+
+    if current_user.role == "COMPANY_ADMIN":
+        if user.company_id != current_user.company_id:
+             raise HTTPException(status_code=403, detail="Cannot edit external user")
+        if role == "SUPER_ADMIN":
+             raise HTTPException(status_code=403, detail="Cannot promote to Super Admin")
+
     user.role = role
     db.commit()
+    return user
+
 @router.get("/stores")
-def list_all_stores(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.require_super_admin)):
+def list_all_stores(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
-    List all stores. Only accessible by SUPER_ADMIN.
+    List stores. SUPER_ADMIN sees all. COMPANY_ADMIN sees company stores.
     """
-    stores = db.query(models.Store).offset(skip).limit(limit).all()
-    return stores
+    if current_user.role == "SUPER_ADMIN":
+        stores = db.query(models.Store).offset(skip).limit(limit).all()
+        return stores
+    elif current_user.role == "COMPANY_ADMIN":
+         if not current_user.company_id:
+            return []
+         stores = db.query(models.Store).filter(models.Store.company_id == current_user.company_id).offset(skip).limit(limit).all()
+         return stores
+    else:
+         raise HTTPException(status_code=403, detail="Not authorized")
+
+@router.post("/stores")
+def create_store(store: StoreCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """
+    Create a new store (manually).
+    """
+    if current_user.role not in ["SUPER_ADMIN", "COMPANY_ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    company_id = None
+    if current_user.role == "COMPANY_ADMIN":
+        company_id = current_user.company_id
+        
+    new_store = models.Store(
+        name=store.name,
+        company_id=company_id
+    )
+    db.add(new_store)
+    db.commit()
+    db.refresh(new_store)
+    return new_store

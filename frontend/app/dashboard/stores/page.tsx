@@ -52,13 +52,30 @@ export default function AdminStoresPage() {
       }
     };
 
-    if (isDemoMode || userInfo?.role === 'SUPER_ADMIN') {
+    if (isDemoMode || (userInfo && (userInfo.role === 'SUPER_ADMIN' || userInfo.role === 'COMPANY_ADMIN'))) {
         fetchStores();
     } else if (userInfo) {
        setIsLoading(false);
-       setError("権限がありません (Super Admin required)");
+       setError("権限がありません (Super Admin or Company Admin required)");
     }
   }, [userInfo, isDemoMode]);
+
+  const handleCreateStore = () => {
+      // TODO: Implement Modal
+      const name = prompt("新しい店舗名を入力してください:");
+      if (!name) return;
+      
+      // Call API (Quick implementation)
+      const token = localStorage.getItem('meo_auth_token');
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/admin/stores`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ name })
+      }).then(res => {
+          if(res.ok) window.location.reload();
+          else alert("作成に失敗しました");
+      });
+  };
 
   if (isLoading) return <div className="p-8 text-slate-400">読み込み中...</div>;
 
@@ -80,8 +97,16 @@ export default function AdminStoresPage() {
            <h1 className="text-3xl font-bold text-white">店舗管理</h1>
            <p className="text-slate-400 mt-1">システムに登録されている全店舗の一覧</p>
         </div>
-        <div className="bg-slate-800 px-4 py-2 rounded text-slate-300">
-           合計: <span className="text-white font-bold ml-1">{stores.length}</span> 店舗
+        <div className="flex gap-4">
+            <button 
+                onClick={handleCreateStore}
+                className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors"
+            >
+                + 店舗を追加
+            </button>
+            <div className="bg-slate-800 px-4 py-2 rounded text-slate-300 flex items-center">
+               合計: <span className="text-white font-bold ml-1">{stores.length}</span> 店舗
+            </div>
         </div>
       </div>
 

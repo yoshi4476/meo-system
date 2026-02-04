@@ -26,7 +26,7 @@ const settingsItems = [
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
-  const { isDemoMode, toggleDemoMode, syncData } = useDashboard();
+  const { isDemoMode, toggleDemoMode, syncData, availableStores, userInfo } = useDashboard();
 
   return (
     <aside className="w-64 h-screen bg-deep-navy/95 backdrop-blur-xl border-r border-white/10 flex flex-col relative z-50">
@@ -51,11 +51,17 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         {/* 店舗切替 */}
         <div className="p-4 border-b border-white/10">
           <label className="text-xs text-slate-500 mb-2 block">店舗を選択</label>
-          <select className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-aurora-cyan">
-            <option>渋谷店</option>
-            <option>新宿店</option>
-            <option>池袋店</option>
-            <option>すべての店舗</option>
+          <select 
+            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-aurora-cyan"
+            value={userInfo?.store_id || ''}
+            onChange={(e) => {
+                alert(`店舗ID: ${e.target.value} に切り替えます (実装準備中)`);
+            }}
+          >
+            <option value="">店舗を選択してください</option>
+            {availableStores.map(store => (
+                <option key={store.id} value={store.id}>{store.name}</option>
+            ))}
           </select>
         </div>
 
