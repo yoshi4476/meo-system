@@ -6,7 +6,7 @@ export default function Home() {
 
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 relative overflow-hidden">
+    <main className="flex min-h-screen flex-col items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden">
       {/* 背景エフェクト - 診断のため一時的に無効化 */}
       {/* <div className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-aurora-purple/20 rounded-full blur-[120px] animate-pulse"></div>
@@ -20,7 +20,7 @@ export default function Home() {
       </div>
 
         <div className="relative z-10 flex flex-col items-center gap-8 mt-20">
-          <h1 className="text-6xl font-bold text-center bg-clip-text text-transparent bg-linear-to-r from-white via-cyan-200 to-purple-200 text-glow">
+          <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-center bg-clip-text text-transparent bg-linear-to-r from-white via-cyan-200 to-purple-200 text-glow">
             ビジネスの成長を、<br/>加速させる。
           </h1>
           <p className="text-xl text-center text-slate-300 max-w-2xl">

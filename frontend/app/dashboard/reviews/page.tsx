@@ -195,22 +195,22 @@ export default function ReviewsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">クチコミ管理</h1>
-                    <p className="text-slate-400 mt-1">お客様からのクチコミを確認・返信します</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white">クチコミ管理</h1>
+                    <p className="text-slate-400 mt-1 text-sm sm:text-base">お客様からのクチコミを確認・返信します</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <button 
                         onClick={() => setShowSettings(true)}
-                        className="bg-slate-800 text-slate-300 border border-slate-600 px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors"
+                        className="bg-slate-800 text-slate-300 border border-slate-600 px-3 sm:px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors text-sm"
                     >
                         ⚙️ AI返信設定
                     </button>
                     <button 
                         onClick={handleSync}
                         disabled={isSyncing}
-                        className="bg-slate-700 text-white border border-slate-600 px-4 py-2 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50"
+                        className="bg-slate-700 text-white border border-slate-600 px-3 sm:px-4 py-2 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50 text-sm"
                     >
                         {isSyncing ? '同期中...' : '🔄 Googleから同期'}
                     </button>

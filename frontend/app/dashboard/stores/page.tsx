@@ -92,25 +92,25 @@ export default function AdminStoresPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-           <h1 className="text-3xl font-bold text-white">店舗管理</h1>
-           <p className="text-slate-400 mt-1">システムに登録されている全店舗の一覧</p>
+           <h1 className="text-2xl sm:text-3xl font-bold text-white">店舗管理</h1>
+           <p className="text-slate-400 mt-1 text-sm sm:text-base">システムに登録されている全店舗の一覧</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-2 sm:gap-4">
             <button 
                 onClick={handleCreateStore}
-                className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors"
+                className="bg-aurora-cyan text-deep-navy font-bold px-3 sm:px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors text-sm sm:text-base"
             >
                 + 店舗を追加
             </button>
-            <div className="bg-slate-800 px-4 py-2 rounded text-slate-300 flex items-center">
+            <div className="bg-slate-800 px-3 sm:px-4 py-2 rounded text-slate-300 flex items-center text-sm sm:text-base">
                合計: <span className="text-white font-bold ml-1">{stores.length}</span> 店舗
             </div>
         </div>
       </div>
 
-      <div className="glass-card overflow-hidden">
+      <div className="glass-card overflow-x-auto">
         <table className="w-full text-left border-collapse">
             <thead>
                 <tr className="bg-slate-800/50 text-slate-400 border-b border-white/5">
