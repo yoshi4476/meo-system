@@ -184,9 +184,9 @@ class GoogleSyncService:
     async def sync_insights(self, db: Session, store_id: str, location_id: str):
         """Fetch latest insights (metrics)"""
         try:
-            # Fetch for last 30 days
+            # Fetch for last 180 days (approx 6 months) to support historical analysis
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=30)
+            start_date = end_date - timedelta(days=180)
             
             # Format dates for API
             start_date_dict = {"year": start_date.year, "month": start_date.month, "day": start_date.day}

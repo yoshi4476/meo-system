@@ -71,11 +71,41 @@ export default function InsightsPage() {
     const [syncResult, setSyncResult] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'table' | 'keywords'>('overview');
 
+    // Date Range State
+    const [rangeType, setRangeType] = useState<'30days' | '90days' | '180days' | 'custom'>('30days');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    
+
     const fetchInsights = async () => {
         setIsLoading(true);
         try {
             const token = localStorage.getItem('meo_auth_token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/insights/${userInfo?.store_id}`, {
+            let url = `${process.env.NEXT_PUBLIC_API_URL}/insights/${userInfo?.store_id}`;
+            
+            // Append Query Params
+            const params = new URLSearchParams();
+            if (rangeType !== 'custom') {
+                 // Calculate dynamic range for standard types? Or let backend default?
+                 // Actually backend defaults to 30 days if empty.
+                 // Better to calculate explicit dates here or use backend logic?
+                 // Backend logic is: if start/end provided, use them.
+                 // Let's calculate dates here to rely on frontend state.
+                 
+                 const end = new Date();
+                 const start = new Date();
+                 if (rangeType === '30days') start.setDate(end.getDate() - 30);
+                 if (rangeType === '90days') start.setDate(end.getDate() - 90);
+                 if (rangeType === '180days') start.setDate(end.getDate() - 180);
+                 
+                 params.append('start_date', start.toISOString().split('T')[0]);
+                 params.append('end_date', end.toISOString().split('T')[0]);
+            } else {
+                 if (startDate) params.append('start_date', startDate);
+                 if (endDate) params.append('end_date', endDate);
+            }
+
+            const res = await fetch(`${url}?${params.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -176,7 +206,7 @@ export default function InsightsPage() {
         } else {
             setIsLoading(false);
         }
-    }, [userInfo, isDemoMode]);
+    }, [userInfo, isDemoMode, rangeType, startDate, endDate]); // Re-fetch on range change
 
     if (!userInfo?.store_id) return <div className="p-8 text-slate-400">店舗を選択してください</div>;
     if (isLoading) return <div className="p-8 text-slate-400">読み込み中...</div>;
@@ -298,22 +328,68 @@ export default function InsightsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex justify-between items-center">
+            {/* Header with Date Picker */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white">📊 インサイト分析</h1>
                     <p className="text-slate-400 mt-1">
-                        {data?.period} ({data?.days_count || getSeries('BUSINESS_IMPRESSIONS_MOBILE_MAPS').length}日間のデータ)
+                        {data?.period} ({data?.days_count || 0}日間のデータ)
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 items-center w-full md:w-auto">
+                    {/* Range Selector */}
+                    <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                        <button 
+                            onClick={() => setRangeType('30days')}
+                            className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '30days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            30日
+                        </button>
+                        <button 
+                            onClick={() => setRangeType('90days')}
+                            className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '90days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            90日
+                        </button>
+                        <button 
+                            onClick={() => setRangeType('180days')}
+                            className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '180days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            180日
+                        </button>
+                        <button 
+                            onClick={() => setRangeType('custom')}
+                            className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === 'custom' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            期間指定
+                        </button>
+                    </div>
+
+                    {rangeType === 'custom' && (
+                        <div className="flex gap-2 items-center bg-slate-800 p-1 rounded-lg border border-slate-700">
+                            <input 
+                                type="date" 
+                                value={startDate}
+                                onChange={e => setStartDate(e.target.value)}
+                                className="bg-transparent text-white text-sm px-2 outline-none scheme-dark"
+                            />
+                            <span className="text-slate-500">-</span>
+                            <input 
+                                type="date" 
+                                value={endDate}
+                                onChange={e => setEndDate(e.target.value)}
+                                className="bg-transparent text-white text-sm px-2 outline-none scheme-dark"
+                            />
+                        </div>
+                    )}
+
                     <button
                         onClick={handleSyncAndDiagnose}
                         disabled={syncing}
-                        className="bg-gradient-to-r from-aurora-purple to-aurora-cyan text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:opacity-90 disabled:opacity-50 font-bold shadow-lg"
+                        className="bg-linear-to-r from-aurora-purple to-aurora-cyan text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:opacity-90 disabled:opacity-50 font-bold shadow-lg whitespace-nowrap"
                     >
                         {syncing ? <span className="animate-spin">⏳</span> : '⚡'}
-                        {syncing ? '同期中...' : '同期＆診断'}
+                        {syncing ? '同期中...' : '同期'}
                     </button>
                 </div>
             </div>
@@ -389,7 +465,7 @@ export default function InsightsPage() {
                     </div>
 
                     {/* Visit Prediction Card */}
-                    <div className="glass-card p-6 border-2 border-aurora-cyan/30 bg-gradient-to-br from-slate-800/50 to-cyan-900/20">
+                    <div className="glass-card p-6 border-2 border-aurora-cyan/30 bg-linear-to-br from-slate-800/50 to-cyan-900/20">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="text-4xl">🏪</div>
                             <div>

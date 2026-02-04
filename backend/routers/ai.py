@@ -54,11 +54,65 @@ def generate_post(req: GeneratePostRequest, current_user: models.User = Depends(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/prompts")
+def list_prompts(category: Optional[str] = None, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    query = db.query(models.Prompt).filter(models.Prompt.user_id == current_user.id)
+    if category:
+        query = query.filter(models.Prompt.category == category)
+    return query.all()
+
+@router.post("/prompts")
+def create_or_update_prompt(prompt: PromptCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    # Check for existing prompt for this user & category
+    # For now, we assume 1 prompt per category per user for simplicity as per requirements (Global Reply Prompt, Locked Post Prompt)
+    existing = db.query(models.Prompt).filter(
+        models.Prompt.user_id == current_user.id,
+        models.Prompt.category == prompt.category
+    ).first()
+    
+    if existing:
+        existing.title = prompt.title
+        existing.content = prompt.content
+        existing.is_locked = prompt.is_locked
+        existing.update_time = datetime.utcnow()
+        db.commit()
+        db.refresh(existing)
+        return existing
+    else:
+        new_prompt = models.Prompt(
+            id=str(uuid.uuid4()),
+            user_id=current_user.id,
+            title=prompt.title,
+            content=prompt.content,
+            category=prompt.category,
+            is_locked=prompt.is_locked,
+            create_time=datetime.utcnow(),
+            update_time=datetime.utcnow()
+        )
+        db.add(new_prompt)
+        db.commit()
+        db.refresh(new_prompt)
+        return new_prompt
+
 @router.post("/generate/reply")
-def generate_reply(req: GenerateReplyRequest, current_user: models.User = Depends(auth.get_current_user)):
+def generate_reply(req: GenerateReplyRequest, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     try:
+        # Check for global prompt
+        global_prompt = db.query(models.Prompt).filter(
+            models.Prompt.user_id == current_user.id,
+            models.Prompt.category == "REVIEW_REPLY"
+        ).first()
+        
+        custom_instruction = global_prompt.content if global_prompt else None
+
         client = ai_generator.AIClient()
-        content = client.generate_review_reply(req.review_text, req.reviewer_name, req.star_rating, req.tone)
+        content = client.generate_review_reply(
+            review_text=req.review_text, 
+            reviewer_name=req.reviewer_name, 
+            star_rating=req.star_rating, 
+            tone=req.tone,
+            custom_instruction=custom_instruction
+        )
         return {"content": content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

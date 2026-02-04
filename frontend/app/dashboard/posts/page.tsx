@@ -5,6 +5,7 @@ import { useDashboard } from '../../../contexts/DashboardContext';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { SmartphonePreview } from '../../../components/dashboard/SmartphonePreview';
+import { ImageSelector } from '../../../components/dashboard/ImageSelector';
 
 type Post = {
     id: string;
@@ -38,6 +39,13 @@ export default function PostsPage() {
     const [mood, setMood] = useState('プロフェッショナル');
     const [charCount, setCharCount] = useState(300);
     const [keywordsRegion, setKeywordsRegion] = useState('');
+    
+    // Prompt Locking
+    const [lockedPrompt, setLockedPrompt] = useState('');
+    const [isPromptLocked, setIsPromptLocked] = useState(false);
+
+    // Image Selector
+    const [showImageSelector, setShowImageSelector] = useState(false);
     
     // Restoring missing state from previous error
     const [couponCode, setCouponCode] = useState('');
@@ -89,7 +97,62 @@ export default function PostsPage() {
 
     useEffect(() => {
         fetchPosts();
+        
+        // Fetch Locked Prompt
+        const fetchPrompt = async () => {
+            if (isDemoMode) {
+                // Demo
+                return;
+            }
+            try {
+                const token = localStorage.getItem('meo_auth_token');
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts?category=POST_GENERATION`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if(res.ok) {
+                    const prompts = await res.json();
+                    if (prompts.length > 0) {
+                        setPrompt(prompts[0].content);
+                        setLockedPrompt(prompts[0].content);
+                        setIsPromptLocked(prompts[0].is_locked);
+                    }
+                }
+            } catch(e) { console.error(e); }
+        };
+        fetchPrompt();
     }, [userInfo, isDemoMode]);
+
+    const handleToggleLock = async () => {
+        const newLockedState = !isPromptLocked;
+        setIsPromptLocked(newLockedState);
+        
+        if (isDemoMode) {
+             alert(newLockedState ? "プロンプトを固定しました (デモ)" : "プロンプトの固定を解除しました");
+             return;
+        }
+
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({
+                    title: "Locked Post Prompt",
+                    content: prompt,
+                    category: "POST_GENERATION",
+                    is_locked: newLockedState
+                })
+            });
+            if (newLockedState) setLockedPrompt(prompt);
+        } catch(e) {
+            console.error(e);
+            alert("保存に失敗しました");
+            setIsPromptLocked(!newLockedState); // Revert
+        }
+    };
 
     const handleGenerate = async () => {
         setIsGenerating(true);
@@ -334,11 +397,20 @@ export default function PostsPage() {
                                 </div>
 
                                 <div>
-                                    <label className="text-sm font-medium text-slate-300 block mb-1">プロンプト (自由指示)</label>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-sm font-medium text-slate-300">プロンプト (自由指示)</label>
+                                        <button 
+                                            onClick={handleToggleLock}
+                                            className={`text-xs flex items-center gap-1 ${isPromptLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-slate-300'}`}
+                                            title={isPromptLocked ? "固定中: 次回もこのプロンプトが使用されます" : "クリックして固定"}
+                                        >
+                                            {isPromptLocked ? '🔒 固定中' : '🔓 固定する'}
+                                        </button>
+                                    </div>
                                     <textarea 
                                         value={prompt} onChange={e => setPrompt(e.target.value)}
                                         placeholder="例: 絵文字を多めに使って、親しみやすい感じで。"
-                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white h-24"
+                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white h-24 ${isPromptLocked ? 'ring-1 ring-aurora-cyan/30' : ''}`}
                                     />
                                 </div>
                             </div>
@@ -367,26 +439,41 @@ export default function PostsPage() {
                                 <label className="text-sm font-medium text-slate-300 block mb-2">画像</label>
                                 <div className="flex gap-3">
                                     <button 
-                                        onClick={() => setShowImageGallery(true)}
-                                        className="px-4 py-2 bg-slate-800 text-slate-300 rounded border border-white/10 hover:bg-slate-700"
+                                        onClick={() => setShowImageSelector(true)}
+                                        className="px-4 py-2 bg-slate-800 text-slate-300 rounded border border-white/10 hover:bg-slate-700 transition-colors"
                                     >
-                                        📷 ギャラリーから選択
+                                        📷 画像を選択...
                                     </button>
                                     <input 
                                         type="text" 
                                         value={newPostMedia} 
                                         onChange={e => setNewPostMedia(e.target.value)}
-                                        placeholder="または画像URLを入力"
+                                        placeholder="または画像URLを直接入力"
                                         className="flex-1 bg-slate-900/50 border border-white/10 rounded px-3 text-white text-sm"
                                     />
                                 </div>
                                 {newPostMedia && (
-                                    <div className="mt-2 w-24 h-24 rounded bg-slate-800 overflow-hidden relative">
+                                    <div className="mt-2 w-full h-48 rounded-lg bg-slate-800 overflow-hidden relative border border-white/10 group">
                                         <img src={newPostMedia} className="w-full h-full object-cover" />
-                                        <button onClick={() => setNewPostMedia('')} className="absolute top-0 right-0 bg-black/50 text-white p-1 text-xs">✕</button>
+                                        <button 
+                                            onClick={() => setNewPostMedia('')} 
+                                            className="absolute top-2 right-2 bg-black/70 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors"
+                                        >
+                                            ✕
+                                        </button>
                                     </div>
                                 )}
                             </div>
+
+                            {showImageSelector && (
+                                <ImageSelector 
+                                    onSelect={(url) => {
+                                        setNewPostMedia(url);
+                                        setShowImageSelector(false);
+                                    }}
+                                    onClose={() => setShowImageSelector(false)}
+                                />
+                            )}
 
                             <div className="flex justify-between items-center pt-4 border-t border-white/10">
                                 <label className="flex items-center gap-2 cursor-pointer">
@@ -406,13 +493,13 @@ export default function PostsPage() {
                                             type="date" 
                                             value={scheduleDate} 
                                             onChange={e=>setScheduleDate(e.target.value)} 
-                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm [color-scheme:dark]" 
+                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm scheme-dark" 
                                         />
                                         <input 
                                             type="time" 
                                             value={scheduleTime} 
                                             onChange={e=>setScheduleTime(e.target.value)} 
-                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm [color-scheme:dark]" 
+                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm scheme-dark" 
                                         />
                                     </div>
                                 )}

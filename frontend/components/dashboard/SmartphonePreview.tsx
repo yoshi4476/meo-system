@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-export function SmartphonePreview({ content, image }: { content: string; image?: string }) {
+export function SmartphonePreview({ content, image, storeName }: { content: string; image?: string; storeName?: string }) {
     return (
       <div className="relative w-[300px] h-[600px] bg-black rounded-[3rem] border-8 border-slate-800 shadow-2xl overflow-hidden mx-auto">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-6 bg-slate-800 rounded-b-xl z-20"></div>
@@ -11,9 +11,9 @@ export function SmartphonePreview({ content, image }: { content: string; image?:
             
             <div className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-linear-to-tr from-aurora-purple to-aurora-cyan flex items-center justify-center text-white text-sm font-bold">渋</div>
+                    <div className="w-10 h-10 rounded-full bg-linear-to-tr from-aurora-purple to-aurora-cyan flex items-center justify-center text-white text-sm font-bold">{storeName ? storeName.charAt(0) : "渋"}</div>
                     <div>
-                        <div className="font-bold text-sm">渋谷店</div>
+                        <div className="font-bold text-sm">{storeName || "渋谷店"}</div>
                         <div className="text-xs text-slate-500">たった今</div>
                     </div>
                 </div>

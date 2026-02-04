@@ -10,33 +10,49 @@ router = APIRouter(
 )
 
 @router.get("/{store_id}")
-def get_insights(store_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+def get_insights(
+    store_id: str, 
+    start_date: str = None, 
+    end_date: str = None,
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
     """
-    Get performance metrics from Google Business Profile for the last 28 days.
+    Get performance metrics from local DB.
+    Refreshed via /sync endpoint.
+    Optional start_date/end_date (YYYY-MM-DD). Default last 30 days.
     """
     store = db.query(models.Store).filter(models.Store.id == store_id).first()
-    if not store or not store.google_location_id:
-        raise HTTPException(status_code=400, detail="Store not linked to Google Business Profile")
+    if not store:
+        raise HTTPException(status_code=400, detail="Store not found")
     
-    connection = current_user.google_connection
-    if not connection or not connection.access_token:
-        # Fallback to fetching stored tokens if current user is not the one connected?
-        # For now strict check.
-        raise HTTPException(status_code=400, detail="Google account not connected")
-        
-    client = google_api.GBPClient(connection.access_token)
-    
-    # Calculate date range: Last 30 days (excluding today usually, to be safe last 1-30 days ago)
-    end_date_dt = datetime.now() - timedelta(days=2)
-    start_date_dt = end_date_dt - timedelta(days=28)
-    
-    start_date = {"year": start_date_dt.year, "month": start_date_dt.month, "day": start_date_dt.day}
-    end_date = {"year": end_date_dt.year, "month": end_date_dt.month, "day": end_date_dt.day}
-    
+    # Determine Date Range
+    if end_date:
+        try:
+            end_date_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        except:
+            end_date_dt = datetime.now()
+    else:
+        end_date_dt = datetime.now()
+
+    if start_date:
+         try:
+            start_date_dt = datetime.strptime(start_date, "%Y-%m-%d")
+         except:
+            start_date_dt = end_date_dt - timedelta(days=30)
+    else:
+        start_date_dt = end_date_dt - timedelta(days=30) # Default 30 days
+
     # Fetch from local DB (Synced Data)
-    insights = db.query(models.Insight).filter(
+    query = db.query(models.Insight).filter(
         models.Insight.store_id == store_id
-    ).order_by(models.Insight.date.asc()).all()
+    )
+    
+    # Filter by date range
+    query = query.filter(models.Insight.date >= start_date_dt.date())
+    query = query.filter(models.Insight.date <= end_date_dt.date())
+    
+    insights = query.order_by(models.Insight.date.asc()).all()
     
     # Format for Frontend (match Google API structure approx or simplify)
     # Frontend expects: { metrics: [ { dailyMetric: "KEY", dailyMetricTimeSeries: [{date, value}] } ] }
@@ -128,7 +144,7 @@ def get_insights(store_id: str, db: Session = Depends(database.get_db), current_
     }
     
     return {
-        "period": "Last 30 Days (Synced)",
+        "period": f"{start_date_dt.strftime('%Y/%m/%d')} - {end_date_dt.strftime('%Y/%m/%d')}",
         "days_count": len(insights),
         "summary": {
             "total_impressions": total_impressions,

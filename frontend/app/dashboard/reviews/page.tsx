@@ -38,6 +38,11 @@ export default function ReviewsPage() {
     const [isSyncing, setIsSyncing] = useState(false);
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyText, setReplyText] = useState('');
+    
+    // AI Settings State
+    const [showSettings, setShowSettings] = useState(false);
+    const [globalPrompt, setGlobalPrompt] = useState('');
+    const [isSavingPrompt, setIsSavingPrompt] = useState(false);
 
     const fetchReviews = async () => {
         setIsLoading(true);
@@ -58,6 +63,24 @@ export default function ReviewsPage() {
     };
 
     useEffect(() => {
+        // Fetch Global Prompt
+        const fetchPrompt = async () => {
+            if (isDemoMode) return;
+            try {
+                const token = localStorage.getItem('meo_auth_token');
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts?category=REVIEW_REPLY`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if(res.ok) {
+                    const prompts = await res.json();
+                    if (prompts.length > 0) {
+                        setGlobalPrompt(prompts[0].content);
+                    }
+                }
+            } catch(e) { console.error(e); }
+        };
+        fetchPrompt();
+
         if (isDemoMode) {
              setReviews([
                 { id: '1', reviewer_name: '田中 健太', star_rating: 'FIVE', comment: '落ち着いた雰囲気で、コーヒーもとても美味しかったです。また利用させていただきます。', create_time: new Date().toISOString() },
@@ -76,6 +99,39 @@ export default function ReviewsPage() {
              setIsLoading(false);
         }
     }, [userInfo, isDemoMode]);
+
+    const handleSaveSettings = async () => {
+        setIsSavingPrompt(true);
+        if (isDemoMode) {
+            alert("設定を保存しました (デモ)");
+            setIsSavingPrompt(false);
+            setShowSettings(false);
+            return;
+        }
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({
+                    title: "Global Review Reply Prompt",
+                    content: globalPrompt,
+                    category: "REVIEW_REPLY",
+                    is_locked: false
+                })
+            });
+            alert("設定を保存しました");
+            setShowSettings(false);
+        } catch(e) {
+            console.error(e);
+            alert("保存に失敗しました");
+        } finally {
+            setIsSavingPrompt(false);
+        }
+    };
 
     const handleSync = async () => {
         setIsSyncing(true);
@@ -142,14 +198,58 @@ export default function ReviewsPage() {
                     <h1 className="text-3xl font-bold text-white">クチコミ管理</h1>
                     <p className="text-slate-400 mt-1">お客様からのクチコミを確認・返信します</p>
                 </div>
-                <button 
-                    onClick={handleSync}
-                    disabled={isSyncing}
-                    className="bg-slate-700 text-white border border-slate-600 px-4 py-2 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50"
-                >
-                    {isSyncing ? '同期中...' : '🔄 Googleから同期'}
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => setShowSettings(true)}
+                        className="bg-slate-800 text-slate-300 border border-slate-600 px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors"
+                    >
+                        ⚙️ AI返信設定
+                    </button>
+                    <button 
+                        onClick={handleSync}
+                        disabled={isSyncing}
+                        className="bg-slate-700 text-white border border-slate-600 px-4 py-2 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50"
+                    >
+                        {isSyncing ? '同期中...' : '🔄 Googleから同期'}
+                    </button>
+                </div>
             </div>
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
+                    <div className="bg-slate-900 rounded-2xl w-full max-w-lg p-6 border border-white/10 shadow-2xl">
+                        <h3 className="text-xl font-bold text-white mb-4">AI返信設定</h3>
+                        
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-slate-300 mb-2">共通プロンプト (返信ポリシー)</label>
+                            <p className="text-xs text-slate-500 mb-2">すべてのクチコミ返信生成時に、この指示が適用されます。</p>
+                            <textarea 
+                                value={globalPrompt}
+                                onChange={e => setGlobalPrompt(e.target.value)}
+                                placeholder="例: 「ありがとうございます」から始めて、最後は「またのご来店をお待ちしております」で締めてください。全体的に親しみやすいトーンで。"
+                                className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white h-40 focus:border-aurora-cyan focus:outline-none"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button 
+                                onClick={() => setShowSettings(false)}
+                                className="px-4 py-2 text-slate-400 hover:text-white"
+                            >
+                                キャンセル
+                            </button>
+                            <button 
+                                onClick={handleSaveSettings}
+                                disabled={isSavingPrompt}
+                                className="px-6 py-2 bg-aurora-cyan text-deep-navy font-bold rounded-lg hover:bg-cyan-400 disabled:opacity-50"
+                            >
+                                {isSavingPrompt ? '保存中...' : '保存する'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid gap-4">
                 {isLoading ? (
