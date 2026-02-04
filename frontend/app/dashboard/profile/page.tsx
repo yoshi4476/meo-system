@@ -112,6 +112,13 @@ export default function ProfilePage() {
             if (!res.ok) throw new Error(await res.text());
             
             const data: LocationDetails = await res.json();
+            
+            if (!data) {
+                // Handle null case
+                setDetails({ name: '', title: 'No Data' });
+                return;
+            }
+
             setDetails(data);
             setFormData({
                 title: data.title || '',
