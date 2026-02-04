@@ -342,7 +342,8 @@ export default function ReviewsPage() {
                                                         method: 'POST',
                                                         headers: { 
                                                             'Content-Type': 'application/json',
-                                                            'Authorization': `Bearer ${localStorage.getItem('meo_auth_token')}`
+                                                            'Authorization': `Bearer ${localStorage.getItem('meo_auth_token')}`,
+                                                            'X-Gemini-Api-Key': localStorage.getItem('gemini_api_key') || ''
                                                         },
                                                         body: JSON.stringify({
                                                             review_text: review.comment || "",

@@ -5,8 +5,8 @@ import json
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 class AIClient:
-    def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY")
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         # Using gemini-1.5-flash for speed and efficiency
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 

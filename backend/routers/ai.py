@@ -39,9 +39,13 @@ class PromptUpdate(BaseModel):
     is_locked: Optional[bool] = None
 
 @router.post("/generate/post")
-def generate_post(req: GeneratePostRequest, current_user: models.User = Depends(auth.get_current_user)):
+def generate_post(
+    req: GeneratePostRequest, 
+    current_user: models.User = Depends(auth.get_current_user),
+    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-Api-Key")
+):
     try:
-        client = ai_generator.AIClient()
+        client = ai_generator.AIClient(api_key=x_gemini_api_key)
         content = client.generate_post_content(
             keywords=req.keywords, 
             length_option=req.length_option, 
@@ -95,7 +99,12 @@ def create_or_update_prompt(prompt: PromptCreate, db: Session = Depends(database
         return new_prompt
 
 @router.post("/generate/reply")
-def generate_reply(req: GenerateReplyRequest, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+def generate_reply(
+    req: GenerateReplyRequest, 
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.get_current_user),
+    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-Api-Key")
+):
     try:
         # Check for global prompt
         global_prompt = db.query(models.Prompt).filter(
@@ -105,7 +114,7 @@ def generate_reply(req: GenerateReplyRequest, db: Session = Depends(database.get
         
         custom_instruction = global_prompt.content if global_prompt else None
 
-        client = ai_generator.AIClient()
+        client = ai_generator.AIClient(api_key=x_gemini_api_key)
         content = client.generate_review_reply(
             review_text=req.review_text, 
             reviewer_name=req.reviewer_name, 
@@ -121,7 +130,12 @@ class AnalyzeSentimentRequest(BaseModel):
     store_id: str
 
 @router.post("/analyze/sentiment")
-def analyze_sentiment(req: AnalyzeSentimentRequest, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+def analyze_sentiment(
+    req: AnalyzeSentimentRequest, 
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.get_current_user),
+    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-Api-Key")
+):
     # 1. Fetch reviews for store
     # For MVP, just fetch last 50 reviews from DB
     reviews = db.query(models.Review).filter(models.Review.store_id == req.store_id).order_by(models.Review.create_time.desc()).limit(50).all()
@@ -131,7 +145,7 @@ def analyze_sentiment(req: AnalyzeSentimentRequest, db: Session = Depends(databa
         
     review_data = [{"text": r.comment, "rating": r.star_rating} for r in reviews if r.comment]
 
-    client = ai_generator.AIClient()
+    client = ai_generator.AIClient(api_key=x_gemini_api_key)
     result = client.analyze_sentiment(review_data)
     
     # Future: Save result to Store model or separate InsightAnalysis model
