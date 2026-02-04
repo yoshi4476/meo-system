@@ -38,6 +38,58 @@ export default function PostsPage() {
     const [mood, setMood] = useState('プロフェッショナル');
     const [charCount, setCharCount] = useState(300);
     const [keywordsRegion, setKeywordsRegion] = useState('');
+    
+    // Restoring missing state from previous error
+    const [couponCode, setCouponCode] = useState('');
+    const [offerTerms, setOfferTerms] = useState('');
+    const [keywordsLocked, setKeywordsLocked] = useState(false);
+    const [promptLocked, setPromptLocked] = useState(false);
+    
+    // Editor State
+    const [newPostContent, setNewPostContent] = useState('');
+    const [newPostMedia, setNewPostMedia] = useState('');
+    const [showImageGallery, setShowImageGallery] = useState(false);
+    
+    // Schedule State
+    const [scheduleEnabled, setScheduleEnabled] = useState(false);
+    const [scheduleDate, setScheduleDate] = useState('');
+    const [scheduleTime, setScheduleTime] = useState('12:00');
+    
+    // Generation State
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const fetchPosts = async () => {
+        setIsLoading(true);
+        if (isDemoMode) {
+             setPosts([
+                 { id: '1', content: '【3月の限定メニュー🌸】\n桜と抹茶のモンブランが新登場！\n春の訪れを感じる一品をぜひお楽しみください。\n#カフェ #春スイーツ #抹茶', status: 'PUBLISHED', created_at: new Date().toISOString(), media_url: demoImages[0].url },
+                 { id: '2', content: 'GW期間中の営業時間について📅\n4/29〜5/5は休まず営業いたします。\n通常通り9:00〜20:00でお待ちしております。', status: 'SCHEDULED', scheduled_at: '2025-04-20T09:00:00', created_at: new Date(Date.now() - 86400000).toISOString() },
+                 { id: '3', content: '【スタッフ募集中】\n私たちと一緒に働きませんか？\n未経験者大歓迎！詳細はプロフィールのリンクから。', status: 'PUBLISHED', created_at: new Date(Date.now() - 259200000).toISOString(), media_url: demoImages[3].url },
+                 { id: '4', content: '夏の新作ドリンク試作中...🍹\nお楽しみに！', status: 'DRAFT', created_at: new Date(Date.now() - 604800000).toISOString() },
+                 { id: '5', content: '雨の日限定クーポン☔\n「インスタ見た」でトッピング無料！\n足元にお気をつけてお越しください。', status: 'PUBLISHED', created_at: new Date(Date.now() - 1209600000).toISOString(), media_url: demoImages[2].url },
+             ]);
+             setIsLoading(false);
+             return;
+        }
+
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/?store_id=${userInfo?.store_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setPosts(await res.json());
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPosts();
+    }, [userInfo, isDemoMode]);
 
     const handleGenerate = async () => {
         setIsGenerating(true);
