@@ -43,6 +43,10 @@ export default function PostsPage() {
     // Prompt Locking
     const [lockedPrompt, setLockedPrompt] = useState('');
     const [isPromptLocked, setIsPromptLocked] = useState(false);
+    
+    // Field Locking (Local Storage)
+    const [isKeywordsLocked, setIsKeywordsLocked] = useState(false);
+    const [isRegionLocked, setIsRegionLocked] = useState(false);
 
     // Image Selector
     const [showImageSelector, setShowImageSelector] = useState(false);
@@ -50,8 +54,6 @@ export default function PostsPage() {
     // Restoring missing state from previous error
     const [couponCode, setCouponCode] = useState('');
     const [offerTerms, setOfferTerms] = useState('');
-    const [keywordsLocked, setKeywordsLocked] = useState(false);
-    const [promptLocked, setPromptLocked] = useState(false);
     
     // Editor State
     const [newPostContent, setNewPostContent] = useState('');
@@ -151,6 +153,41 @@ export default function PostsPage() {
             console.error(e);
             alert("保存に失敗しました");
             setIsPromptLocked(!newLockedState); // Revert
+        }
+    };
+
+    // Load Local Locks
+    useEffect(() => {
+        const savedKeywordsLock = localStorage.getItem('post_keywords_locked') === 'true';
+        const savedRegionLock = localStorage.getItem('post_region_locked') === 'true';
+        setIsKeywordsLocked(savedKeywordsLock);
+        setIsRegionLocked(savedRegionLock);
+
+        if(savedKeywordsLock) {
+            const savedK = localStorage.getItem('post_keywords_content');
+            if(savedK) setKeywords(savedK);
+        }
+        if(savedRegionLock) {
+            const savedR = localStorage.getItem('post_region_content');
+            if(savedR) setKeywordsRegion(savedR);
+        }
+    }, []);
+
+    const toggleKeywordsLock = () => {
+        const next = !isKeywordsLocked;
+        setIsKeywordsLocked(next);
+        localStorage.setItem('post_keywords_locked', String(next));
+        if (next) {
+            localStorage.setItem('post_keywords_content', keywords);
+        }
+    };
+
+    const toggleRegionLock = () => {
+        const next = !isRegionLocked;
+        setIsRegionLocked(next);
+        localStorage.setItem('post_region_locked', String(next));
+        if (next) {
+            localStorage.setItem('post_region_content', keywordsRegion);
         }
     };
 
@@ -353,19 +390,37 @@ export default function PostsPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-sm font-medium text-slate-300 block mb-1">キーワード</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="text-sm font-medium text-slate-300">キーワード</label>
+                                            <button 
+                                                onClick={toggleKeywordsLock}
+                                                className={`text-xs ${isKeywordsLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-white'}`}
+                                            >
+                                                {isKeywordsLocked ? '🔒' : '🔓'}
+                                            </button>
+                                        </div>
                                         <input 
                                             value={keywords} onChange={e => setKeywords(e.target.value)}
                                             placeholder="例: 渋谷, カフェ, ランチ"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white"
+                                            disabled={isKeywordsLocked}
+                                            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-white ${isKeywordsLocked ? 'border-aurora-cyan/30 opacity-70 cursor-not-allowed' : 'border-white/10'}`}
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium text-slate-300 block mb-1">地域</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="text-sm font-medium text-slate-300">キーワード地域</label>
+                                            <button 
+                                                onClick={toggleRegionLock}
+                                                className={`text-xs ${isRegionLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-white'}`}
+                                            >
+                                                {isRegionLocked ? '🔒' : '🔓'}
+                                            </button>
+                                        </div>
                                         <input 
                                             value={keywordsRegion} onChange={e => setKeywordsRegion(e.target.value)}
                                             placeholder="例: 東京都渋谷区"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white"
+                                            disabled={isRegionLocked}
+                                            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-white ${isRegionLocked ? 'border-aurora-cyan/30 opacity-70 cursor-not-allowed' : 'border-white/10'}`}
                                         />
                                     </div>
                                 </div>
