@@ -167,8 +167,41 @@ def create_answer(
 
     client = google_api.GBPClient(connection.access_token)
     try:
-        # Question name: accounts/.../locations/.../questions/{id}
-        question_name = f"{store.google_location_id}/questions/{question.google_question_id}"
+        # Resolve v4 location name
+        # We need the Account ID to construct the v4 name: accounts/{accountId}/locations/{locationId}
+        # But we only stored locationId (v1) in store.google_location_id probably.
+        # Let's re-resolve or assume structure if we had account_id stored (we check existing approach).
+        # We will use the same resolution logic as in sync for reliability.
+        
+        v4_location_name = None
+        
+        # Optimistic attempt: if store.google_location_id already looks like accounts/X/locations/Y?
+        if "accounts/" in store.google_location_id:
+             v4_location_name = store.google_location_id
+        else:
+            # Resolve
+            accounts_data = client.list_accounts()
+            if accounts_data.get("accounts"):
+                location_suffix = store.google_location_id.split("/")[-1]
+                for account in accounts_data["accounts"]:
+                    account_name = account["name"]
+                    candidate_name = f"{account_name}/locations/{location_suffix}"
+                    # Try to list answers on the question to verify access/path validity?
+                    # Or just try to create answer? Let's just create.
+                    try:
+                        # Test access by listing questions (lightweight)
+                        client.list_questions(candidate_name)
+                        v4_location_name = candidate_name
+                        break
+                    except:
+                        continue
+        
+        if not v4_location_name:
+             raise HTTPException(status_code=400, detail="Could not resolve Google V4 Location Name")
+
+        # Question name: {v4_location_name}/questions/{question.google_question_id}
+        question_name = f"{v4_location_name}/questions/{question.google_question_id}"
+        
         result = client.create_answer(question_name, answer.text)
         
         # Save local
@@ -185,4 +218,4 @@ def create_answer(
         db.commit()
         return new_answer
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"Failed to post answer: {str(e)}")

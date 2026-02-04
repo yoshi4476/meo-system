@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas, auth
-from routers import gbp, posts, reviews, admin, locations, insights, media, qa, ai, ranks, bulk, reports, sync
+from routers import gbp, posts, reviews, admin, locations, insights, media, qa, ai, ranks, bulk, reports, sync, optimization, messages, qr
 from datetime import timedelta
 
 models.Base.metadata.create_all(bind=engine)
@@ -157,6 +157,9 @@ app.include_router(bulk.router)
 app.include_router(reports.router)
 app.include_router(reports.router)
 app.include_router(sync.router)
+app.include_router(optimization.router)
+app.include_router(messages.router)
+app.include_router(qr.router)
 from routers import debug
 app.include_router(debug.router)
 
