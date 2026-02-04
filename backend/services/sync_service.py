@@ -259,7 +259,14 @@ class GoogleSyncService:
                 if "actions_driving_directions" in values: insight.actions_driving_directions = values["actions_driving_directions"]
                 
             db.commit()
-            return {"status": "success", "message": f"Metrics updated for {len(daily_data)} days", "count": synced_count}
+            
+            # Include debug info about API response structure
+            debug_info = {
+                "api_response_keys": list(metrics_data.keys()) if metrics_data else [],
+                "multiDailyMetricTimeSeries_count": len(metrics_data.get("multiDailyMetricTimeSeries", [])) if metrics_data else 0,
+            }
+            
+            return {"status": "success", "message": f"Metrics updated for {len(daily_data)} days", "count": synced_count, "debug": debug_info}
         except Exception as e:
             error_msg = str(e)
             if hasattr(e, 'response') and e.response is not None:
