@@ -394,8 +394,9 @@ export default function PostsPage() {
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-sm font-medium text-slate-300">キーワード</label>
                                             <button 
-                                                onClick={toggleKeywordsLock}
-                                                className={`text-xs ${isKeywordsLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-white'}`}
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); toggleKeywordsLock(); }}
+                                                className={`text-xs p-1 rounded hover:bg-white/10 ${isKeywordsLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-white'}`}
                                             >
                                                 {isKeywordsLocked ? '🔒' : '🔓'}
                                             </button>
@@ -411,8 +412,9 @@ export default function PostsPage() {
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-sm font-medium text-slate-300">キーワード地域</label>
                                             <button 
-                                                onClick={toggleRegionLock}
-                                                className={`text-xs ${isRegionLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-white'}`}
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); toggleRegionLock(); }}
+                                                className={`text-xs p-1 rounded hover:bg-white/10 ${isRegionLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-white'}`}
                                             >
                                                 {isRegionLocked ? '🔒' : '🔓'}
                                             </button>
