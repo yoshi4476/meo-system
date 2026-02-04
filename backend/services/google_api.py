@@ -266,14 +266,15 @@ class GBPClient:
         url = f"https://businessprofileperformance.googleapis.com/v1/{location_name}:fetchMultiDailyMetricsTimeSeries"
         
         # We'll fetch a standard set of metrics for the dashboard
-        # Note: Only certain metrics are supported by fetchMultiDailyMetricsTimeSeries
-        # CALL_CLICKS and DRIVING_DIRECTIONS are obtained via different API or not available
+        # Note: Some metrics may not be available for all business types
         metrics = [
             "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
             "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
             "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
             "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
             "WEBSITE_CLICKS",
+            "CALL_CLICKS",
+            "BUSINESS_DIRECTION_REQUESTS",
         ]
         
         params = {
@@ -305,3 +306,27 @@ class GBPClient:
         response = requests.get(full_url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
+
+    def fetch_search_keywords(self, location_name: str, year: int, month: int):
+        """
+        Fetch search keywords that users searched to find this business.
+        location_name: "locations/{locationId}"
+        year, month: The month to fetch data for (e.g., 2026, 1 for January 2026)
+        Returns list of {searchKeyword: str, insightsValue: {value: int or threshold: int}}
+        """
+        url = f"https://businessprofileperformance.googleapis.com/v1/{location_name}/searchkeywords/impressions/monthly"
+        
+        params = {
+            "monthlyRange.startMonth.year": year,
+            "monthlyRange.startMonth.month": month,
+            "monthlyRange.endMonth.year": year,
+            "monthlyRange.endMonth.month": month,
+        }
+        
+        query_parts = [f"{k}={v}" for k, v in params.items()]
+        full_url = f"{url}?{'&'.join(query_parts)}"
+        
+        response = requests.get(full_url, headers=self._get_headers())
+        response.raise_for_status()
+        return response.json()
+

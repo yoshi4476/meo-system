@@ -238,6 +238,10 @@ class GoogleSyncService:
                              daily_data[date_str]["views_search"] = daily_data[date_str].get("views_search", 0) + val
                         elif metric_key == "WEBSITE_CLICKS":
                              daily_data[date_str]["actions_website"] = daily_data[date_str].get("actions_website", 0) + val
+                        elif metric_key == "CALL_CLICKS":
+                             daily_data[date_str]["actions_phone"] = daily_data[date_str].get("actions_phone", 0) + val
+                        elif metric_key == "BUSINESS_DIRECTION_REQUESTS":
+                             daily_data[date_str]["actions_driving_directions"] = daily_data[date_str].get("actions_driving_directions", 0) + val
             
             # 2. Upsert to DB
             from datetime import date as dt_date
