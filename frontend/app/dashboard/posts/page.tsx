@@ -232,8 +232,22 @@ export default function PostsPage() {
             if(res.ok) {
                 const data = await res.json();
                 setNewPostContent(data.content);
+            } else {
+                // Determine error message
+                const errText = await res.text();
+                let errMsg = `生成に失敗しました (Status: ${res.status})`;
+                try {
+                    const errJson = JSON.parse(errText);
+                    if(errJson.detail) errMsg += `\n${errJson.detail}`;
+                } catch(e) {
+                    errMsg += `\n${errText.substring(0, 100)}`;
+                }
+                alert(errMsg);
             }
-        } catch(e) { console.error(e); alert("生成エラー"); }
+        } catch(e) { 
+            console.error(e); 
+            alert(`ネットワークエラーまたはサーバーエラー:\n${e}`); 
+        }
         finally { setIsGenerating(false); }
     };
 

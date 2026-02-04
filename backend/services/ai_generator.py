@@ -39,11 +39,16 @@ class AIClient:
             }
         }
         
-        response = requests.post(url, headers=headers, json=data)
+        print(f"DEBUG: Calling Gemini API with Key starting: {self.api_key[:4]}...")
+        try:
+             response = requests.post(url, headers=headers, json=data)
+        except Exception as e:
+             print(f"Error calling Gemini API: {e}")
+             return f"生成エラー: 通信に失敗しました ({str(e)})"
         
         if response.status_code != 200:
             print(f"Gemini API Error: {response.text}")
-            response.raise_for_status()
+            return f"生成エラー (Google): {response.text}"
         
         result = response.json()
         try:
