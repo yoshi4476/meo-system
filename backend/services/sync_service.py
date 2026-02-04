@@ -343,7 +343,7 @@ class GoogleSyncService:
                         store_id=store_id,
                         google_question_id=q_id,
                         text=q_data.get("text"),
-                        author_name=q_data.get("author", {}).get("displayName", "Anonymous"),
+                        authore_name=q_data.get("author", {}).get("displayName", "Anonymous"),
                         upvote_count=q_data.get("upvoteCount", 0),
                         create_time=datetime.utcnow() # Approx
                     )
