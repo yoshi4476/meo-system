@@ -206,34 +206,38 @@ class GoogleSyncService:
             # 1. Organize data by Date
             daily_data = {} # "YYYY-MM-DD": { queries_direct: 0, ... }
             
-            for metric_series in metrics_data.get("multiDailyMetricTimeSeries", []):
-                metric_key = metric_series.get("dailyMetric") # e.g. BUSINESS_IMPRESSIONS_DESKTOP_MAPS
-                
-                for day_val in metric_series.get("dailyMetricTimeSeries", []):
-                    d = day_val.get("date")
-                    if not d or not d.get("year"):
-                        continue  # Skip if date is None or incomplete
-                    date_str = f"{d['year']}-{d['month']}-{d['day']}"
-                    val = int(day_val.get("value", 0))
+            # Actual API structure:
+            # multiDailyMetricTimeSeries[0].dailyMetricTimeSeries[].dailyMetric
+            # multiDailyMetricTimeSeries[0].dailyMetricTimeSeries[].timeSeries.datedValues[].date/value
+            
+            for series_group in metrics_data.get("multiDailyMetricTimeSeries", []):
+                for metric_series in series_group.get("dailyMetricTimeSeries", []):
+                    metric_key = metric_series.get("dailyMetric") # e.g. BUSINESS_IMPRESSIONS_DESKTOP_MAPS
                     
-                    if date_str not in daily_data:
-                        daily_data[date_str] = {}
+                    time_series = metric_series.get("timeSeries", {})
+                    dated_values = time_series.get("datedValues", [])
+                    
+                    for day_val in dated_values:
+                        d = day_val.get("date")
+                        if not d or not d.get("year"):
+                            continue  # Skip if date is None or incomplete
+                        date_str = f"{d['year']}-{d['month']:02d}-{d['day']:02d}"
+                        val = int(day_val.get("value", 0))
                         
-                    # Map API Metric to Model Field
-                    if metric_key == "BUSINESS_IMPRESSIONS_DESKTOP_MAPS":
-                        daily_data[date_str]["views_maps"] = daily_data[date_str].get("views_maps", 0) + val
-                    elif metric_key == "BUSINESS_IMPRESSIONS_MOBILE_MAPS":
-                         daily_data[date_str]["views_maps"] = daily_data[date_str].get("views_maps", 0) + val
-                    elif metric_key == "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH":
-                         daily_data[date_str]["views_search"] = daily_data[date_str].get("views_search", 0) + val
-                    elif metric_key == "BUSINESS_IMPRESSIONS_MOBILE_SEARCH":
-                         daily_data[date_str]["views_search"] = daily_data[date_str].get("views_search", 0) + val
-                    elif metric_key == "WEBSITE_CLICKS":
-                         daily_data[date_str]["actions_website"] = val
-                    elif metric_key == "CALL_CLICKS":
-                         daily_data[date_str]["actions_phone"] = val
-                    elif metric_key == "DRIVING_DIRECTIONS_CLICKS":
-                         daily_data[date_str]["actions_driving_directions"] = val
+                        if date_str not in daily_data:
+                            daily_data[date_str] = {}
+                            
+                        # Map API Metric to Model Field
+                        if metric_key == "BUSINESS_IMPRESSIONS_DESKTOP_MAPS":
+                            daily_data[date_str]["views_maps"] = daily_data[date_str].get("views_maps", 0) + val
+                        elif metric_key == "BUSINESS_IMPRESSIONS_MOBILE_MAPS":
+                             daily_data[date_str]["views_maps"] = daily_data[date_str].get("views_maps", 0) + val
+                        elif metric_key == "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH":
+                             daily_data[date_str]["views_search"] = daily_data[date_str].get("views_search", 0) + val
+                        elif metric_key == "BUSINESS_IMPRESSIONS_MOBILE_SEARCH":
+                             daily_data[date_str]["views_search"] = daily_data[date_str].get("views_search", 0) + val
+                        elif metric_key == "WEBSITE_CLICKS":
+                             daily_data[date_str]["actions_website"] = daily_data[date_str].get("actions_website", 0) + val
             
             # 2. Upsert to DB
             from datetime import date as dt_date
