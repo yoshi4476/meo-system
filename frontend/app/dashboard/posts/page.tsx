@@ -69,7 +69,7 @@ export default function PostsPage() {
                 },
                 body: JSON.stringify({ 
                     keywords: keywords || topic, 
-                    length_option: 'MEDIUM', # Use char_count effectively
+                    length_option: 'MEDIUM', // Use char_count effectively
                     char_count: charCount,
                     tone: mood === 'プロフェッショナル' ? 'professional' : 'friendly',
                     keywords_region: keywordsRegion,
