@@ -33,17 +33,27 @@ class AIClient:
         result = response.json()
         return result["choices"][0]["message"]["content"]
 
-    def generate_post_content(self, keywords: str, length_option: str, tone: str = "friendly"):
-        # length_option: "SHORT" (100-200 chars), "MEDIUM" (300-500 chars), "LONG" (800+ chars)
+    def generate_post_content(self, keywords: str, length_option: str, tone: str = "friendly", custom_prompt: str = None, keywords_region: str = None, char_count: int = None):
+        # length_option: "SHORT", "MEDIUM", "LONG" or specific char_count
         
         length_guide = ""
-        if length_option == "SHORT":
+        if char_count:
+             length_guide = f"{char_count}文字前後"
+        elif length_option == "SHORT":
             length_guide = "100〜200文字程度で簡潔に"
         elif length_option == "MEDIUM":
             length_guide = "300〜500文字程度で標準的な長さに"
         elif length_option == "LONG":
             length_guide = "800文字以上で詳細に"
             
+        region_instruction = ""
+        if keywords_region:
+            region_instruction = f"ターゲット地域: {keywords_region} (地域名を自然に盛り込んでください)"
+
+        additional_instruction = ""
+        if custom_prompt:
+             additional_instruction = f"追加指示: {custom_prompt}"
+
         system_prompt = f"""
 あなたはGoogleビジネスプロフィールの投稿作成のエキスパートです。
 以下の条件に従って、集客効果の高い投稿文を作成してください。
@@ -52,7 +62,10 @@ class AIClient:
 """
         user_prompt = f"""
 キーワード: {keywords}
+{region_instruction}
 文字数目安: {length_guide}
+
+{additional_instruction}
 
 投稿文を作成してください。ハッシュタグも含めてください。 
 """

@@ -16,6 +16,9 @@ class GeneratePostRequest(BaseModel):
     keywords: str
     length_option: str # SHORT, MEDIUM, LONG
     tone: str = "friendly"
+    char_count: Optional[int] = None
+    custom_prompt: Optional[str] = None
+    keywords_region: Optional[str] = None
     # Future: reuse_photo_id
 
 class GenerateReplyRequest(BaseModel):
@@ -39,7 +42,14 @@ class PromptUpdate(BaseModel):
 def generate_post(req: GeneratePostRequest, current_user: models.User = Depends(auth.get_current_user)):
     try:
         client = ai_generator.AIClient()
-        content = client.generate_post_content(req.keywords, req.length_option, req.tone)
+        content = client.generate_post_content(
+            keywords=req.keywords, 
+            length_option=req.length_option, 
+            tone=req.tone,
+            custom_prompt=req.custom_prompt,
+            keywords_region=req.keywords_region,
+            char_count=req.char_count
+        )
         return {"content": content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

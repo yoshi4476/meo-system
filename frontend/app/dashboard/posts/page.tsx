@@ -37,56 +37,7 @@ export default function PostsPage() {
     const [prompt, setPrompt] = useState('');
     const [mood, setMood] = useState('プロフェッショナル');
     const [charCount, setCharCount] = useState(300);
-    const [couponCode, setCouponCode] = useState('');
-    const [offerTerms, setOfferTerms] = useState('');
-    const [keywordsLocked, setKeywordsLocked] = useState(false);
-    const [promptLocked, setPromptLocked] = useState(false);
-    
-    // Editor State
-    const [newPostContent, setNewPostContent] = useState('');
-    const [newPostMedia, setNewPostMedia] = useState('');
-    const [showImageGallery, setShowImageGallery] = useState(false);
-    
-    // Schedule State
-    const [scheduleEnabled, setScheduleEnabled] = useState(false);
-    const [scheduleDate, setScheduleDate] = useState('');
-    const [scheduleTime, setScheduleTime] = useState('12:00');
-    
-    // Generation State
-    const [isGenerating, setIsGenerating] = useState(false);
-
-    const fetchPosts = async () => {
-        setIsLoading(true);
-        if (isDemoMode) {
-             setPosts([
-                 { id: '1', content: '【3月の限定メニュー🌸】\n桜と抹茶のモンブランが新登場！\n春の訪れを感じる一品をぜひお楽しみください。\n#カフェ #春スイーツ #抹茶', status: 'PUBLISHED', created_at: new Date().toISOString(), media_url: demoImages[0].url },
-                 { id: '2', content: 'GW期間中の営業時間について📅\n4/29〜5/5は休まず営業いたします。\n通常通り9:00〜20:00でお待ちしております。', status: 'SCHEDULED', scheduled_at: '2025-04-20T09:00:00', created_at: new Date(Date.now() - 86400000).toISOString() },
-                 { id: '3', content: '【スタッフ募集中】\n私たちと一緒に働きませんか？\n未経験者大歓迎！詳細はプロフィールのリンクから。', status: 'PUBLISHED', created_at: new Date(Date.now() - 259200000).toISOString(), media_url: demoImages[3].url },
-                 { id: '4', content: '夏の新作ドリンク試作中...🍹\nお楽しみに！', status: 'DRAFT', created_at: new Date(Date.now() - 604800000).toISOString() },
-                 { id: '5', content: '雨の日限定クーポン☔\n「インスタ見た」でトッピング無料！\n足元にお気をつけてお越しください。', status: 'PUBLISHED', created_at: new Date(Date.now() - 1209600000).toISOString(), media_url: demoImages[2].url },
-             ]);
-             setIsLoading(false);
-             return;
-        }
-
-        try {
-            const token = localStorage.getItem('meo_auth_token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/?store_id=${userInfo?.store_id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setPosts(await res.json());
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchPosts();
-    }, [userInfo, isDemoMode]);
+    const [keywordsRegion, setKeywordsRegion] = useState('');
 
     const handleGenerate = async () => {
         setIsGenerating(true);
@@ -97,10 +48,12 @@ export default function PostsPage() {
             let content = "";
             const storeName = "MEO Cafe 渋谷店";
             
+            const regionStr = keywordsRegion ? `(${keywordsRegion}エリア)` : "";
+            
             if (postType === 'offer') {
-                content = `【限定特典】${topic || '特別クーポン配布中！'}\n\n${storeName}から皆様へプレゼント🎁\n\n${keywords.split(',').map(k => `#${k.trim()}`).join(' ')}\n\n${couponCode ? `クーポンコード: ${couponCode}\n` : ''}${offerTerms ? `利用条件: ${offerTerms}\n` : ''}\n皆様のご来店をお待ちしております！`;
+                content = `【限定特典】${topic || '特別クーポン配布中！'}\n\n${storeName}${regionStr}から皆様へプレゼント🎁\n\n${keywords.split(',').map(k => `#${k.trim()}`).join(' ')}\n\n${couponCode ? `クーポンコード: ${couponCode}\n` : ''}${offerTerms ? `利用条件: ${offerTerms}\n` : ''}\n皆様のご来店をお待ちしております！`;
             } else {
-                content = `【${mood}な${postType === 'event' ? 'イベント' : 'お知らせ'}】\n${topic || '季節のご挨拶'}\n\nいつも${storeName}をご利用ありがとうございます。\n${keywords.split(',').map(k => `#${k.trim()}`).join(' ')}\n\nぜひお立ち寄りください！`;
+                content = `【${mood}な${postType === 'event' ? 'イベント' : 'お知らせ'}】\n${topic || '季節のご挨拶'}\n\nいつも${storeName}をご利用ありがとうございます。\n${keywords.split(',').map(k => `#${k.trim()}`).join(' ')}\n\n${prompt ? `(${prompt}を反映)\n` : ''}ぜひお立ち寄りください！`;
             }
             setNewPostContent(content);
             setIsGenerating(false);
@@ -116,8 +69,11 @@ export default function PostsPage() {
                 },
                 body: JSON.stringify({ 
                     keywords: keywords || topic, 
-                    length_option: charCount > 400 ? 'LONG' : 'MEDIUM', 
-                    tone: mood === 'プロフェッショナル' ? 'professional' : 'friendly' 
+                    length_option: 'MEDIUM', # Use char_count effectively
+                    char_count: charCount,
+                    tone: mood === 'プロフェッショナル' ? 'professional' : 'friendly',
+                    keywords_region: keywordsRegion,
+                    custom_prompt: prompt
                 })
             });
             if(res.ok) {
@@ -290,6 +246,17 @@ export default function PostsPage() {
                                         />
                                     </div>
                                     <div>
+                                        <label className="text-sm font-medium text-slate-300 block mb-1">地域</label>
+                                        <input 
+                                            value={keywordsRegion} onChange={e => setKeywordsRegion(e.target.value)}
+                                            placeholder="例: 東京都渋谷区"
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
                                         <label className="text-sm font-medium text-slate-300 block mb-1">トーン</label>
                                         <select 
                                             value={mood} onChange={e => setMood(e.target.value)}
@@ -300,6 +267,27 @@ export default function PostsPage() {
                                             <option>エキサイティング</option>
                                         </select>
                                     </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-slate-300 block mb-1">文字数目安</label>
+                                        <select 
+                                            value={charCount} onChange={e => setCharCount(Number(e.target.value))}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white"
+                                        >
+                                            <option value={150}>短め (150文字)</option>
+                                            <option value={300}>標準 (300文字)</option>
+                                            <option value={600}>長め (600文字)</option>
+                                            <option value={1000}>詳細 (1000文字)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-slate-300 block mb-1">プロンプト (自由指示)</label>
+                                    <textarea 
+                                        value={prompt} onChange={e => setPrompt(e.target.value)}
+                                        placeholder="例: 絵文字を多めに使って、親しみやすい感じで。"
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white h-24"
+                                    />
                                 </div>
                             </div>
                             
@@ -359,9 +347,21 @@ export default function PostsPage() {
                                     <span className="text-slate-300 text-sm">予約投稿する</span>
                                 </label>
                                 {scheduleEnabled && (
-                                    <div className="flex gap-2">
-                                        <input type="date" value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm" />
-                                        <input type="time" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)} className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm" />
+                                    <div className="flex gap-2 items-center">
+                                       {/* Changed icons to be visible: using css-built-in color-scheme or simple filters not easy on input[type=date]. 
+                                           Best way for raw HTML inputs is `color-scheme: dark`. */}
+                                        <input 
+                                            type="date" 
+                                            value={scheduleDate} 
+                                            onChange={e=>setScheduleDate(e.target.value)} 
+                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm [color-scheme:dark]" 
+                                        />
+                                        <input 
+                                            type="time" 
+                                            value={scheduleTime} 
+                                            onChange={e=>setScheduleTime(e.target.value)} 
+                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm [color-scheme:dark]" 
+                                        />
                                     </div>
                                 )}
                             </div>
