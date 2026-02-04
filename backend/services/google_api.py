@@ -266,14 +266,14 @@ class GBPClient:
         url = f"https://businessprofileperformance.googleapis.com/v1/{location_name}:fetchMultiDailyMetricsTimeSeries"
         
         # We'll fetch a standard set of metrics for the dashboard
+        # Note: Only certain metrics are supported by fetchMultiDailyMetricsTimeSeries
+        # CALL_CLICKS and DRIVING_DIRECTIONS are obtained via different API or not available
         metrics = [
             "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
             "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
             "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
             "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
-            "WEBSITE_CLICKS", 
-            "CALL_CLICKS",
-            "DRIVING_DIRECTIONS_CLICKS"
+            "WEBSITE_CLICKS",
         ]
         
         params = {
