@@ -44,6 +44,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Check for saved demo preference on mount
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const saved = localStorage.getItem('is_demo_mode');
     if (saved === 'true') {
         setIsDemoMode(true);
@@ -51,6 +52,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchUser = useCallback(async () => {
+    // Guard: Only access localStorage on client side
+    if (typeof window === 'undefined') {
+        return;
+    }
+
     // If in Demo Mode, return mock user immediately
     if (localStorage.getItem('is_demo_mode') === 'true') {
         setUserInfo({
@@ -118,6 +124,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           return;
       }
 
+      if (typeof window === 'undefined') return;
+      
       const token = localStorage.getItem('meo_auth_token');
       if (!token) {
           alert("認証トークンが見つかりません。再度ログインしてください。");
