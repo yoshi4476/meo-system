@@ -41,10 +41,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Check for saved demo preference on mount
+  // Mark as mounted after first render (client-side only)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    setMounted(true);
+    // Check for saved demo preference on mount
     const saved = localStorage.getItem('is_demo_mode');
     if (saved === 'true') {
         setIsDemoMode(true);
@@ -209,6 +211,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
   };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <DashboardContext.Provider value={{ userInfo: null, isLoading: true, error: null, refreshUser: async () => {}, isDemoMode: false, toggleDemoMode: () => {}, syncData: async () => {} }}>
+        {children}
+      </DashboardContext.Provider>
+    );
+  }
 
   return (
     <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser, isDemoMode, toggleDemoMode, syncData }}>
