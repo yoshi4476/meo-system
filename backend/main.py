@@ -12,7 +12,7 @@ models.Base.metadata.create_all(bind=engine)
 # Run DB Migration (Add store_id if missing)
 try:
     import migrate_db
-    print("DEBUG: Running DB migration... Version 1.0.2")
+    print("DEBUG: Running DB migration... Version 1.0.3 (Tracer)")
     migrate_db.migrate()
 except Exception as e:
     print(f"WARNING: DB Migration failed: {e}")

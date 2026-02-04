@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header as APIHeader
 from sqlalchemy.orm import Session
 import models, database, auth
 from services import ai_generator
@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 import uuid
+
+print("DEBUG: Loading ai.py router...")
 
 router = APIRouter(
     prefix="/ai",
@@ -42,7 +44,7 @@ class PromptUpdate(BaseModel):
 def generate_post(
     req: GeneratePostRequest, 
     current_user: models.User = Depends(auth.get_current_user),
-    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-Api-Key")
+    x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
 ):
     try:
         client = ai_generator.AIClient(api_key=x_gemini_api_key)
@@ -103,7 +105,7 @@ def generate_reply(
     req: GenerateReplyRequest, 
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user),
-    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-Api-Key")
+    x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
 ):
     try:
         # Check for global prompt
@@ -134,7 +136,7 @@ def analyze_sentiment(
     req: AnalyzeSentimentRequest, 
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user),
-    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-Api-Key")
+    x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
 ):
     # 1. Fetch reviews for store
     # For MVP, just fetch last 50 reviews from DB
