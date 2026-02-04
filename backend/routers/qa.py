@@ -40,8 +40,40 @@ def sync_qa_from_google(store_id: str, db: Session = Depends(database.get_db), c
     
     client = google_api.GBPClient(connection.access_token)
     try:
-        # 1. Sync Questions
-        questions_resp = client.list_questions(store.google_location_id)
+        # Resolve v4 location name (accounts/{accountId}/locations/{locationId})
+        # Q&A API requires v4 format, but store.google_location_id is v1 format (locations/XXX)
+        v4_location_name = None
+        resolve_error = None
+        
+        try:
+            accounts_data = client.list_accounts()
+            if accounts_data.get("accounts"):
+                location_suffix = store.google_location_id.split("/")[-1]
+                
+                for account in accounts_data["accounts"]:
+                    account_name = account["name"]
+                    candidate_name = f"{account_name}/locations/{location_suffix}"
+                    
+                    # Test if this account has access to the location
+                    try:
+                        client.list_reviews(candidate_name)
+                        v4_location_name = candidate_name
+                        break
+                    except:
+                        continue
+                
+                if not v4_location_name:
+                    resolve_error = "Location not found in connected Google Accounts"
+            else:
+                resolve_error = "No Google Accounts found"
+        except Exception as e:
+            resolve_error = f"Account resolution failed: {str(e)}"
+        
+        if not v4_location_name:
+            raise HTTPException(status_code=400, detail=resolve_error or "Could not resolve Google Account")
+        
+        # 1. Sync Questions using v4 format
+        questions_resp = client.list_questions(v4_location_name)
         synced_q_count = 0
         
         for q_data in questions_resp.get("questions", []):

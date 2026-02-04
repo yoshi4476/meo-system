@@ -88,7 +88,24 @@ def get_insights(store_id: str, db: Session = Depends(database.get_db), current_
         if v:
             metrics.append({"dailyMetric": k, "dailyMetricTimeSeries": v})
 
+    # Calculate summary statistics
+    total_maps = sum(i.views_maps or 0 for i in insights)
+    total_search = sum(i.views_search or 0 for i in insights)
+    total_website = sum(i.actions_website or 0 for i in insights)
+    total_phone = sum(i.actions_phone or 0 for i in insights)
+    total_directions = sum(i.actions_driving_directions or 0 for i in insights)
+    
     return {
         "period": "Last 30 Days (Synced)",
+        "days_count": len(insights),
+        "summary": {
+            "total_impressions": total_maps + total_search,
+            "map_views": total_maps,
+            "search_views": total_search,
+            "website_clicks": total_website,
+            "phone_calls": total_phone,
+            "direction_requests": total_directions,
+            "total_actions": total_website + total_phone + total_directions,
+        },
         "metrics": metrics
     }
