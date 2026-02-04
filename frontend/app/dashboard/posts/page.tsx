@@ -67,6 +67,11 @@ export default function PostsPage() {
     
     // Generation State
     const [isGenerating, setIsGenerating] = useState(false);
+    
+    // API Key Settings
+    const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+    const [apiKey, setApiKey] = useState('');
+    const [hasApiKey, setHasApiKey] = useState(false);
 
     const fetchPosts = async () => {
         setIsLoading(true);
@@ -156,7 +161,7 @@ export default function PostsPage() {
         }
     };
 
-    // Load Local Locks
+    // Load Local Locks and API Key
     useEffect(() => {
         const savedKeywordsLock = localStorage.getItem('post_keywords_locked') === 'true';
         const savedRegionLock = localStorage.getItem('post_region_locked') === 'true';
@@ -171,23 +176,38 @@ export default function PostsPage() {
             const savedR = localStorage.getItem('post_region_content');
             if(savedR) setKeywordsRegion(savedR);
         }
+        
+        // Load API Key
+        const savedApiKey = localStorage.getItem('gemini_api_key');
+        if (savedApiKey) {
+            setApiKey(savedApiKey);
+            setHasApiKey(true);
+        }
     }, []);
 
-    const toggleKeywordsLock = () => {
-        const next = !isKeywordsLocked;
-        setIsKeywordsLocked(next);
-        localStorage.setItem('post_keywords_locked', String(next));
-        if (next) {
+    const handleKeywordsLockChange = (value: string) => {
+        const isLocked = value === 'locked';
+        setIsKeywordsLocked(isLocked);
+        localStorage.setItem('post_keywords_locked', String(isLocked));
+        if (isLocked) {
             localStorage.setItem('post_keywords_content', keywords);
         }
     };
 
-    const toggleRegionLock = () => {
-        const next = !isRegionLocked;
-        setIsRegionLocked(next);
-        localStorage.setItem('post_region_locked', String(next));
-        if (next) {
+    const handleRegionLockChange = (value: string) => {
+        const isLocked = value === 'locked';
+        setIsRegionLocked(isLocked);
+        localStorage.setItem('post_region_locked', String(isLocked));
+        if (isLocked) {
             localStorage.setItem('post_region_content', keywordsRegion);
+        }
+    };
+    
+    const handleSaveApiKey = () => {
+        if (apiKey.trim()) {
+            localStorage.setItem('gemini_api_key', apiKey.trim());
+            setHasApiKey(true);
+            setShowApiKeyModal(false);
         }
     };
 
@@ -407,38 +427,40 @@ export default function PostsPage() {
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-sm font-medium text-slate-300">キーワード</label>
-                                            <button 
-                                                type="button"
-                                                onClick={(e) => { e.preventDefault(); toggleKeywordsLock(); }}
-                                                className={`text-xs p-1 rounded hover:bg-white/10 ${isKeywordsLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-white'}`}
+                                            <select
+                                                value={isKeywordsLocked ? 'locked' : 'unlocked'}
+                                                onChange={(e) => handleKeywordsLockChange(e.target.value)}
+                                                className="text-xs bg-slate-800 border border-white/10 rounded px-2 py-1 text-slate-300"
                                             >
-                                                {isKeywordsLocked ? '🔒' : '🔓'}
-                                            </button>
+                                                <option value="unlocked">🔓 固定しない</option>
+                                                <option value="locked">🔒 固定する</option>
+                                            </select>
                                         </div>
                                         <input 
                                             value={keywords} onChange={e => setKeywords(e.target.value)}
                                             placeholder="例: 渋谷, カフェ, ランチ"
-                                            disabled={isKeywordsLocked}
-                                            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-white ${isKeywordsLocked ? 'border-aurora-cyan/30 opacity-70 cursor-not-allowed' : 'border-white/10'}`}
+                                            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-white ${isKeywordsLocked ? 'border-aurora-cyan/30 ring-1 ring-aurora-cyan/20' : 'border-white/10'}`}
                                         />
+                                        {isKeywordsLocked && <p className="text-xs text-aurora-cyan mt-1">✓ 固定中: 次回も使用されます</p>}
                                     </div>
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-sm font-medium text-slate-300">キーワード地域</label>
-                                            <button 
-                                                type="button"
-                                                onClick={(e) => { e.preventDefault(); toggleRegionLock(); }}
-                                                className={`text-xs p-1 rounded hover:bg-white/10 ${isRegionLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-white'}`}
+                                            <select
+                                                value={isRegionLocked ? 'locked' : 'unlocked'}
+                                                onChange={(e) => handleRegionLockChange(e.target.value)}
+                                                className="text-xs bg-slate-800 border border-white/10 rounded px-2 py-1 text-slate-300"
                                             >
-                                                {isRegionLocked ? '🔒' : '🔓'}
-                                            </button>
+                                                <option value="unlocked">🔓 固定しない</option>
+                                                <option value="locked">🔒 固定する</option>
+                                            </select>
                                         </div>
                                         <input 
                                             value={keywordsRegion} onChange={e => setKeywordsRegion(e.target.value)}
                                             placeholder="例: 東京都渋谷区"
-                                            disabled={isRegionLocked}
-                                            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-white ${isRegionLocked ? 'border-aurora-cyan/30 opacity-70 cursor-not-allowed' : 'border-white/10'}`}
+                                            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-white ${isRegionLocked ? 'border-aurora-cyan/30 ring-1 ring-aurora-cyan/20' : 'border-white/10'}`}
                                         />
+                                        {isRegionLocked && <p className="text-xs text-aurora-cyan mt-1">✓ 固定中: 次回も使用されます</p>}
                                     </div>
                                 </div>
                                 
@@ -487,13 +509,38 @@ export default function PostsPage() {
                                 </div>
                             </div>
                             
-                            <button 
-                                onClick={handleGenerate}
-                                disabled={isGenerating}
-                                className="w-full py-3 bg-linear-to-r from-aurora-purple to-pink-600 text-white font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-                            >
-                                {isGenerating ? 'AIが生成中...' : '✨ AIで文章を生成'}
-                            </button>
+                            {/* API Key Status & Generate Button */}
+                            <div className="space-y-3">
+                                {!isDemoMode && (
+                                    <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <span className={hasApiKey ? 'text-green-400' : 'text-yellow-400'}>
+                                                {hasApiKey ? '✓' : '⚠'}
+                                            </span>
+                                            <span className="text-sm text-slate-300">
+                                                {hasApiKey ? 'Google AI Studio APIキー設定済み' : 'APIキーが未設定です'}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowApiKeyModal(true)}
+                                            className="text-xs px-3 py-1 bg-slate-700 text-slate-300 rounded hover:bg-slate-600 transition-colors"
+                                        >
+                                            {hasApiKey ? '変更' : '設定'}
+                                        </button>
+                                    </div>
+                                )}
+                                
+                                <button 
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || (!isDemoMode && !hasApiKey)}
+                                    className="w-full py-3 bg-linear-to-r from-aurora-purple to-pink-600 text-white font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isGenerating ? 'AIが生成中...' : '✨ AIで文章を生成'}
+                                </button>
+                                {!isDemoMode && !hasApiKey && (
+                                    <p className="text-xs text-yellow-400 text-center">AI生成にはGoogle AI StudioのAPIキーが必要です</p>
+                                )}
+                            </div>
                         </div>
                         
                         {/* Editor */}
@@ -615,6 +662,43 @@ export default function PostsPage() {
                                  <button onClick={() => setShowImageGallery(false)} className="mt-6 w-full py-2 bg-slate-800 text-white rounded">閉じる</button>
                              </div>
                          </div>
+                    )}
+                    
+                    {/* API Key Modal */}
+                    {showApiKeyModal && (
+                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                            <div className="bg-slate-900 p-6 rounded-xl max-w-md w-full space-y-4">
+                                <h3 className="text-xl font-bold text-white">🔑 Google AI Studio APIキー設定</h3>
+                                <p className="text-sm text-slate-400">
+                                    AI文章生成にはGoogle AI StudioのAPIキーが必要です。<br/>
+                                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-aurora-cyan hover:underline">
+                                        ここから無料で取得 →
+                                    </a>
+                                </p>
+                                <input 
+                                    type="password"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    placeholder="APIキーを入力..."
+                                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white"
+                                />
+                                <div className="flex gap-3">
+                                    <button 
+                                        onClick={() => setShowApiKeyModal(false)} 
+                                        className="flex-1 py-2 text-slate-400 hover:text-white"
+                                    >
+                                        キャンセル
+                                    </button>
+                                    <button 
+                                        onClick={handleSaveApiKey}
+                                        disabled={!apiKey.trim()}
+                                        className="flex-1 py-2 bg-aurora-cyan text-deep-navy font-bold rounded-lg hover:bg-cyan-400 disabled:opacity-50"
+                                    >
+                                        保存
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </div>
             )}
