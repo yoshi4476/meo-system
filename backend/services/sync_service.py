@@ -261,9 +261,12 @@ class GoogleSyncService:
             db.commit()
             
             # Include debug info about API response structure
+            first_series = metrics_data.get("multiDailyMetricTimeSeries", [{}])[0] if metrics_data else {}
             debug_info = {
                 "api_response_keys": list(metrics_data.keys()) if metrics_data else [],
                 "multiDailyMetricTimeSeries_count": len(metrics_data.get("multiDailyMetricTimeSeries", [])) if metrics_data else 0,
+                "first_series_keys": list(first_series.keys()) if first_series else [],
+                "first_series_sample": str(first_series)[:500] if first_series else "empty",
             }
             
             return {"status": "success", "message": f"Metrics updated for {len(daily_data)} days", "count": synced_count, "debug": debug_info}
