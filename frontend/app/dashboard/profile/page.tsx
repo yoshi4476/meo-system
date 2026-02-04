@@ -55,6 +55,7 @@ export default function ProfilePage() {
         description: '',
         websiteUri: '',
         primaryPhone: '',
+        rawCategoryId: '',
     });
 
     useEffect(() => {
@@ -99,6 +100,7 @@ export default function ProfilePage() {
                     description: '渋谷駅徒歩5分の落ち着いたカフェです。自家焙煎のコーヒーと手作りケーキが自慢です。Wi-Fi完備でリモートワークにも最適。',
                     websiteUri: 'https://example.com',
                     primaryPhone: '03-1234-5678',
+                    rawCategoryId: 'gcid:cafe',
                 });
                 return;
             }
@@ -116,6 +118,7 @@ export default function ProfilePage() {
                 description: data.profile?.description || '',
                 websiteUri: data.websiteUri || '',
                 primaryPhone: data.phoneNumbers?.primaryPhone || '',
+                rawCategoryId: data.categories?.primaryCategory?.categoryId || '',
             });
         } catch (e: any) {
             setError(e.message);
@@ -147,6 +150,31 @@ export default function ProfilePage() {
                 websiteUri: formData.websiteUri,
                 phoneNumbers: { primaryPhone: formData.primaryPhone }
             };
+
+            // Format category
+            if (formData.rawCategoryId) {
+                // Ensure prefix if user forgot
+                let catId = formData.rawCategoryId.trim();
+                // Google format: categories/gcid:xxx or just gcid:xxx, but API often wants resource name or just id.
+                // The API spec for categories says "categories/{categoryId}".
+                // But update mask for Location says "categories.primaryCategory.name".
+                // backend locations.py passes dict directly.
+                // We'll construct the dict as expected by Google: { primaryCategory: { name: "categories/gcid:..." } }
+                
+                if (!catId.startsWith('categories/')) {
+                     if (!catId.startsWith('gcid:')) {
+                         catId = `gcid:${catId}`;
+                     }
+                     catId = `categories/${catId}`;
+                }
+                
+                body.categories = {
+                    primaryCategory: {
+                        name: catId
+                    }
+                };
+            }
+
 
             // Add description if changed (Profile object)
             // Note: The backend update logic currently handles flat fields. 
@@ -270,18 +298,22 @@ export default function ProfilePage() {
                                 <p className="text-xs text-slate-500">※Google検索やマップに表示される説明文です (750文字以内)</p>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm text-slate-400">カテゴリ</label>
-                                <div className="p-3 bg-slate-900/30 rounded border border-white/5 text-slate-300">
-                                    <span className="font-bold text-white">{details?.categories?.primaryCategory?.displayName}</span>
-                                    {details?.categories?.additionalCategories && (
-                                        <div className="mt-2 flex flex-wrap gap-2">
-                                            {details.categories.additionalCategories.map((c, i) => (
-                                                <span key={i} className="text-xs bg-slate-700 px-2 py-1 rounded">{c.displayName}</span>
-                                            ))}
-                                        </div>
-                                    )}
+                                <label className="text-sm text-slate-400">カテゴリ (Category ID)</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        value={formData.rawCategoryId}
+                                        onChange={(e) => setFormData({...formData, rawCategoryId: e.target.value})}
+                                        placeholder="gcid:cafe"
+                                        className="flex-1 bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan font-mono text-sm"
+                                    />
+                                    <div className="p-2 bg-slate-800 rounded text-xs text-slate-400 flex items-center">
+                                       現在: {details?.categories?.primaryCategory?.displayName}
+                                    </div>
                                 </div>
-                                <p className="text-xs text-slate-500">※カテゴリの変更はGoogleビジネスプロフィールで直接行ってください</p>
+                                <p className="text-xs text-slate-500">
+                                    ※GoogleカテゴリIDを入力してください (例: <code>gcid:cafe</code>, <code>gcid:japanese_restaurant</code>)<br/>
+                                    <a href="https://developers.google.com/my-business/content/categories" target="_blank" className="underline hover:text-aurora-cyan">カテゴリID一覧はこちら</a>
+                                </p>
                             </div>
                         </div>
                     </div>

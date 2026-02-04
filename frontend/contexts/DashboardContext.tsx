@@ -178,7 +178,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       } catch (e: any) {
           console.error("Sync network error:", e);
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-          alert(`通信エラー:\n${e.message}\n\n接続先: ${apiUrl}\n\nバックエンドが起動しているか確認してください。`);
+          alert(`通信エラー:\n${e.message}\n\n接続先: ${apiUrl}\n\n【ヒント】\nバックエンド(Render)がスリープしている可能性があります。\n1分ほど待ってから再度お試しください。`);
       }
   };
 

@@ -131,8 +131,8 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://meo-system-act.vercel.app", # Adjust if needed
-    "*", # Allow all for debugging phase
+    "https://meo-system-act.vercel.app", 
+    "https://meo-backend-xoeo.onrender.com",
 ]
 
 app.add_middleware(

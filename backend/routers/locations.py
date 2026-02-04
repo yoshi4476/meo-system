@@ -15,6 +15,7 @@ class LocationUpdate(BaseModel):
     websiteUri: Optional[str] = None
     phoneNumbers: Optional[Dict] = None # {primaryPhone: ...}
     regularHours: Optional[Dict] = None # {periods: [{openDay: ..., openTime: ..., closeDay: ..., closeTime: ...}]}
+    categories: Optional[Dict] = None # {primaryCategory: {name: "categories/gcid:..."}}
     
     # Add other fields as needed
 
@@ -35,6 +36,18 @@ def get_location_details(store_id: str, db: Session = Depends(database.get_db), 
     if not current_user.google_connection:
          raise HTTPException(status_code=400, detail="Google account not connected")
     
+    # Caching Logic
+    # 1. Check if we have cached data and it is recent (< 1 hour)
+    should_fetch = True
+    if store.gbp_data and store.last_synced_at:
+        # Check if cache is fresh (e.g. 1 hour)
+        if datetime.utcnow() - store.last_synced_at < timedelta(hours=1):
+            should_fetch = False
+            # Check for force_refresh query param if implemented, or just rely on manual sync for forcing
+            
+    if not should_fetch:
+        return store.gbp_data
+
     client = google_api.GBPClient(current_user.google_connection.access_token)
     
     try:
@@ -43,6 +56,7 @@ def get_location_details(store_id: str, db: Session = Depends(database.get_db), 
         
         # Save to DB for caching/display
         store.gbp_data = details
+        store.last_synced_at = datetime.utcnow()
         db.commit()
         
         return details
@@ -83,6 +97,9 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
     if update_data.regularHours:
         mask_parts.append("regularHours")
         data["regularHours"] = update_data.regularHours
+    if update_data.categories:
+        mask_parts.append("categories")
+        data["categories"] = update_data.categories
         
     if not mask_parts:
         return {"message": "No changes detected"}

@@ -21,12 +21,27 @@ class GoogleSyncService:
         try:
             accounts_data = self.gbp.list_accounts()
             if accounts_data.get("accounts"):
-                # Use the first account. 
-                # Ideally check which account actually owns the location but listing all locations per account is expensive.
-                # Assuming the authorized user has access via the first account returned.
-                account_name = accounts_data["accounts"][0]["name"] # accounts/123...
                 location_suffix = location_id.split("/")[-1]
-                v4_location_name = f"{account_name}/locations/{location_suffix}"
+                
+                # Iterate through accounts to find the correct one
+                for account in accounts_data["accounts"]:
+                    account_name = account["name"]
+                    candidate_name = f"{account_name}/locations/{location_suffix}"
+                    
+                    # Verify if this account has access to the location using a lightweight v4 call
+                    # We use list_reviews as a check, as it requires v4 access
+                    try:
+                        # Just check if we can access the endpoint (even if empty)
+                        self.gbp.list_reviews(candidate_name)
+                        v4_location_name = candidate_name
+                        break
+                    except Exception as e:
+                        # If 404 or 403, this is likely not the right account (or API not enabled)
+                        # We continue to the next account
+                        continue
+                
+                if not v4_location_name:
+                    resolve_error = "Location not found in any of the connected Google Accounts."
             else:
                  resolve_error = "No Google Accounts found for this user."
         except Exception as e:
@@ -36,9 +51,7 @@ class GoogleSyncService:
         if not v4_location_name:
              # We can still sync Insights/Location which use v1 (location_id)
              print(f"Warning: {resolve_error}. Skipping v4 dependent syncs.")
-             # But we should probably alert the user?
-             # For now, let's try to proceed with v1 only, or fail?
-             # User expects Reviews. If we can't get reviews, we should error.
+             # For Insights (v1), we don't strictly need v4 name, but let's return error for now to ensure consistency
              if resolve_error:
                  return {"status": "error", "message": f"Google Account ID Resolution Failed: {resolve_error}"}
              return {"status": "error", "message": "Google Account ID not found."}
