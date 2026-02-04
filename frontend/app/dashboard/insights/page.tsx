@@ -75,6 +75,10 @@ export default function InsightsPage() {
     const [rangeType, setRangeType] = useState<'30days' | '90days' | '180days' | 'custom'>('30days');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    // View Mode State
+    const [viewMode, setViewMode] = useState<'range' | 'month'>('range');
+    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     
 
     const fetchInsights = async () => {
@@ -85,24 +89,28 @@ export default function InsightsPage() {
             
             // Append Query Params
             const params = new URLSearchParams();
-            if (rangeType !== 'custom') {
-                 // Calculate dynamic range for standard types? Or let backend default?
-                 // Actually backend defaults to 30 days if empty.
-                 // Better to calculate explicit dates here or use backend logic?
-                 // Backend logic is: if start/end provided, use them.
-                 // Let's calculate dates here to rely on frontend state.
-                 
-                 const end = new Date();
-                 const start = new Date();
-                 if (rangeType === '30days') start.setDate(end.getDate() - 30);
-                 if (rangeType === '90days') start.setDate(end.getDate() - 90);
-                 if (rangeType === '180days') start.setDate(end.getDate() - 180);
-                 
-                 params.append('start_date', start.toISOString().split('T')[0]);
-                 params.append('end_date', end.toISOString().split('T')[0]);
+            if (viewMode === 'range') {
+                if (rangeType !== 'custom') {
+                     const end = new Date();
+                     const start = new Date();
+                     if (rangeType === '30days') start.setDate(end.getDate() - 30);
+                     if (rangeType === '90days') start.setDate(end.getDate() - 90);
+                     if (rangeType === '180days') start.setDate(end.getDate() - 180);
+                     
+                     params.append('start_date', start.toISOString().split('T')[0]);
+                     params.append('end_date', end.toISOString().split('T')[0]);
+                } else {
+                     if (startDate) params.append('start_date', startDate);
+                     if (endDate) params.append('end_date', endDate);
+                }
             } else {
-                 if (startDate) params.append('start_date', startDate);
-                 if (endDate) params.append('end_date', endDate);
+                // Monthly View
+                const [y, m] = selectedMonth.split('-');
+                const start = new Date(parseInt(y), parseInt(m) - 1, 1);
+                const end = new Date(parseInt(y), parseInt(m), 0); // Last day of month
+                
+                params.append('start_date', start.toISOString().split('T')[0]);
+                params.append('end_date', end.toISOString().split('T')[0]);
             }
 
             const res = await fetch(`${url}?${params.toString()}`, {
@@ -206,7 +214,7 @@ export default function InsightsPage() {
         } else {
             setIsLoading(false);
         }
-    }, [userInfo, isDemoMode, rangeType, startDate, endDate]); // Re-fetch on range change
+    }, [userInfo, isDemoMode, rangeType, startDate, endDate, viewMode, selectedMonth]); // Re-fetch on range/mode change
 
     if (!userInfo?.store_id) return <div className="p-8 text-slate-400">店舗を選択してください</div>;
     if (isLoading) return <div className="p-8 text-slate-400">読み込み中...</div>;
@@ -337,49 +345,100 @@ export default function InsightsPage() {
                     </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 items-center w-full md:w-auto">
-                    {/* Range Selector */}
+                    {/* Mode Toggle */}
                     <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
-                        <button 
-                            onClick={() => setRangeType('30days')}
-                            className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '30days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                        <button
+                            onClick={() => setViewMode('range')}
+                            className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'range' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
                         >
-                            30日
+                            期間
                         </button>
-                        <button 
-                            onClick={() => setRangeType('90days')}
-                            className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '90days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                        <button
+                            onClick={() => setViewMode('month')}
+                            className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'month' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
                         >
-                            90日
-                        </button>
-                        <button 
-                            onClick={() => setRangeType('180days')}
-                            className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '180days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            180日
-                        </button>
-                        <button 
-                            onClick={() => setRangeType('custom')}
-                            className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === 'custom' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            期間指定
+                            月別
                         </button>
                     </div>
 
-                    {rangeType === 'custom' && (
+                    {/* Range Selector */}
+                    {viewMode === 'range' && (
+                        <>
+                            <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                                <button 
+                                    onClick={() => setRangeType('30days')}
+                                    className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '30days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    30日
+                                </button>
+                                <button 
+                                    onClick={() => setRangeType('90days')}
+                                    className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '90days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    90日
+                                </button>
+                                <button 
+                                    onClick={() => setRangeType('180days')}
+                                    className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === '180days' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    180日
+                                </button>
+                                <button 
+                                    onClick={() => setRangeType('custom')}
+                                    className={`px-3 py-1 text-sm rounded transition-colors ${rangeType === 'custom' ? 'bg-slate-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    期間指定
+                                </button>
+                            </div>
+
+                            {rangeType === 'custom' && (
+                                <div className="flex gap-2 items-center bg-slate-800 p-1 rounded-lg border border-slate-700">
+                                    <input 
+                                        type="date" 
+                                        value={startDate}
+                                        onChange={e => setStartDate(e.target.value)}
+                                        className="bg-transparent text-white text-sm px-2 outline-none scheme-dark"
+                                    />
+                                    <span className="text-slate-500">-</span>
+                                    <input 
+                                        type="date" 
+                                        value={endDate}
+                                        onChange={e => setEndDate(e.target.value)}
+                                        className="bg-transparent text-white text-sm px-2 outline-none scheme-dark"
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {viewMode === 'month' && (
                         <div className="flex gap-2 items-center bg-slate-800 p-1 rounded-lg border border-slate-700">
+                            <button 
+                                onClick={() => {
+                                    const d = new Date(selectedMonth + '-01');
+                                    d.setMonth(d.getMonth() - 1);
+                                    setSelectedMonth(d.toISOString().slice(0, 7));
+                                }}
+                                className="px-2 text-slate-400 hover:text-white"
+                            >
+                                ◀
+                            </button>
                             <input 
-                                type="date" 
-                                value={startDate}
-                                onChange={e => setStartDate(e.target.value)}
-                                className="bg-transparent text-white text-sm px-2 outline-none scheme-dark"
+                                type="month" 
+                                value={selectedMonth}
+                                onChange={e => setSelectedMonth(e.target.value)}
+                                className="bg-transparent text-white text-sm px-2 outline-none scheme-dark font-bold"
                             />
-                            <span className="text-slate-500">-</span>
-                            <input 
-                                type="date" 
-                                value={endDate}
-                                onChange={e => setEndDate(e.target.value)}
-                                className="bg-transparent text-white text-sm px-2 outline-none scheme-dark"
-                            />
+                            <button 
+                                onClick={() => {
+                                    const d = new Date(selectedMonth + '-01');
+                                    d.setMonth(d.getMonth() + 1);
+                                    setSelectedMonth(d.toISOString().slice(0, 7));
+                                }}
+                                className="px-2 text-slate-400 hover:text-white"
+                            >
+                                ▶
+                            </button>
                         </div>
                     )}
 
