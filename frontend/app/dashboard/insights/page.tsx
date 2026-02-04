@@ -23,10 +23,20 @@ type SummaryData = {
     total_actions: number;
 };
 
+type PredictionsData = {
+    estimated_visits: number;
+    visits_from_maps: number;
+    visits_from_actions: number;
+    action_rate_percent: number;
+    map_conversion_rate: number;
+    action_conversion_rate: number;
+};
+
 type InsightsData = {
     period: string;
     days_count?: number;
     summary?: SummaryData;
+    predictions?: PredictionsData;
     metrics: MetricSeries[];
 };
 
@@ -102,6 +112,14 @@ export default function InsightsPage() {
                     phone_calls: 45,
                     direction_requests: 89,
                     total_actions: 368
+                },
+                predictions: {
+                    estimated_visits: 261,
+                    visits_from_maps: 114,
+                    visits_from_actions: 147,
+                    action_rate_percent: 8.14,
+                    map_conversion_rate: 4,
+                    action_conversion_rate: 40
                 },
                 metrics: [
                     { dailyMetric: 'BUSINESS_IMPRESSIONS_MOBILE_SEARCH', dailyMetricTimeSeries: generateSeries(30, 80) },
@@ -328,6 +346,54 @@ export default function InsightsPage() {
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Visit Prediction Card */}
+                    <div className="glass-card p-6 border-2 border-aurora-cyan/30 bg-gradient-to-br from-slate-800/50 to-cyan-900/20">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="text-4xl">🏪</div>
+                            <div>
+                                <h3 className="font-bold text-white text-xl">来店予測</h3>
+                                <p className="text-slate-400 text-sm">業界平均ベンチマークに基づく推定値</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="text-center bg-slate-900/50 rounded-xl p-4">
+                                <p className="text-slate-400 text-sm mb-1">推定来店数</p>
+                                <p className="text-5xl font-bold text-aurora-cyan">
+                                    {data?.predictions?.estimated_visits?.toLocaleString() || 
+                                     Math.round(summary.map_views * 0.04 + summary.total_actions * 0.4).toLocaleString()}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">人/月</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-slate-400 text-sm mb-1">マップ経由</p>
+                                <p className="text-3xl font-bold text-green-400">
+                                    {data?.predictions?.visits_from_maps?.toLocaleString() || 
+                                     Math.round(summary.map_views * 0.04).toLocaleString()}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">変換率 4%</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-slate-400 text-sm mb-1">アクション経由</p>
+                                <p className="text-3xl font-bold text-purple-400">
+                                    {data?.predictions?.visits_from_actions?.toLocaleString() || 
+                                     Math.round(summary.total_actions * 0.4).toLocaleString()}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">変換率 40%</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-slate-400 text-sm mb-1">アクション率</p>
+                                <p className="text-3xl font-bold text-orange-400">
+                                    {data?.predictions?.action_rate_percent?.toFixed(2) || 
+                                     (summary.total_impressions > 0 ? ((summary.total_actions / summary.total_impressions) * 100).toFixed(2) : 0)}%
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">表示→アクション</p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-4 text-center">
+                            ※ 来店予測は業界平均データ（マップ表示の約4%、アクションの約40%が来店につながる）に基づく推定値です
+                        </p>
                     </div>
 
                     {/* Mini Charts Row */}

@@ -95,17 +95,41 @@ def get_insights(store_id: str, db: Session = Depends(database.get_db), current_
     total_phone = sum(i.actions_phone or 0 for i in insights)
     total_directions = sum(i.actions_driving_directions or 0 for i in insights)
     
+    total_impressions = total_maps + total_search
+    total_actions = total_website + total_phone + total_directions
+    
+    # 来店率予測 (業界平均ベンチマーク)
+    # マップ表示の約3-5%が来店につながる (飲食店業界平均)
+    # アクション(電話・ルート検索)の約30-50%が来店につながる
+    map_to_visit_rate = 0.04  # 4%
+    action_to_visit_rate = 0.40  # 40%
+    
+    estimated_visits_from_maps = int(total_maps * map_to_visit_rate)
+    estimated_visits_from_actions = int(total_actions * action_to_visit_rate)
+    total_estimated_visits = estimated_visits_from_maps + estimated_visits_from_actions
+    
+    # 変換率
+    action_rate = (total_actions / total_impressions * 100) if total_impressions > 0 else 0
+    
     return {
         "period": "Last 30 Days (Synced)",
         "days_count": len(insights),
         "summary": {
-            "total_impressions": total_maps + total_search,
+            "total_impressions": total_impressions,
             "map_views": total_maps,
             "search_views": total_search,
             "website_clicks": total_website,
             "phone_calls": total_phone,
             "direction_requests": total_directions,
-            "total_actions": total_website + total_phone + total_directions,
+            "total_actions": total_actions,
+        },
+        "predictions": {
+            "estimated_visits": total_estimated_visits,
+            "visits_from_maps": estimated_visits_from_maps,
+            "visits_from_actions": estimated_visits_from_actions,
+            "action_rate_percent": round(action_rate, 2),
+            "map_conversion_rate": map_to_visit_rate * 100,
+            "action_conversion_rate": action_to_visit_rate * 100,
         },
         "metrics": metrics
     }
