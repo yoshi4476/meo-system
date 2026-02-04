@@ -32,21 +32,44 @@ type PredictionsData = {
     action_conversion_rate: number;
 };
 
+type PlatformBreakdown = {
+    mobile_maps: number;
+    desktop_maps: number;
+    mobile_search: number;
+    desktop_search: number;
+    mobile_total: number;
+    desktop_total: number;
+};
+
+type KeywordData = {
+    keyword: string;
+    impressions: number;
+};
+
+type KeywordsResponse = {
+    period: string;
+    keywords: KeywordData[];
+    total_keywords: number;
+    error?: string;
+};
+
 type InsightsData = {
     period: string;
     days_count?: number;
     summary?: SummaryData;
     predictions?: PredictionsData;
+    platform_breakdown?: PlatformBreakdown;
     metrics: MetricSeries[];
 };
 
 export default function InsightsPage() {
     const { userInfo, isDemoMode } = useDashboard();
     const [data, setData] = useState<InsightsData | null>(null);
+    const [keywords, setKeywords] = useState<KeywordsResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'table'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'table' | 'keywords'>('overview');
 
     const fetchInsights = async () => {
         setIsLoading(true);
@@ -58,10 +81,26 @@ export default function InsightsPage() {
             if (res.ok) {
                 setData(await res.json());
             }
+            // Also fetch keywords
+            fetchKeywords();
         } catch (e) {
             console.error(e);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchKeywords = async () => {
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/insights/${userInfo?.store_id}/keywords`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setKeywords(await res.json());
+            }
+        } catch (e) {
+            console.error('Keywords fetch error:', e);
         }
     };
 
@@ -293,11 +332,12 @@ export default function InsightsPage() {
             )}
 
             {/* Tab Navigation */}
-            <div className="flex gap-2 border-b border-slate-700 pb-2">
+            <div className="flex gap-2 border-b border-slate-700 pb-2 overflow-x-auto">
                 {[
-                    { id: 'overview' as const, label: '📈 概要', desc: 'サマリー' },
-                    { id: 'details' as const, label: '📊 詳細グラフ', desc: 'チャート' },
-                    { id: 'table' as const, label: '📋 データテーブル', desc: '一覧' },
+                    { id: 'overview' as const, label: '📈 概要' },
+                    { id: 'keywords' as const, label: '🔍 検索語句' },
+                    { id: 'details' as const, label: '📊 詳細グラフ' },
+                    { id: 'table' as const, label: '📋 データテーブル' },
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -408,6 +448,97 @@ export default function InsightsPage() {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Keywords Tab */}
+            {activeTab === 'keywords' && (
+                <div className="space-y-6">
+                    {/* Platform/Device Breakdown */}
+                    <div className="glass-card p-6">
+                        <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                            📱 プラットフォーム・デバイス別表示回数
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                                <div className="text-3xl mb-2">📱</div>
+                                <p className="text-2xl font-bold text-green-400">
+                                    {data?.platform_breakdown?.mobile_total?.toLocaleString() || Math.round(summary.total_impressions * 0.8).toLocaleString()}
+                                </p>
+                                <p className="text-slate-400 text-sm">モバイル合計</p>
+                                <p className="text-xs text-slate-500">約80%</p>
+                            </div>
+                            <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                                <div className="text-3xl mb-2">💻</div>
+                                <p className="text-2xl font-bold text-blue-400">
+                                    {data?.platform_breakdown?.desktop_total?.toLocaleString() || Math.round(summary.total_impressions * 0.2).toLocaleString()}
+                                </p>
+                                <p className="text-slate-400 text-sm">デスクトップ合計</p>
+                                <p className="text-xs text-slate-500">約20%</p>
+                            </div>
+                            <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                                <div className="text-3xl mb-2">🗺️</div>
+                                <p className="text-2xl font-bold text-purple-400">
+                                    {summary.map_views.toLocaleString()}
+                                </p>
+                                <p className="text-slate-400 text-sm">マップ経由</p>
+                            </div>
+                            <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                                <div className="text-3xl mb-2">🔍</div>
+                                <p className="text-2xl font-bold text-orange-400">
+                                    {summary.search_views.toLocaleString()}
+                                </p>
+                                <p className="text-slate-400 text-sm">検索経由</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Search Keywords Table */}
+                    <div className="glass-card p-6">
+                        <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                            🔍 検索語句ランキング
+                            <span className="text-sm font-normal text-slate-400">
+                                ({keywords?.period || 'データ取得中...'})
+                            </span>
+                        </h3>
+                        {keywords?.error && (
+                            <p className="text-yellow-400 text-sm mb-4">
+                                ⚠️ キーワードデータを取得できませんでした: {keywords.error}
+                            </p>
+                        )}
+                        {keywords?.keywords && keywords.keywords.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-slate-700">
+                                            <th className="text-left py-3 px-2 text-slate-400">順位</th>
+                                            <th className="text-left py-3 px-2 text-slate-400">検索キーワード</th>
+                                            <th className="text-right py-3 px-2 text-slate-400">表示回数</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {keywords.keywords.map((kw, i) => (
+                                            <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/50">
+                                                <td className="py-2 px-2 text-slate-400">{i + 1}</td>
+                                                <td className="py-2 px-2 text-white font-medium">{kw.keyword}</td>
+                                                <td className="py-2 px-2 text-right text-cyan-400">{kw.impressions.toLocaleString()}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {keywords.total_keywords > 20 && (
+                                    <p className="text-xs text-slate-500 mt-2 text-center">
+                                        上位20件を表示（全{keywords.total_keywords}件）
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-slate-500">
+                                <p>検索キーワードデータがありません</p>
+                                <p className="text-xs mt-2">「同期＆診断」を実行してデータを取得してください</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
 
             {/* Details Tab */}
