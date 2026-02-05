@@ -92,7 +92,8 @@ export default function QAPage() {
                 alert(`同期完了: ${data.message}`);
                 fetchExpectedQuestions();
             } else {
-                alert('同期に失敗しました');
+                const errData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+                alert(`Q&A同期に失敗しました: ${errData.detail}`);
             }
         } catch (e) {
             alert('エラーが発生しました');
