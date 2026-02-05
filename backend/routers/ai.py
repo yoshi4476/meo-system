@@ -20,6 +20,41 @@ router = APIRouter(
     tags=["ai"],
 )
 
+@router.get("/debug")
+def debug_ai(
+    x_openai_api_key: Optional[str] = APIHeader(None, alias="X-OpenAI-Api-Key")
+):
+    """Debug endpoint to test API key reception and OpenAI connection."""
+    import os
+    
+    result = {
+        "header_received": x_openai_api_key is not None and len(x_openai_api_key) > 0,
+        "header_length": len(x_openai_api_key) if x_openai_api_key else 0,
+        "env_key_set": bool(os.getenv("OPENAI_API_KEY")),
+    }
+    
+    # Test OpenAI connection if key provided
+    api_key = x_openai_api_key or os.getenv("OPENAI_API_KEY")
+    if api_key:
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key)
+            # Simple test call
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "user", "content": "Say 'OK' in one word."}],
+                max_tokens=5
+            )
+            result["openai_connection"] = "success"
+            result["test_response"] = response.choices[0].message.content
+        except Exception as e:
+            result["openai_connection"] = "failed"
+            result["openai_error"] = str(e)
+    else:
+        result["openai_connection"] = "no_key"
+    
+    return result
+
 class GeneratePostRequest(BaseModel):
     keywords: str
     length_option: str # SHORT, MEDIUM, LONG
