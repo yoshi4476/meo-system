@@ -127,10 +127,16 @@ async def auto_reply_to_reviews():
         
         for store in auto_reply_stores:
             # Find unreplied reviews for this store
-            unreplied_reviews = db.query(models.Review).filter(
+            query = db.query(models.Review).filter(
                 models.Review.store_id == store.id,
                 models.Review.reply_comment == None
-            ).limit(5).all()  # Process max 5 per store per cycle
+            )
+
+            # Filter by start date if set
+            if store.auto_reply_start_date:
+                query = query.filter(models.Review.create_time >= store.auto_reply_start_date)
+            
+            unreplied_reviews = query.limit(5).all()  # Process max 5 per store per cycle
             
             if not unreplied_reviews:
                 continue

@@ -174,6 +174,7 @@ def create_store(store: StoreCreate, db: Session = Depends(database.get_db), cur
 class AutoReplySettings(BaseModel):
     enabled: bool
     prompt: Optional[str] = None
+    include_past_reviews: Optional[bool] = False
 
 @router.patch("/stores/{store_id}/auto-reply")
 def update_store_auto_reply(
@@ -196,6 +197,20 @@ def update_store_auto_reply(
         raise HTTPException(status_code=403, detail="Not authorized")
     
     store.auto_reply_enabled = settings.enabled
+    
+    # Handle Start Date Logic
+    if settings.enabled:
+        if settings.include_past_reviews:
+            # Include all past reviews -> Very old date
+            store.auto_reply_start_date = datetime(2000, 1, 1)
+        elif store.auto_reply_start_date is None:
+            # First time enabling without "include past" -> Start from NOW
+            store.auto_reply_start_date = datetime.utcnow()
+    else:
+        # If disabled, we might want to reset start_date or keep it?
+        # Keeping it allows resuming? No, let's keep it simply compliant with logic.
+        pass
+
     if settings.prompt is not None:
         store.auto_reply_prompt = settings.prompt
     
@@ -204,7 +219,8 @@ def update_store_auto_reply(
     return {
         "message": f"Auto-reply {'enabled' if settings.enabled else 'disabled'} for {store.name}",
         "auto_reply_enabled": store.auto_reply_enabled,
-        "auto_reply_prompt": store.auto_reply_prompt
+        "auto_reply_prompt": store.auto_reply_prompt,
+        "auto_reply_start_date": store.auto_reply_start_date
     }
 
 @router.get("/stores/{store_id}/auto-reply")

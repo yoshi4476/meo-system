@@ -51,6 +51,7 @@ class Store(Base):
     # Auto-reply feature
     auto_reply_enabled = Column(Boolean, default=False)
     auto_reply_prompt = Column(String, nullable=True)  # Custom prompt for AI replies
+    auto_reply_start_date = Column(DateTime, nullable=True) # To filter when auto-reply starts (or use old date for "all past")
     description = Column(String, nullable=True)  # Store description for context
     category = Column(String, nullable=True)  # Store category for context
     

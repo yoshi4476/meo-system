@@ -46,6 +46,7 @@ export default function ReviewsPage() {
     const [isSavingPrompt, setIsSavingPrompt] = useState(false);
     const [isPromptLocked, setIsPromptLocked] = useState(false);
     const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
+    const [includePastReviews, setIncludePastReviews] = useState(false);
 
     const fetchReviews = async () => {
         setIsLoading(true);
@@ -144,7 +145,8 @@ export default function ReviewsPage() {
                 },
                 body: JSON.stringify({
                     enabled: autoReplyEnabled,
-                    prompt: globalPrompt
+                    prompt: globalPrompt,
+                    include_past_reviews: includePastReviews
                 })
             });
 
@@ -380,20 +382,37 @@ export default function ReviewsPage() {
                         
                         <div className="space-y-6">
                             {/* Auto Reply Toggle */}
-                            <div className="bg-slate-800/50 p-4 rounded-xl border border-white/5 flex items-center justify-between">
-                                <div>
-                                    <div className="font-bold text-white mb-1">自動返信機能</div>
-                                    <div className="text-xs text-slate-400">新着のクチコミ（未返信）にAIが自動で返信します。<br/>24時間以内に実行されます（実際は5分毎チェック）。</div>
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-white/5 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="font-bold text-white mb-1">自動返信機能</div>
+                                        <div className="text-xs text-slate-400">新着のクチコミ（未返信）にAIが自動で返信します。<br/>24時間以内に実行されます（実際は5分毎チェック）。</div>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="sr-only peer"
+                                            checked={autoReplyEnabled}
+                                            onChange={(e) => setAutoReplyEnabled(e.target.checked)}
+                                        />
+                                        <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-aurora-cyan"></div>
+                                    </label>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer"
-                                        checked={autoReplyEnabled}
-                                        onChange={(e) => setAutoReplyEnabled(e.target.checked)}
-                                    />
-                                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-aurora-cyan"></div>
-                                </label>
+                                
+                                {autoReplyEnabled && (
+                                    <div className="flex items-center gap-2 pt-2 border-t border-white/5 animate-fade-in">
+                                        <input 
+                                            type="checkbox" 
+                                            id="includePast"
+                                            checked={includePastReviews}
+                                            onChange={(e) => setIncludePastReviews(e.target.checked)}
+                                            className="rounded bg-slate-700 border-slate-600 text-aurora-cyan focus:ring-aurora-cyan"
+                                        />
+                                        <label htmlFor="includePast" className="text-sm text-slate-300">
+                                            過去の未返信クチコミも対象にする
+                                        </label>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="relative">
