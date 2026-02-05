@@ -155,10 +155,34 @@ class GBPClient:
         """
         Reply to a review.
         review_name: Format "accounts/{accountId}/locations/{locationId}/reviews/{reviewId}"
+                     OR "{locationId}/reviews/{reviewId}"
         """
-        url = f"https://mybusiness.googleapis.com/v4/{review_name}/reply"
+        full_review_name = review_name
+        
+        # If review_name doesn't start with accounts/, assume we need to resolve it
+        if not review_name.startswith("accounts/"):
+            # Try to extract location info
+            parts = review_name.split("/reviews/")
+            if len(parts) == 2:
+                location_part = parts[0] # e.g. locations/12345
+                review_id = parts[1]
+                
+                # Resolve proper v4 parent path (accounts/.../locations/...)
+                try:
+                    v4_location = self._get_v4_location_path(location_part)
+                    full_review_name = f"{v4_location}/reviews/{review_id}"
+                except Exception as e:
+                    print(f"Warning: Could not resolve v4 path for review {review_name}: {e}")
+                    # Fallback to original and hope for the best (or maybe it was already v4 just weird)
+                    pass
+
+        url = f"https://mybusiness.googleapis.com/v4/{full_review_name}/reply"
         data = {"comment": reply_text}
         response = requests.put(url, headers=self._get_headers(), json=data)
+        if not response.ok:
+            print(f"Reply Failed: {response.text}")
+        response.raise_for_status()
+        return response.json()
     def list_local_posts(self, location_name: str):
         """
         List local posts (updates, events, offers).

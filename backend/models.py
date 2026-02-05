@@ -209,3 +209,16 @@ Store.media_items = relationship("MediaItem", back_populates="store", cascade="a
 User.google_connection = relationship("GoogleConnection", back_populates="user", uselist=False)
 Store.insights = relationship("Insight", back_populates="store")
 Store.reviews = relationship("Review", back_populates="store")
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), unique=True)
+    openai_api_key = Column(String, nullable=True)
+    
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = relationship("User", back_populates="settings")
+
+User.settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
