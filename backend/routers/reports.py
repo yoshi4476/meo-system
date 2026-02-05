@@ -166,16 +166,45 @@ def download_report(
         raise HTTPException(status_code=404, detail="Store not found")
         
     try:
-        # 1. Fetch Insights (aggregate from DB)
-        insights = db.query(models.Insight).filter(
-            models.Insight.store_id == store_id
-        ).order_by(models.Insight.date.desc()).limit(30).all()
+        # 1. Fetch Insights (Last 30 days vs Previous 30 days)
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=30)
+        prev_end_date = start_date
+        prev_start_date = prev_end_date - timedelta(days=30)
         
+        # Current Period
+        current_insights = db.query(models.Insight).filter(
+            models.Insight.store_id == store_id,
+            models.Insight.date >= start_date,
+            models.Insight.date <= end_date
+        ).all()
+        
+        # Previous Period
+        prev_insights = db.query(models.Insight).filter(
+            models.Insight.store_id == store_id,
+            models.Insight.date >= prev_start_date,
+            models.Insight.date <= prev_end_date
+        ).all()
+        
+        def sum_metric(insights_list, metric_name):
+            return sum(getattr(i, metric_name) or 0 for i in insights_list)
+
         insight_data = {
-            "views_search": sum(i.views_search or 0 for i in insights),
-            "views_maps": sum(i.views_maps or 0 for i in insights),
-            "actions_website": sum(i.actions_website or 0 for i in insights),
-            "actions_phone": sum(i.actions_phone or 0 for i in insights),
+            "period_label": f"{start_date.strftime('%Y/%m/%d')} - {end_date.strftime('%Y/%m/%d')}",
+            "current": {
+                "views_search": sum_metric(current_insights, "views_search"),
+                "views_maps": sum_metric(current_insights, "views_maps"),
+                "actions_website": sum_metric(current_insights, "actions_website"),
+                "actions_phone": sum_metric(current_insights, "actions_phone"),
+                "actions_driving_directions": sum_metric(current_insights, "actions_driving_directions"),
+            },
+            "previous": {
+                "views_search": sum_metric(prev_insights, "views_search"),
+                "views_maps": sum_metric(prev_insights, "views_maps"),
+                "actions_website": sum_metric(prev_insights, "actions_website"),
+                "actions_phone": sum_metric(prev_insights, "actions_phone"),
+                "actions_driving_directions": sum_metric(prev_insights, "actions_driving_directions"),
+            }
         }
         
         # 2. Fetch Sentiment - with fallback if AI fails
@@ -203,9 +232,18 @@ def download_report(
             # Continue with fallback sentiment_data
         
         # Generate PDF
+        # Generate PDF
         logger.info(f"Generating PDF for store {store.name}")
         generator = report_generator.ReportGenerator()
-        pdf_buffer = generator.generate_report(store.name, insight_data, sentiment_data)
+        
+        # Enrich store info
+        store_info = {
+            "name": store.name,
+            "address": store.address if store.address else "-",
+            "category": store.category if store.category else "-"
+        }
+        
+        pdf_buffer = generator.generate_report(store_info, insight_data, sentiment_data)
         
         filename = f"report_{store.name}_{datetime.now().strftime('%Y%m')}.pdf"
         
