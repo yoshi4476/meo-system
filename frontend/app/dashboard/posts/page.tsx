@@ -264,11 +264,16 @@ function PostsContent() {
                 // Determine error message
                 const errText = await res.text();
                 let errMsg = `生成に失敗しました (Status: ${res.status})`;
-                try {
-                    const errJson = JSON.parse(errText);
-                    if(errJson.detail) errMsg += `\n${errJson.detail}`;
-                } catch(e) {
-                    errMsg += `\n${errText.substring(0, 100)}`;
+                
+                if (res.status === 429) {
+                    errMsg = "⚠️ AIの利用制限（無料枠）を超えました。\n\nGoogle Gemini APIの制限により、短時間に多数のリクエストを送ることができません。\n1〜2分ほど待ってから再試行してください。";
+                } else {
+                    try {
+                        const errJson = JSON.parse(errText);
+                        if(errJson.detail) errMsg += `\n${errJson.detail}`;
+                    } catch(e) {
+                        errMsg += `\n${errText.substring(0, 100)}`;
+                    }
                 }
                 alert(errMsg);
             }

@@ -488,7 +488,21 @@ export default function SettingsPage() {
                   }
 
                   if (uid) {
-                      window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/google/login?state=${uid}`;
+                      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+                      if (!apiUrl) {
+                          alert('システムエラー: APIの接続先(NEXT_PUBLIC_API_URL)が設定されていません。\n開発者にお問い合わせください。');
+                          console.error("NEXT_PUBLIC_API_URL is missing");
+                          return;
+                      }
+                      
+                      const loginUrl = `${apiUrl}/google/login?state=${uid}`;
+                      console.log("Initiating Google Login Redirect:", loginUrl);
+                      
+                      // ユーザーにフィードバック
+                      const btn = document.activeElement as HTMLElement;
+                      if(btn) btn.innerText = "連携ページへ移動中...";
+                      
+                      window.location.href = loginUrl;
                   } else {
                       alert('ユーザー情報を取得できませんでした。\nネットワーク接続を確認するか、一度ログアウトして再ログインしてください。');
                   }
