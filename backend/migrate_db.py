@@ -14,7 +14,8 @@ def migrate():
                 # Note: Transaction handling varies by DB. SQLAlchemy autocommit might be needed or explicit commit.
                 # For schema changes, it's safer to execute properly.
                 try:
-                    conn.execute(text("ALTER TABLE stores ADD COLUMN auto_reply_start_date DATETIME"))
+                    # Use TIMESTAMP as it is compatible with both SQLite (as NUMERIC/TEXT) and Postgres
+                    conn.execute(text("ALTER TABLE stores ADD COLUMN auto_reply_start_date TIMESTAMP"))
                     conn.commit()
                     print("Column added successfully.")
                 except Exception as e:

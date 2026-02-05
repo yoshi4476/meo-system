@@ -203,8 +203,8 @@ def update_store_auto_reply(
         if settings.include_past_reviews:
             # Include all past reviews -> Very old date
             store.auto_reply_start_date = datetime(2000, 1, 1)
-        elif store.auto_reply_start_date is None:
-            # First time enabling without "include past" -> Start from NOW
+        elif store.auto_reply_start_date is None or store.auto_reply_start_date < datetime(2020, 1, 1):
+            # If was previously "Include Past" (Old Date) but now not, OR first time -> Start from NOW
             store.auto_reply_start_date = datetime.utcnow()
     else:
         # If disabled, we might want to reset start_date or keep it?
