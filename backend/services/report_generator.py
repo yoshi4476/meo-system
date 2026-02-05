@@ -10,13 +10,22 @@ class ReportGenerator:
     def __init__(self):
         # Register Japanese Font using CID Fonts (Standard for PDF)
         # This works on Linux/Render without external font files
+        self.font_name = 'Helvetica'  # Default fallback
         try:
             from reportlab.pdfbase.cidfonts import UnicodeCIDFont
             pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
             self.font_name = 'HeiseiKakuGo-W5'
+            print("Font registered successfully: HeiseiKakuGo-W5")
         except Exception as e:
-            print(f"Font registration warning: {e}")
-            self.font_name = 'Helvetica'
+            print(f"CID Font registration failed, using Helvetica: {e}")
+            # Try alternative CID fonts
+            try:
+                from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+                pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
+                self.font_name = 'HeiseiMin-W3'
+                print("Fallback font registered: HeiseiMin-W3")
+            except:
+                print("All Japanese fonts failed, using Helvetica")
 
     def generate_report(self, store_name: str, insights_data: dict, sentiment_data: dict):
         buffer = io.BytesIO()

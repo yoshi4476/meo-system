@@ -188,16 +188,22 @@ def download_report(
         
         try:
             reviews = db.query(models.Review).filter(models.Review.store_id == store_id).order_by(models.Review.create_time.desc()).limit(10).all()
+            logger.info(f"Found {len(reviews)} reviews for store {store_id}")
             if reviews:
                 review_data = [{"text": r.comment, "rating": r.star_rating} for r in reviews if r.comment]
-                if review_data:
+                logger.info(f"Reviews with comments: {len(review_data)}")
+                if review_data and x_openai_api_key:
                     client = ai_generator.AIClient(api_key=x_openai_api_key)
                     sentiment_data = client.analyze_sentiment(review_data)
+                elif not x_openai_api_key:
+                    logger.warning("No OpenAI API key provided for sentiment analysis")
         except Exception as e:
-            print(f"AI sentiment analysis failed (non-critical): {e}")
+            logger.error(f"AI sentiment analysis failed (non-critical): {e}")
+            traceback.print_exc()
             # Continue with fallback sentiment_data
         
         # Generate PDF
+        logger.info(f"Generating PDF for store {store.name}")
         generator = report_generator.ReportGenerator()
         pdf_buffer = generator.generate_report(store.name, insight_data, sentiment_data)
         
