@@ -309,8 +309,7 @@ function PostsContent() {
         }
 
         try {
-            const endpoint = status === 'PUBLISHED' && !scheduleEnabled ? '/posts/publish' : '/posts/';
-            // For now standard create api
+            // Always create the post first
              const token = localStorage.getItem('meo_auth_token');
              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/`, {
                 method: 'POST',
@@ -322,13 +321,36 @@ function PostsContent() {
                     store_id: userInfo?.store_id,
                     content: newPostContent,
                     media_url: newPostMedia || undefined,
-                    status: scheduleEnabled ? 'SCHEDULED' : status,
+                    status: scheduleEnabled ? 'SCHEDULED' : 'DRAFT', // Create as DRAFT first if publishing
                     scheduled_at: scheduleEnabled ? `${scheduleDate}T${scheduleTime}:00` : undefined
                 })
             });
             
             if (res.ok) {
-                alert('保存しました');
+                const createdPost = await res.json();
+                
+                // If user selected "今すぐ公開", call the publish endpoint
+                if (status === 'PUBLISHED' && !scheduleEnabled) {
+                    try {
+                        const publishRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${createdPost.id}/publish`, {
+                            method: 'POST',
+                            headers: { 
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        if (publishRes.ok) {
+                            alert('Googleマップに公開しました！');
+                        } else {
+                            const errData = await publishRes.json().catch(() => ({}));
+                            alert(`投稿は保存されましたが、Googleへの公開に失敗しました: ${errData.detail || 'Unknown error'}`);
+                        }
+                    } catch (pubErr: any) {
+                        alert(`投稿は保存されましたが、Googleへの公開に失敗しました: ${pubErr.message}`);
+                    }
+                } else {
+                    alert('保存しました');
+                }
+                
                 setNewPostContent('');
                 setIsCreating(false);
                 fetchPosts();
