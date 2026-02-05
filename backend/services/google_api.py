@@ -252,10 +252,14 @@ class GBPClient:
     def list_questions(self, location_name: str):
         """
         List questions.
-        location_name: Can be any format, will be converted to v4 format.
+        location_name: "locations/{locationId}" or "accounts/.../locations/{locationId}"
         """
-        v4_path = self._get_v4_location_path(location_name)
-        url = f"https://mybusiness.googleapis.com/v4/{v4_path}/questions"
+        # Ensure format is locations/{locationId}
+        if "accounts/" in location_name and "/locations/" in location_name:
+             location_name = "locations/" + location_name.split("/locations/")[1]
+             
+        # Q&A API v1
+        url = f"https://mybusinessqanda.googleapis.com/v1/{location_name}/questions"
         response = requests.get(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
@@ -263,9 +267,15 @@ class GBPClient:
     def list_answers(self, question_name: str):
         """
         List answers for a question.
-        question_name: Format "accounts/{accountId}/locations/{locationId}/questions/{questionId}"
+        question_name: Format "locations/{locationId}/questions/{questionId}"
+                       (Old v4 was "accounts/.../locations/.../questions/...")
         """
-        url = f"https://mybusiness.googleapis.com/v4/{question_name}/answers"
+        # Fix format if v4-style is passed
+        if "accounts/" in question_name and "/locations/" in question_name:
+             # Extract part starting from locations/
+             question_name = "locations/" + question_name.split("/locations/")[1]
+
+        url = f"https://mybusinessqanda.googleapis.com/v1/{question_name}/answers"
         response = requests.get(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
@@ -273,9 +283,12 @@ class GBPClient:
     def create_answer(self, question_name: str, text: str):
         """
         Answer a question.
-        question_name: Format "accounts/{accountId}/locations/{locationId}/questions/{questionId}"
+        question_name: Format "locations/{locationId}/questions/{questionId}"
         """
-        url = f"https://mybusiness.googleapis.com/v4/{question_name}/answers"
+        if "accounts/" in question_name and "/locations/" in question_name:
+             question_name = "locations/" + question_name.split("/locations/")[1]
+             
+        url = f"https://mybusinessqanda.googleapis.com/v1/{question_name}/answers"
         data = {"text": text}
         response = requests.post(url, headers=self._get_headers(), json=data)
         response.raise_for_status()
