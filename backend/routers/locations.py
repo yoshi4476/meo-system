@@ -43,6 +43,8 @@ def list_available_locations(db: Session = Depends(database.get_db), current_use
         if store:
             return [{"id": store.id, "name": store.name}]
         return []
+
+@router.get("/{store_id}")
 def get_location_details(store_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
     Get location details directly from Google Business Profile.
