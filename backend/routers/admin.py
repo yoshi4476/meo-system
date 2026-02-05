@@ -170,3 +170,57 @@ def create_store(store: StoreCreate, db: Session = Depends(database.get_db), cur
     db.commit()
     db.refresh(new_store)
     return new_store
+
+class AutoReplySettings(BaseModel):
+    enabled: bool
+    prompt: Optional[str] = None
+
+@router.patch("/stores/{store_id}/auto-reply")
+def update_store_auto_reply(
+    store_id: str, 
+    settings: AutoReplySettings, 
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Toggle auto-reply for a store.
+    """
+    store = db.query(models.Store).filter(models.Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    # Authorization check
+    if current_user.role == "STORE_USER" and current_user.store_id != store_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "COMPANY_ADMIN" and store.company_id != current_user.company_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    store.auto_reply_enabled = settings.enabled
+    if settings.prompt is not None:
+        store.auto_reply_prompt = settings.prompt
+    
+    db.commit()
+    
+    return {
+        "message": f"Auto-reply {'enabled' if settings.enabled else 'disabled'} for {store.name}",
+        "auto_reply_enabled": store.auto_reply_enabled,
+        "auto_reply_prompt": store.auto_reply_prompt
+    }
+
+@router.get("/stores/{store_id}/auto-reply")
+def get_store_auto_reply(
+    store_id: str, 
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Get auto-reply settings for a store.
+    """
+    store = db.query(models.Store).filter(models.Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    return {
+        "auto_reply_enabled": store.auto_reply_enabled or False,
+        "auto_reply_prompt": store.auto_reply_prompt
+    }

@@ -48,6 +48,12 @@ class Store(Base):
     gbp_data = Column(JSON, nullable=True) # Full GBP Data
     last_synced_at = Column(DateTime, nullable=True) # When last synced with Google
     
+    # Auto-reply feature
+    auto_reply_enabled = Column(Boolean, default=False)
+    auto_reply_prompt = Column(String, nullable=True)  # Custom prompt for AI replies
+    description = Column(String, nullable=True)  # Store description for context
+    category = Column(String, nullable=True)  # Store category for context
+    
     company = relationship("Company", back_populates="stores")
     posts = relationship("Post", back_populates="store")
     users = relationship("User", back_populates="store")
