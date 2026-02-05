@@ -10,13 +10,7 @@ from datetime import timedelta
 
 models.Base.metadata.create_all(bind=engine)
 
-@app.on_event("startup")
-async def startup_event():
-    scheduler.start_scheduler()
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    scheduler.shutdown_scheduler()
 
 # Run DB Migration (Add store_id if missing)
 try:
@@ -168,6 +162,14 @@ app.include_router(optimization.router)
 app.include_router(messages.router)
 from routers import debug
 app.include_router(debug.router)
+
+@app.on_event("startup")
+async def startup_event():
+    scheduler.start_scheduler()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    scheduler.shutdown_scheduler()
 
 # Dependency
 def get_db():
