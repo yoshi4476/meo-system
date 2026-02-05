@@ -55,9 +55,24 @@ def get_optimization_suggestions(store_id: str, db: Session = Depends(database.g
             "action": "GO_TO_REVIEWS"
         })
 
+    # Calculate dynamic score based on completeness
+    base_score = 100
+    
+    # Deduct points per suggestion type
+    for s in suggestions:
+        if s["type"] == "URGENT":
+            base_score -= 15
+        elif s["type"] == "WARNING":
+            base_score -= 10
+        else:  # INFO
+            base_score -= 5
+    
+    # Ensure minimum score of 20
+    final_score = max(20, base_score)
+
     return {
         "store_name": store.name,
-        "score": 75, # Mock score
+        "score": final_score,
         "suggestions": suggestions
     }
 

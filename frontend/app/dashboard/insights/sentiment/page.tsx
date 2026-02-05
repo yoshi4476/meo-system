@@ -37,7 +37,8 @@ export default function SentimentPage() {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}` 
+                    Authorization: `Bearer ${token}`,
+                    'X-OpenAI-Api-Key': localStorage.getItem('openai_api_key') || ''
                 },
                 body: JSON.stringify({ store_id: userInfo?.store_id })
             });
