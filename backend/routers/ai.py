@@ -44,10 +44,14 @@ class PromptUpdate(BaseModel):
 def generate_post(
     req: GeneratePostRequest, 
     current_user: models.User = Depends(auth.get_current_user),
+    x_openai_api_key: Optional[str] = APIHeader(None, alias="X-OpenAI-Api-Key"),
     x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
 ):
     try:
-        client = ai_generator.AIClient(api_key=x_gemini_api_key)
+        # Prioritize OpenAI key, fallback to Gemini key (User might have old UI)
+        api_key = x_openai_api_key or x_gemini_api_key
+        
+        client = ai_generator.AIClient(api_key=api_key)
         content = client.generate_post_content(
             keywords=req.keywords, 
             length_option=req.length_option, 
@@ -105,6 +109,7 @@ def generate_reply(
     req: GenerateReplyRequest, 
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user),
+    x_openai_api_key: Optional[str] = APIHeader(None, alias="X-OpenAI-Api-Key"),
     x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
 ):
     try:
@@ -116,7 +121,8 @@ def generate_reply(
         
         custom_instruction = global_prompt.content if global_prompt else None
 
-        client = ai_generator.AIClient(api_key=x_gemini_api_key)
+        api_key = x_openai_api_key or x_gemini_api_key
+        client = ai_generator.AIClient(api_key=api_key)
         content = client.generate_review_reply(
             review_text=req.review_text, 
             reviewer_name=req.reviewer_name, 
@@ -136,6 +142,7 @@ def analyze_sentiment(
     req: AnalyzeSentimentRequest, 
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user),
+    x_openai_api_key: Optional[str] = APIHeader(None, alias="X-OpenAI-Api-Key"),
     x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
 ):
     # 1. Fetch reviews for store
@@ -147,7 +154,8 @@ def analyze_sentiment(
         
     review_data = [{"text": r.comment, "rating": r.star_rating} for r in reviews if r.comment]
 
-    client = ai_generator.AIClient(api_key=x_gemini_api_key)
+    api_key = x_openai_api_key or x_gemini_api_key
+    client = ai_generator.AIClient(api_key=api_key)
     result = client.analyze_sentiment(review_data)
     
     # Future: Save result to Store model or separate InsightAnalysis model

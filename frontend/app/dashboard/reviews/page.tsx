@@ -343,7 +343,7 @@ export default function ReviewsPage() {
                                                         headers: { 
                                                             'Content-Type': 'application/json',
                                                             'Authorization': `Bearer ${localStorage.getItem('meo_auth_token')}`,
-                                                            'X-Gemini-Api-Key': localStorage.getItem('gemini_api_key') || ''
+                                                            'X-OpenAI-Api-Key': localStorage.getItem('openai_api_key') || ''
                                                         },
                                                         body: JSON.stringify({
                                                             review_text: review.comment || "",

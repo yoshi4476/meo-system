@@ -186,7 +186,7 @@ function PostsContent() {
         }
         
         // Load API Key
-        const savedApiKey = localStorage.getItem('gemini_api_key');
+        const savedApiKey = localStorage.getItem('openai_api_key');
         if (savedApiKey) {
             setApiKey(savedApiKey);
             setHasApiKey(true);
@@ -213,7 +213,7 @@ function PostsContent() {
     
     const handleSaveApiKey = () => {
         if (apiKey.trim()) {
-            localStorage.setItem('gemini_api_key', apiKey.trim());
+            localStorage.setItem('openai_api_key', apiKey.trim());
             setHasApiKey(true);
             setShowApiKeyModal(false);
         }
@@ -246,7 +246,7 @@ function PostsContent() {
                 headers: { 
                     'Content-Type': 'application/json', 
                     Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}`,
-                    'X-Gemini-Api-Key': localStorage.getItem('gemini_api_key') || ''
+                    'X-OpenAI-Api-Key': localStorage.getItem('openai_api_key') || ''
                 },
                 body: JSON.stringify({ 
                     keywords: keywords || topic, 
@@ -266,7 +266,7 @@ function PostsContent() {
                 let errMsg = `生成に失敗しました (Status: ${res.status})`;
                 
                 if (res.status === 429) {
-                    errMsg = "⚠️ AIの利用制限（無料枠）を超えました。\n\nGoogle Gemini APIの制限により、短時間に多数のリクエストを送ることができません。\n1〜2分ほど待ってから再試行してください。";
+                    errMsg = "⚠️ AIの利用制限を超えました。\n\nOpenAI APIの制限により、短時間に多数のリクエストを送ることができません。\nしばらく待ってから再試行してください。";
                 } else {
                     try {
                         const errJson = JSON.parse(errText);
@@ -531,7 +531,7 @@ function PostsContent() {
                                                 {hasApiKey ? '✓' : '⚠'}
                                             </span>
                                             <span className="text-sm text-slate-300">
-                                                {hasApiKey ? 'Google AI Studio APIキー設定済み' : 'APIキーが未設定です'}
+                                                {hasApiKey ? 'OpenAI APIキー設定済み' : 'APIキーが未設定です'}
                                             </span>
                                         </div>
                                         <button
@@ -551,7 +551,7 @@ function PostsContent() {
                                     {isGenerating ? 'AIが生成中...' : '✨ AIで文章を生成'}
                                 </button>
                                 {!isDemoMode && !hasApiKey && (
-                                    <p className="text-xs text-yellow-400 text-center">AI生成にはGoogle AI StudioのAPIキーが必要です</p>
+                                    <p className="text-xs text-yellow-400 text-center">AI生成にはOpenAIのAPIキーが必要です</p>
                                 )}
                             </div>
                         </div>
@@ -681,11 +681,11 @@ function PostsContent() {
                     {showApiKeyModal && (
                         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
                             <div className="bg-slate-900 p-6 rounded-xl max-w-md w-full space-y-4">
-                                <h3 className="text-xl font-bold text-white">🔑 Google AI Studio APIキー設定</h3>
+                                <h3 className="text-xl font-bold text-white">🔑 OpenAI APIキー設定(GPT-4o)</h3>
                                 <p className="text-sm text-slate-400">
-                                    AI文章生成にはGoogle AI StudioのAPIキーが必要です。<br/>
-                                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-aurora-cyan hover:underline">
-                                        ここから無料で取得 →
+                                    AI文章生成にはOpenAIのAPIキーが必要です。<br/>
+                                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-aurora-cyan hover:underline">
+                                        ここから取得 →
                                     </a>
                                 </p>
                                 <input 

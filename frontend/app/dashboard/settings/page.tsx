@@ -12,15 +12,15 @@ export default function SettingsPage() {
     competitors: false
   });
 
-  const [apiKeys, setApiKeys] = useState<{google: string, gemini: string}>({
+  const [apiKeys, setApiKeys] = useState<{google: string, openai: string}>({
     google: '',
-    gemini: ''
+    openai: ''
   });
 
   // Derived state from global userInfo
   const connectionStatus = {
     google: (isDemoMode || userInfo?.is_google_connected) ? 'connected' : 'disconnected',
-    gemini: (isDemoMode || apiKeys.gemini) ? 'connected' : 'disconnected'
+    openai: (isDemoMode || apiKeys.openai) ? 'connected' : 'disconnected'
   };
 
   // 店舗選択用
@@ -121,32 +121,25 @@ export default function SettingsPage() {
       if (isDemoMode) {
           setApiKeys({
               google: 'demo-google-key-xxxxx',
-              gemini: 'demo-gemini-key-xxxxx'
+              openai: 'demo-openai-key-xxxxx'
           });
           return;
       }
 
       const savedGoogleKey = localStorage.getItem('google_api_key');
-      const savedOpenaiKey = localStorage.getItem('gemini_api_key');
+      const savedOpenaiKey = localStorage.getItem('openai_api_key');
       // ... existing logic
       if (savedGoogleKey) setApiKeys(prev => ({ ...prev, google: savedGoogleKey }));
-      if (savedOpenaiKey) setApiKeys(prev => ({ ...prev, gemini: savedOpenaiKey }));
+      if (savedOpenaiKey) setApiKeys(prev => ({ ...prev, openai: savedOpenaiKey }));
     };
 
     loadSettings();
   }, [isDemoMode]);
 
-  const handleSaveApiKey = (type: 'google' | 'gemini') => {
-    if (type === 'google') {
-        // Deprecated manual key input
-    } else {
-      if (apiKeys.gemini) {
-        localStorage.setItem('gemini_api_key', apiKeys.gemini);
-        alert('Gemini APIキーを保存しました');
-      } else {
-        localStorage.removeItem('gemini_api_key');
-      }
-    }
+  const handleSaveApiKeys = () => {
+    localStorage.setItem('google_api_key', apiKeys.google);
+    localStorage.setItem('openai_api_key', apiKeys.openai);
+    alert('APIキーを保存しました');
   };
 
   const getStatusBadge = (status: string) => {
@@ -515,39 +508,39 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Google Gemini API */}
+          {/* OpenAI API Key */}
           <div className="bg-slate-800/50 rounded-xl p-5 border border-white/5">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-bold text-white whitespace-nowrap">Google Gemini API</h3>
-                  <p className="text-xs text-slate-400 whitespace-nowrap">最新のGoogle AIモデルによる自動生成機能</p>
+                  <h3 className="font-bold text-white whitespace-nowrap">OpenAI API (GPT-4o)</h3>
+                  <p className="text-xs text-slate-400 whitespace-nowrap">最新のAIモデルによる自動生成機能</p>
                 </div>
               </div>
-              {getStatusBadge(connectionStatus.gemini)}
+              {getStatusBadge(connectionStatus.openai)}
             </div>
             
             <div className="flex gap-2">
               <input 
                 type="password" 
-                placeholder="AIza...で始まるAPI Keyを入力してください" 
-                value={apiKeys.gemini}
-                onChange={(e) => setApiKeys(prev => ({...prev, gemini: e.target.value}))}
+                placeholder="sk-...で始まるAPI Keyを入力してください" 
+                value={apiKeys.openai}
+                onChange={(e) => setApiKeys(prev => ({...prev, openai: e.target.value}))}
                 className="flex-1 bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-aurora-cyan"
               />
               <button 
-                onClick={() => handleSaveApiKey('gemini')}
+                onClick={handleSaveApiKeys}
                 className="px-4 py-2 rounded-lg bg-aurora-purple hover:bg-aurora-purple/80 text-white text-sm font-medium whitespace-nowrap"
               >
                 保存
               </button>
             </div>
-            {!apiKeys.gemini && (
+            {!apiKeys.openai && (
               <p className="text-xs text-yellow-400 mt-2 flex items-center gap-1">
                 <span>⚠️</span> APIキーが設定されていない場合、環境変数またはモックモードで動作します。
               </p>

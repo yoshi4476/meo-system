@@ -1,60 +1,41 @@
 import os
-import requests
 import json
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+from openai import OpenAI
+import httpx
 
 class AIClient:
     def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        # Using gemini-2.0-flash for speed and efficiency (updated from 1.5)
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        # Initialize OpenAI client
+        # Note: If no API key is provided here or in env, client creation might not fail immediately,
+        # but subsequent calls will. We handle this check in methods.
+        if self.api_key:
+            self.client = OpenAI(api_key=self.api_key)
+        else:
+            self.client = None
+            
+        self.model = "gpt-4o"
 
     def generate_text(self, system_prompt: str, user_prompt: str):
-        if not self.api_key:
-            # Fallback for dev/demo if no key
-            print("Warning: GEMINI_API_KEY is not set.")
-            return "AI生成機能を利用するには、GEMINI_API_KEYの設定が必要です。"
+        if not self.client:
+            print("Warning: OPENAI_API_KEY is not set.")
+            return "AI機能を利用するには、OpenAI APIキーの設定が必要です。"
 
-        url = f"{self.base_url}?key={self.api_key}"
-        
-        headers = {
-            "Content-Type": "application/json"
-        }
-        
-        # enhance system prompt by combining with user prompt or sending as system instruction if supported
-        # For simplicity in REST v1beta, we can combine them or just use user role.
-        # Gemini often handles system instructions well within the prompt or as a specific system role (depending on version).
-        # We will combine them for robust compatibility with the generateContent endpoint.
-        
-        combined_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
-
-        data = {
-            "contents": [{
-                "parts": [{"text": combined_prompt}]
-            }],
-            "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 1000,
-            }
-        }
-        
-        print(f"DEBUG: Calling Gemini API with Key starting: {self.api_key[:4]}...")
         try:
-             response = requests.post(url, headers=headers, json=data)
+            print(f"DEBUG: Calling OpenAI API ({self.model})...")
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1000
+            )
+            return response.choices[0].message.content
         except Exception as e:
-             print(f"Error calling Gemini API: {e}")
-             return f"生成エラー: 通信に失敗しました ({str(e)})"
-        
-        if response.status_code != 200:
-            print(f"Gemini API Error: {response.text}")
-            return f"生成エラー (Google): {response.text}"
-        
-        result = response.json()
-        try:
-            return result["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError):
-            return "AIからの応答の解析に失敗しました。"
+            print(f"Error calling OpenAI API: {e}")
+            return f"生成エラー: {str(e)}"
 
     def generate_post_content(self, keywords: str, length_option: str, tone: str = "friendly", custom_prompt: str = None, keywords_region: str = None, char_count: int = None):
         # length_option: "SHORT", "MEDIUM", "LONG" or specific char_count
