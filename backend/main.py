@@ -5,9 +5,18 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas, auth
 from routers import gbp, posts, reviews, admin, locations, insights, media, qa, ai, bulk, reports, sync, optimization, messages
+from services import scheduler
 from datetime import timedelta
 
 models.Base.metadata.create_all(bind=engine)
+
+@app.on_event("startup")
+async def startup_event():
+    scheduler.start_scheduler()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    scheduler.shutdown_scheduler()
 
 # Run DB Migration (Add store_id if missing)
 try:
