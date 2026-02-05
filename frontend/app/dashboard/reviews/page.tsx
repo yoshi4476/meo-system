@@ -40,10 +40,12 @@ export default function ReviewsPage() {
     const [replyText, setReplyText] = useState('');
     
     // AI Settings State
+    // AI Settings State
     const [showSettings, setShowSettings] = useState(false);
     const [globalPrompt, setGlobalPrompt] = useState('');
     const [isSavingPrompt, setIsSavingPrompt] = useState(false);
     const [isPromptLocked, setIsPromptLocked] = useState(false);
+    const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
 
     const fetchReviews = async () => {
         setIsLoading(true);
@@ -64,24 +66,44 @@ export default function ReviewsPage() {
     };
 
     useEffect(() => {
-        // Fetch Global Prompt
-        const fetchPrompt = async () => {
+
+        // Fetch Settings (Global Prompt & Auto-Reply)
+        const fetchSettings = async () => {
             if (isDemoMode) return;
             try {
                 const token = localStorage.getItem('meo_auth_token');
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts?category=REVIEW_REPLY`, {
+                
+                // Fetch Global Prompt
+                const promptRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts?category=REVIEW_REPLY`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if(res.ok) {
-                    const prompts = await res.json();
+                if(promptRes.ok) {
+                    const prompts = await promptRes.json();
                     if (prompts.length > 0) {
                         setGlobalPrompt(prompts[0].content);
                         setIsPromptLocked(prompts[0].is_locked);
                     }
                 }
+
+                if (userInfo?.store_id) {
+                    // Fetch Auto-Reply Settings
+                    const storeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stores/${userInfo.store_id}/auto-reply`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (storeRes.ok) {
+                        const storeData = await storeRes.json();
+                        setAutoReplyEnabled(storeData.auto_reply_enabled);
+                        // If we have a stored prompt specifically for auto-reply, maybe use it?
+                        // For now, we sync them, so global prompt is sufficient.
+                        if (storeData.auto_reply_prompt) {
+                             setGlobalPrompt(storeData.auto_reply_prompt);
+                        }
+                    }
+                }
             } catch(e) { console.error(e); }
         };
-        fetchPrompt();
+        fetchSettings();
+
 
         if (isDemoMode) {
              setReviews([
@@ -112,6 +134,21 @@ export default function ReviewsPage() {
         }
         try {
             const token = localStorage.getItem('meo_auth_token');
+            
+            // 1. Save to Store Settings (for Auto-Reply)
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stores/${userInfo?.store_id}/auto-reply`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({
+                    enabled: autoReplyEnabled,
+                    prompt: globalPrompt
+                })
+            });
+
+            // 2. Save to Global Prompt (for Manual Generation consistency)
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts`, {
                 method: 'POST',
                 headers: { 
@@ -125,7 +162,8 @@ export default function ReviewsPage() {
                     is_locked: isPromptLocked
                 })
             });
-            alert("設定を保存しました");
+
+            alert("設定を保存しました\n自動返信設定も更新されました");
             setShowSettings(false);
         } catch(e) {
             console.error(e);
@@ -336,37 +374,60 @@ export default function ReviewsPage() {
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
                     {/* ... existing settings modal code ... */}
                     <div className="bg-slate-900 rounded-2xl w-full max-w-lg p-6 border border-white/10 shadow-2xl">
-                        <h3 className="text-xl font-bold text-white mb-4">AI返信設定</h3>
+                        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                            <span>⚙️</span> AI返信・自動返信設定
+                        </h3>
                         
-                        <div className="mb-6 relative">
-                            <div className="flex justify-between items-center mb-2">
+                        <div className="space-y-6">
+                            {/* Auto Reply Toggle */}
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-white/5 flex items-center justify-between">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300">共通プロンプト (返信ポリシー)</label>
-                                    <p className="text-xs text-slate-500">すべてのクチコミ返信生成時に、この指示が適用されます。</p>
+                                    <div className="font-bold text-white mb-1">自動返信機能</div>
+                                    <div className="text-xs text-slate-400">新着のクチコミ（未返信）にAIが自動で返信します。<br/>24時間以内に実行されます（実際は5分毎チェック）。</div>
                                 </div>
-                                <button
-                                    onClick={() => setIsPromptLocked(!isPromptLocked)}
-                                    className={`p-2 rounded-lg transition-colors ${isPromptLocked ? 'bg-red-500/20 text-red-400' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                                    title={isPromptLocked ? "ロック解除" : "編集をロック"}
-                                >
-                                    {isPromptLocked ? (
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                    ) : (
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                                    )}
-                                </button>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only peer"
+                                        checked={autoReplyEnabled}
+                                        onChange={(e) => setAutoReplyEnabled(e.target.checked)}
+                                    />
+                                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-aurora-cyan"></div>
+                                </label>
                             </div>
-                            <textarea 
-                                value={globalPrompt}
-                                onChange={e => setGlobalPrompt(e.target.value)}
-                                placeholder="例: 「ありがとうございます」から始めて、最後は「またのご来店をお待ちしております」で締めてください。全体的に親しみやすいトーンで。"
-                                disabled={isPromptLocked}
-                                className={`w-full bg-slate-800 border rounded-lg px-4 py-3 text-white h-40 focus:outline-none transition-all ${
-                                    isPromptLocked 
-                                    ? 'border-red-500/30 opacity-70 cursor-not-allowed' 
-                                    : 'border-white/10 focus:border-aurora-cyan'
-                                }`}
-                            />
+
+                            <div className="relative">
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-sm font-medium text-slate-300">
+                                        AI返信プロンプト（指示）
+                                    </label>
+                                    <button
+                                        onClick={() => setIsPromptLocked(!isPromptLocked)}
+                                        className={`p-1.5 rounded-lg transition-colors ${isPromptLocked ? 'bg-red-500/20 text-red-400' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                                        title={isPromptLocked ? "ロック解除" : "編集をロック"}
+                                    >
+                                        {isPromptLocked ? (
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                        ) : (
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                                        )}
+                                    </button>
+                                </div>
+                                <textarea 
+                                    value={globalPrompt}
+                                    onChange={(e) => setGlobalPrompt(e.target.value)}
+                                    className={`w-full bg-slate-900 border rounded-lg p-3 text-white h-32 focus:outline-none transition-all ${
+                                        isPromptLocked 
+                                        ? 'border-red-500/30 opacity-70 cursor-not-allowed' 
+                                        : 'border-slate-600 focus:border-aurora-cyan'
+                                    }`}
+                                    placeholder="例: 親しみやすいトーンで、感謝の気持ちを伝えてください。また、新メニューの提案も含めてください。"
+                                    disabled={isPromptLocked}
+                                />
+                                <div className="text-xs text-slate-500 mt-2">
+                                    ※ この設定は「手動AI生成」と「自動返信」の両方に適用されます。
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex justify-end gap-3">
