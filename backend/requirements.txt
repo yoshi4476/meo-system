@@ -15,3 +15,4 @@ openai
 reportlab
 google-api-python-client
 apscheduler
+psycopg2-binary

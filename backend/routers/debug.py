@@ -108,3 +108,32 @@ def debug_google_connection(
          report["api_checks"]["v1_accounts"] = f"Failed: {str(e)}"
 
     return report
+
+@router.get("/pdf_test")
+def debug_pdf_generation():
+    """
+    Test PDF Generation logic independent of DB data.
+    """
+    from services.report_generator import ReportGenerator
+    from fastapi.responses import StreamingResponse
+    try:
+        gen = ReportGenerator()
+        insights = {"views_search": 123, "views_maps": 456, "actions_website": 10, "actions_phone": 5}
+        sentiment = {
+            "sentiment_score": 80, 
+            "summary": "This is a test summary from debug endpoint.", 
+            "positive_points": ["Good service", "Tasty food"], 
+            "negative_points": ["No parking"]
+        }
+        
+        pdf_buffer = gen.generate_report("Debug Store", insights, sentiment)
+        
+        return StreamingResponse(
+            pdf_buffer, 
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=debug_report.pdf"}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"PDF Debug Failed: {str(e)}")
