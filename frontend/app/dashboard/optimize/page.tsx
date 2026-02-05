@@ -43,7 +43,7 @@ export default function OptimizePage() {
                         qa: 40,
                     },
                     suggestions: [
-                        { done: false, title: "最新の写真を5枚追加", description: "写真が豊富な店舗はクリック率が30%向上します", action: "UPLOAD_PHOTO", type: "WARNING", points: 10 },
+                        { done: false, title: "写真を50枚以上追加", description: "写真が豊富な店舗はクリック率が大幅に向上します", action: "UPLOAD_PHOTO", type: "WARNING", points: 10 },
                         { done: false, title: "特別営業時間の設定", description: "来週の祝日の営業時間を設定してください", action: "EDIT_HOURS", type: "INFO", points: 5 },
                         { done: true, title: "ビジネスの説明文の最適化", description: "キーワード「ランチ」を含めた説明文に更新済み", action: "EDIT_DESCRIPTION", type: "SUCCESS", points: 0 },
                         { done: false, title: "Q&Aに回答する", description: "未回答の質問が2件あります", action: "GO_TO_QA", type: "URGENT", points: 15 },

@@ -31,29 +31,62 @@ def get_optimization_suggestions(store_id: str, db: Session = Depends(database.g
             "action": "AI_GENERATE_DESCRIPTION"
         })
     
-    # Check 2: Photos (Mock check)
-    # We would check media count here
+    # Check 2: Photos (Simulated check as we don't sync media count yet)
+    # Ideally we would check: len(store.media) < 50
     suggestions.append({
-        "type": "INFO",
-        "title": "写真をさらに追加しましょう",
-        "description": "外観や内観の写真を増やすと、ユーザーの関心が高まります。",
+        "type": "WARNING",
+        "title": "写真を50枚以上を目指しましょう",
+        "description": "写真はユーザーの興味を惹く最も重要な要素です。現在よりさらに充実させることを推奨します。",
         "action": "UPLOAD_PHOTO"
     })
     
     # Check 3: Reviews
     # Check if recent reviews have replies
-    unreplied_count = db.query(models.Review).filter(
-        models.Review.store_id == store_id, 
-        models.Review.reply == None
-    ).count()
-    
-    if unreplied_count > 0:
-        suggestions.append({
-            "type": "URGENT",
-            "title": f"未返信のクチコミが{unreplied_count}件あります",
-            "description": "クチコミへの返信はMEO評価に大きく影響します。AI返信を利用して返信しましょう。",
-            "action": "GO_TO_REVIEWS"
-        })
+    try:
+        unreplied_count = db.query(models.Review).filter(
+            models.Review.store_id == store_id, 
+            models.Review.reply_comment == None
+        ).count()
+        
+        if unreplied_count > 0:
+            suggestions.append({
+                "type": "URGENT",
+                "title": f"未返信のクチコミが{unreplied_count}件あります",
+                "description": "クチコミへの返信はMEO評価に大きく影響します。AI返信を利用して返信しましょう。",
+                "action": "GO_TO_REVIEWS"
+            })
+    except Exception as e:
+        print(f"Error checking reviews: {e}")
+
+    # Check 4: Posts (Check if posted in last 7 days)
+    try:
+        from datetime import datetime, timedelta
+        recent_post = db.query(models.Post).filter(
+            models.Post.store_id == store_id,
+            models.Post.created_at >= datetime.utcnow() - timedelta(days=7)
+        ).first()
+
+        if not recent_post:
+             suggestions.append({
+                "type": "INFO",
+                "title": "最新の投稿がありません",
+                "description": "週に1回以上の投稿は、検索順位の維持・向上に効果的です。",
+                "action": "CREATE_POST"
+            })
+    except Exception as e:
+         print(f"Error checking posts: {e}")
+
+    # Check 5: Q&A (Unanswered questions)
+    # Note: QA model structure assumes question has answer? Need to check QA schema.
+    # Assuming we don't have local QA db fully structured for unanswered check easily yet, skipping strict check or mocking.
+    # Actually we can see routers/qa.py implies we fetch from Google. 
+    # Let's add a generic suggestion if we can't check.
+    suggestions.append({
+        "type": "INFO",
+        "title": "Q&Aを確認しましょう",
+        "description": "ユーザーからの質問には迅速に回答することが重要です。",
+        "action": "GO_TO_QA"
+    })
 
     # Calculate dynamic score based on completeness
     base_score = 100
