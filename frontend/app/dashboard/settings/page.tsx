@@ -539,6 +539,36 @@ export default function SettingsPage() {
               >
                 保存
               </button>
+              <button 
+                onClick={async () => {
+                  const key = apiKeys.openai || localStorage.getItem('openai_api_key');
+                  if (!key) {
+                    alert('❌ APIキーが入力されていません');
+                    return;
+                  }
+                  try {
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/debug`, {
+                      headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('meo_auth_token')}`,
+                        'X-OpenAI-Api-Key': key
+                      }
+                    });
+                    const data = await res.json();
+                    if (data.openai_connection === 'success') {
+                      alert(`✅ 接続成功！\n\nテスト応答: ${data.test_response}`);
+                    } else if (data.openai_connection === 'failed') {
+                      alert(`❌ 接続失敗\n\nエラー: ${data.openai_error}`);
+                    } else {
+                      alert(`⚠️ キーが届いていません\n\n詳細: ${JSON.stringify(data)}`);
+                    }
+                  } catch (e: any) {
+                    alert(`❌ テストエラー: ${e.message}`);
+                  }
+                }}
+                className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium whitespace-nowrap"
+              >
+                🔌 テスト
+              </button>
             </div>
             {!apiKeys.openai && (
               <p className="text-xs text-yellow-400 mt-2 flex items-center gap-1">
