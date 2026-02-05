@@ -138,6 +138,10 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
     try:
         updated_location = client.update_location(store.google_location_id, data, update_mask)
         
+        # Update Cache immediately so UI reflects changes
+        store.gbp_data = updated_location
+        store.last_synced_at = datetime.utcnow()
+        
         # Sync back basics to local DB if title changed
         if update_data.title:
             store.name = update_data.title

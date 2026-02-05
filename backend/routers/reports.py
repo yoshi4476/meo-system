@@ -6,6 +6,7 @@ from services import report_generator, ai_generator
 from datetime import datetime, timedelta
 from io import StringIO
 import csv
+import urllib.parse
 
 import logging
 import traceback
@@ -238,7 +239,7 @@ def download_report(
         return StreamingResponse(
             pdf_buffer, 
             media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{urllib.parse.quote(filename)}"}
         )
     except Exception as e:
         logger.error(f"PDF Request Failed: {e}")
