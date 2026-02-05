@@ -88,6 +88,10 @@ def generate_post(
     except Exception as e:
         logger.error(f"Error in generate_post: {e}")
         traceback.print_exc()
+        # Return user-friendly error if it's an API key issue
+        error_str = str(e).lower()
+        if "api key" in error_str or "authentication" in error_str or "unauthorized" in error_str:
+            raise HTTPException(status_code=401, detail="OpenAI APIキーが無効または未設定です。設定画面でAPIキーを確認してください。")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/prompts")
@@ -183,10 +187,20 @@ def analyze_sentiment(
     review_data = [{"text": r.comment, "rating": r.star_rating} for r in reviews if r.comment]
 
     api_key = x_openai_api_key or x_gemini_api_key
-    client = ai_generator.AIClient(api_key=api_key)
-    result = client.analyze_sentiment(review_data)
     
-    # Future: Save result to Store model or separate InsightAnalysis model
-    return result
+    if not api_key:
+        logger.warning("analyze_sentiment: No API key provided")
+        raise HTTPException(status_code=400, detail="OpenAI APIキーが設定されていません。設定画面でAPIキーを入力してください。")
+    
+    try:
+        client = ai_generator.AIClient(api_key=api_key)
+        result = client.analyze_sentiment(review_data)
+        
+        # Future: Save result to Store model or separate InsightAnalysis model
+        return result
+    except Exception as e:
+        logger.error(f"Error in analyze_sentiment: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"分析エラー: {str(e)}")
 
 # --- Prompt Management Removed ---

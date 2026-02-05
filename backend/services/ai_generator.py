@@ -18,8 +18,8 @@ class AIClient:
 
     def generate_text(self, system_prompt: str, user_prompt: str):
         if not self.client:
-            print("Warning: OPENAI_API_KEY is not set.")
-            return "AI機能を利用するには、OpenAI APIキーの設定が必要です。"
+            print("Error: OpenAI client not initialized (API key missing)")
+            raise ValueError("OpenAI APIキーが設定されていません。設定画面でAPIキーを入力してください。")
 
         try:
             print(f"DEBUG: Calling OpenAI API ({self.model})...")
