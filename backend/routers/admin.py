@@ -243,7 +243,14 @@ def get_store_auto_reply(
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
+    # Determine if "include past" is effectively on
+    # If start_date is very old (e.g. year 2000), it means we included past.
+    include_past = False
+    if store.auto_reply_start_date and store.auto_reply_start_date.year < 2020:
+        include_past = True
+
     return {
         "auto_reply_enabled": store.auto_reply_enabled or False,
-        "auto_reply_prompt": store.auto_reply_prompt
+        "auto_reply_prompt": store.auto_reply_prompt,
+        "include_past_reviews": include_past
     }

@@ -94,6 +94,9 @@ export default function ReviewsPage() {
                     if (storeRes.ok) {
                         const storeData = await storeRes.json();
                         setAutoReplyEnabled(storeData.auto_reply_enabled);
+                        if (storeData.include_past_reviews !== undefined) {
+                            setIncludePastReviews(storeData.include_past_reviews);
+                        }
                         // If we have a stored prompt specifically for auto-reply, maybe use it?
                         // For now, we sync them, so global prompt is sufficient.
                         if (storeData.auto_reply_prompt) {
