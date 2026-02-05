@@ -9,6 +9,12 @@ import uuid
 
 print("DEBUG: Loading ai.py router...")
 
+import logging
+import traceback
+
+# Setup Logger
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/ai",
     tags=["ai"],
@@ -49,9 +55,16 @@ def generate_post(
     x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
 ):
     try:
+        logger.info(f"generate_post called. store_id={current_user.store_id}")
+        
         # Prioritize OpenAI key, fallback to Gemini key (User might have old UI)
         api_key = x_openai_api_key or x_gemini_api_key
         
+        if not api_key:
+            logger.warning("No API Key provided in headers (X-OpenAI-Api-Key or X-Gemini-Api-Key)")
+        else:
+            logger.info("API Key provided.")
+
         # Fetch past posts (latest 5) for context
         past_posts_data = []
         if current_user.store_id:
@@ -73,6 +86,8 @@ def generate_post(
         )
         return {"content": content}
     except Exception as e:
+        logger.error(f"Error in generate_post: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/prompts")
@@ -143,6 +158,8 @@ def generate_reply(
         )
         return {"content": content}
     except Exception as e:
+        logger.error(f"Error in generate_reply: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 class AnalyzeSentimentRequest(BaseModel):

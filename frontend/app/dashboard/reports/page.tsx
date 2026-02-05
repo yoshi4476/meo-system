@@ -20,7 +20,10 @@ export default function ReportsPage() {
         if (!userInfo?.store_id) return;
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/download/${userInfo.store_id}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }
+                headers: { 
+                    'Authorization': `Bearer ${localStorage.getItem('meo_auth_token')}`,
+                    'X-OpenAI-Api-Key': localStorage.getItem('openai_api_key') || ''
+                }
             });
             
             if (res.ok) {

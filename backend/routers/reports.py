@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header as APIHeader
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import models, database, auth
@@ -6,6 +6,11 @@ from services import report_generator, ai_generator
 from datetime import datetime, timedelta
 from io import StringIO
 import csv
+
+import logging
+import traceback
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/reports",
@@ -150,7 +155,12 @@ def get_monthly_report(
     return report_data
 
 @router.get("/download/{store_id}")
-def download_report(store_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+def download_report(
+    store_id: str, 
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.get_current_user),
+    x_openai_api_key: str = APIHeader(None, alias="X-OpenAI-Api-Key")
+):
     store = db.query(models.Store).filter(models.Store.id == store_id).first()
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
@@ -181,7 +191,7 @@ def download_report(store_id: str, db: Session = Depends(database.get_db), curre
             if reviews:
                 review_data = [{"text": r.comment, "rating": r.star_rating} for r in reviews if r.comment]
                 if review_data:
-                    client = ai_generator.AIClient()
+                    client = ai_generator.AIClient(api_key=x_openai_api_key)
                     sentiment_data = client.analyze_sentiment(review_data)
         except Exception as e:
             print(f"AI sentiment analysis failed (non-critical): {e}")
@@ -199,5 +209,7 @@ def download_report(store_id: str, db: Session = Depends(database.get_db), curre
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     except Exception as e:
+        logger.error(f"PDF Request Failed: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"PDF生成エラー: {str(e)}")
 
