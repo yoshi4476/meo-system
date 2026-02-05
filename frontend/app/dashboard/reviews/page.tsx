@@ -356,7 +356,24 @@ export default function ReviewsPage() {
                                                         const data = await res.json();
                                                         setReplyText(data.content);
                                                     } else {
-                                                        alert("AI生成に失敗しました");
+                                                        const errText = await res.text();
+                                                        let errMsg = "AI生成に失敗しました";
+                                                        
+                                                        if (res.status === 429) {
+                                                            if (errText.includes('insufficient_quota')) {
+                                                                errMsg = "⚠️ OpenAI APIのクレジットが不足しています。\nOpenAIのBilling設定を確認してください。";
+                                                            } else {
+                                                                errMsg = "⚠️ AIの利用制限を超えました。しばらく待ってから再試行してください。";
+                                                            }
+                                                        } else {
+                                                            try {
+                                                                const errJson = JSON.parse(errText);
+                                                                if(errJson.detail) errMsg += `\n${errJson.detail}`;
+                                                            } catch(e) {
+                                                                errMsg += ` (Status: ${res.status})`;
+                                                            }
+                                                        }
+                                                        alert(errMsg);
                                                     }
                                                 } catch (e) {
                                                     console.error(e);

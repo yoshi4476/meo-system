@@ -264,16 +264,21 @@ function PostsContent() {
                 // Determine error message
                 const errText = await res.text();
                 let errMsg = `生成に失敗しました (Status: ${res.status})`;
-                
+                let errJson = null;
+                try {
+                    errJson = JSON.parse(errText);
+                } catch(e) { /* ignore */ }
+
                 if (res.status === 429) {
-                    errMsg = "⚠️ AIの利用制限を超えました。\n\nOpenAI APIの制限により、短時間に多数のリクエストを送ることができません。\nしばらく待ってから再試行してください。";
-                } else {
-                    try {
-                        const errJson = JSON.parse(errText);
-                        if(errJson.detail) errMsg += `\n${errJson.detail}`;
-                    } catch(e) {
-                        errMsg += `\n${errText.substring(0, 100)}`;
+                    // Check for specific quota error
+                    if (errJson?.error?.code === 'insufficient_quota' || errText.includes('insufficient_quota')) {
+                        errMsg = "⚠️ OpenAI APIの利用枠（クレジット）が不足しています。\n\n無料枠の期限切れ、または上限に達している可能性があります。\nOpenAIのBilling設定をご確認いただき、クレジットを追加するか支払い情報を更新してください。";
+                    } else {
+                        errMsg = "⚠️ AIの利用制限（レートリミット）を超えました。\n\n短時間に多数のリクエストを送ることができません。\nしばらく待ってから再試行してください。";
                     }
+                } else {
+                    if(errJson?.detail) errMsg += `\n${errJson.detail}`;
+                    else errMsg += `\n${errText.substring(0, 100)}`;
                 }
                 alert(errMsg);
             }
