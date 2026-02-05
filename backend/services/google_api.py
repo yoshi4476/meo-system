@@ -67,6 +67,32 @@ class GBPClient:
     def _get_headers(self):
         return {"Authorization": f"Bearer {self.access_token}"}
 
+    def _get_v4_location_path(self, location_name: str) -> str:
+        """
+        Convert location ID/name to v4 API format: accounts/{accountId}/locations/{locationId}
+        """
+        # Extract just the location ID
+        location_id = location_name
+        if "/" in location_name:
+            location_id = location_name.split("/")[-1]
+        
+        # Check if already in v4 format
+        if "accounts/" in location_name and "/locations/" in location_name:
+            return location_name
+        
+        # Find the account that owns this location
+        accounts_data = self.list_accounts()
+        
+        for account in accounts_data.get("accounts", []):
+            account_name = account["name"]  # "accounts/xxx"
+            locations = self.list_locations(account_name)
+            for loc in locations.get("locations", []):
+                loc_id = loc["name"].split("/")[-1] if "/" in loc["name"] else loc["name"]
+                if loc_id == location_id:
+                    return f"{account_name}/locations/{location_id}"
+        
+        raise ValueError(f"Location {location_id} not found in any account")
+
     def list_accounts(self):
         url = f"{self.account_url}/accounts"
         all_accounts = []
@@ -117,9 +143,10 @@ class GBPClient:
     def list_reviews(self, location_name: str):
         """
         List all reviews for a specific location.
-        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        location_name: Can be any format, will be converted to v4 format.
         """
-        url = f"https://mybusiness.googleapis.com/v4/{location_name}/reviews"
+        v4_path = self._get_v4_location_path(location_name)
+        url = f"https://mybusiness.googleapis.com/v4/{v4_path}/reviews"
         response = requests.get(url, headers=self._get_headers(), timeout=10)
         response.raise_for_status()
         return response.json()
@@ -135,9 +162,10 @@ class GBPClient:
     def list_local_posts(self, location_name: str):
         """
         List local posts (updates, events, offers).
-        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        location_name: Can be any format, will be converted to v4 format.
         """
-        url = f"https://mybusiness.googleapis.com/v4/{location_name}/localPosts"
+        v4_path = self._get_v4_location_path(location_name)
+        url = f"https://mybusiness.googleapis.com/v4/{v4_path}/localPosts"
         response = requests.get(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
@@ -191,9 +219,10 @@ class GBPClient:
     def list_media(self, location_name: str):
         """
         List media items (photos, videos).
-        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        location_name: Can be any format, will be converted to v4 format.
         """
-        url = f"https://mybusiness.googleapis.com/v4/{location_name}/media"
+        v4_path = self._get_v4_location_path(location_name)
+        url = f"https://mybusiness.googleapis.com/v4/{v4_path}/media"
         response = requests.get(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
@@ -201,10 +230,11 @@ class GBPClient:
     def upload_media(self, location_name: str, media_data: dict):
         """
         Upload media (photo/video).
-        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        location_name: Can be any format, will be converted to v4 format.
         media_data: Dict with mediaFormat, locationAssociation, sourceUrl or bytes
         """
-        url = f"https://mybusiness.googleapis.com/v4/{location_name}/media"
+        v4_path = self._get_v4_location_path(location_name)
+        url = f"https://mybusiness.googleapis.com/v4/{v4_path}/media"
         response = requests.post(url, headers=self._get_headers(), json=media_data)
         response.raise_for_status()
         return response.json()
@@ -222,9 +252,10 @@ class GBPClient:
     def list_questions(self, location_name: str):
         """
         List questions.
-        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        location_name: Can be any format, will be converted to v4 format.
         """
-        url = f"https://mybusiness.googleapis.com/v4/{location_name}/questions"
+        v4_path = self._get_v4_location_path(location_name)
+        url = f"https://mybusiness.googleapis.com/v4/{v4_path}/questions"
         response = requests.get(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
