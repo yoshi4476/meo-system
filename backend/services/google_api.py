@@ -145,20 +145,48 @@ class GBPClient:
     def create_local_post(self, location_name: str, post_data: dict):
         """
         Create a new local post (update/event/offer).
-        location_name: Format "accounts/{accountId}/locations/{locationId}"
+        location_name: Can be "locations/{locationId}" (v1 format) or just the location ID.
         post_data: Dict with summary, callToAction, media, event, offer etc.
-        Example post_data for a standard update:
-        {
-            "summary": "投稿のテキスト",
-            "callToAction": {"actionType": "LEARN_MORE", "url": "https://example.com"},
-            "media": [{"mediaFormat": "PHOTO", "sourceUrl": "https://example.com/image.jpg"}]
-        }
-        For scheduled posts, use topicType: "STANDARD", "EVENT", or "OFFER"
+        
+        Note: The v4 localPosts API requires "accounts/{accountId}/locations/{locationId}" format.
+        Since we only store the location part, we need to find the account first.
         """
-        url = f"https://mybusiness.googleapis.com/v4/{location_name}/localPosts"
-        response = requests.post(url, headers=self._get_headers(), json=post_data)
-        response.raise_for_status()
-        return response.json()
+        # Ensure we have just the location ID
+        location_id = location_name
+        if "/" in location_name:
+            location_id = location_name.split("/")[-1]
+        
+        # Build v4 format: accounts/{accountId}/locations/{locationId}
+        # We need to find which account owns this location
+        try:
+            accounts_data = self.list_accounts()
+            v4_location_path = None
+            
+            for account in accounts_data.get("accounts", []):
+                account_name = account["name"]  # "accounts/xxx"
+                # Try to find this location under this account
+                locations = self.list_locations(account_name)
+                for loc in locations.get("locations", []):
+                    # loc["name"] is like "locations/yyy"
+                    loc_id = loc["name"].split("/")[-1] if "/" in loc["name"] else loc["name"]
+                    if loc_id == location_id:
+                        # Found it! Build the v4 path
+                        v4_location_path = f"{account_name}/locations/{location_id}"
+                        break
+                if v4_location_path:
+                    break
+            
+            if not v4_location_path:
+                raise ValueError(f"Location {location_id} not found in any account")
+            
+            url = f"https://mybusiness.googleapis.com/v4/{v4_location_path}/localPosts"
+            print(f"DEBUG: Creating post at {url}")
+            response = requests.post(url, headers=self._get_headers(), json=post_data)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"DEBUG: create_local_post error: {e}")
+            raise
 
     def list_media(self, location_name: str):
         """
