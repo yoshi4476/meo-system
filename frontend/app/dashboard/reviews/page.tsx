@@ -191,6 +191,54 @@ export default function ReviewsPage() {
         }
     };
 
+    const [showAnalysis, setShowAnalysis] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState<any>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const handleAnalyze = async () => {
+        setIsAnalyzing(true);
+        setShowAnalysis(true);
+        setAnalysisResult(null);
+
+        if (isDemoMode) {
+            await new Promise(r => setTimeout(r, 2000));
+            setAnalysisResult({
+                summary: "全体的に非常に好評です。特に「桜餅ラテ」への言及が多く、季節商品がフックとなっています。一方でWi-Fi速度に関する指摘が散見されるため、通信環境の改善が満足度向上への鍵となります。",
+                sentiment_score: 85,
+                positive_points: ["季節限定メニュー（桜餅ラテ）", "スタッフの接客態度", "落ち着いた雰囲気"],
+                negative_points: ["Wi-Fiの通信速度", "ランチタイムの混雑"],
+                action_plan: "ピークタイムのオペレーション見直しと、Wi-Fi環境のバックボーン増強を検討する"
+            });
+            setIsAnalyzing(false);
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/analyze/sentiment`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'X-OpenAI-Api-Key': localStorage.getItem('openai_api_key') || ''
+                },
+                body: JSON.stringify({ store_id: userInfo?.store_id })
+            });
+            
+            if (res.ok) {
+                setAnalysisResult(await res.json());
+            } else {
+                throw new Error(await res.text());
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert(`分析エラー: ${e.message}`);
+            setShowAnalysis(false);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
     if (!userInfo?.store_id) return <div className="p-8 text-slate-400">店舗を選択してください</div>;
 
     return (
@@ -201,6 +249,12 @@ export default function ReviewsPage() {
                     <p className="text-slate-400 mt-1 text-sm sm:text-base">お客様からのクチコミを確認・返信します</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    <button 
+                        onClick={handleAnalyze}
+                        className="bg-linear-to-r from-aurora-purple to-pink-500 text-white font-bold px-3 sm:px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm flex items-center gap-2"
+                    >
+                        🧠 AIクチコミ分析
+                    </button>
                     <button 
                         onClick={() => setShowSettings(true)}
                         className="bg-slate-800 text-slate-300 border border-slate-600 px-3 sm:px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors text-sm"
@@ -217,9 +271,70 @@ export default function ReviewsPage() {
                 </div>
             </div>
 
-            {/* Settings Modal */}
+            {/* Analysis Modal */}
+            {showAnalysis && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
+                    <div className="bg-slate-900 rounded-2xl w-full max-w-2xl p-6 border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh]">
+                        <div className="flex justify-between items-start mb-6">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                🧠 AIクチコミ分析結果
+                            </h3>
+                            <button onClick={() => setShowAnalysis(false)} className="text-slate-400 hover:text-white">✕</button>
+                        </div>
+                        
+                        {isAnalyzing ? (
+                            <div className="py-12 text-center text-slate-400 flex flex-col items-center gap-4">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-aurora-cyan"></div>
+                                <p>AIが最近のクチコミを分析中...</p>
+                            </div>
+                        ) : analysisResult ? (
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-xl">
+                                    <div className="text-center px-4 border-r border-slate-700">
+                                        <div className="text-sm text-slate-400">センチメントスコア</div>
+                                        <div className={`text-3xl font-bold ${analysisResult.sentiment_score >= 80 ? 'text-green-400' : analysisResult.sentiment_score >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                            {analysisResult.sentiment_score}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-bold text-white mb-1">総評</div>
+                                        <p className="text-sm text-slate-300">{analysisResult.summary}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-xl">
+                                        <h4 className="font-bold text-green-400 mb-2 flex items-center gap-2">👍 高評価ポイント</h4>
+                                        <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
+                                            {analysisResult.positive_points?.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
+                                        <h4 className="font-bold text-red-400 mb-2 flex items-center gap-2">👎 改善のヒント</h4>
+                                        <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
+                                            {analysisResult.negative_points?.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {analysisResult.action_plan && (
+                                    <div className="bg-aurora-purple/10 border border-aurora-purple/30 p-4 rounded-xl">
+                                        <h4 className="font-bold text-aurora-purple mb-2">💡 推奨アクションプラン</h4>
+                                        <p className="text-sm text-white font-medium">{analysisResult.action_plan}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center text-red-400">分析に失敗しました</div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Settings Modal (Existing) */}
             {showSettings && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
+                    {/* ... existing settings modal code ... */}
                     <div className="bg-slate-900 rounded-2xl w-full max-w-lg p-6 border border-white/10 shadow-2xl">
                         <h3 className="text-xl font-bold text-white mb-4">AI返信設定</h3>
                         
@@ -272,6 +387,7 @@ export default function ReviewsPage() {
                     </div>
                 </div>
             )}
+
 
             <div className="grid gap-4">
                 {isLoading ? (

@@ -8,21 +8,15 @@ from datetime import datetime
 
 class ReportGenerator:
     def __init__(self):
-        # Register Japanese Font
-        # On Windows, MS Gothic is usually available.
+        # Register Japanese Font using CID Fonts (Standard for PDF)
+        # This works on Linux/Render without external font files
         try:
-            pdfmetrics.registerFont(TTFont('Gothic', 'C:\\Windows\\Fonts\\msgothic.ttc'))
-            self.font_name = 'Gothic'
-        except:
-            try:
-                # Fallback to a standard font if MS Gothic is not found (e.g. Linux/Mac)
-                # In a real app we should bundle a font file.
-                # For now, let's try to use Helvetica which doesn't support Japanese,
-                # but we will try to handle it gracefully or warn.
-                self.font_name = 'Helvetica'
-                print("WARNING: Japanese font not found. Text may be garbled.")
-            except:
-                self.font_name = 'Helvetica'
+            from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+            pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
+            self.font_name = 'HeiseiKakuGo-W5'
+        except Exception as e:
+            print(f"Font registration warning: {e}")
+            self.font_name = 'Helvetica'
 
     def generate_report(self, store_name: str, insights_data: dict, sentiment_data: dict):
         buffer = io.BytesIO()

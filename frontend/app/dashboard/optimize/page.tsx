@@ -4,18 +4,52 @@ import { useState, useEffect } from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
 
 export default function OptimizePage() {
-  const { isDemoMode } = useDashboard();
+  const { userInfo, isDemoMode } = useDashboard();
   const [score, setScore] = useState(0);
   const [analyzing, setAnalyzing] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   useEffect(() => {
-      // Auto analyze on open (Mock)
-      setAnalyzing(true);
-      setTimeout(() => {
-          setScore(isDemoMode ? 72 : 0);
-          setAnalyzing(false);
-      }, 1500);
-  }, [isDemoMode]);
+      if (isDemoMode) {
+           setAnalyzing(true);
+           setTimeout(() => {
+               setScore(72);
+               setAnalyzing(false);
+               setSuggestions([
+                   { done: false, title: "最新の写真を5枚追加しましょう", description: "写真が豊富な店舗はクリック率が30%向上します", action: "UPLOAD_PHOTO", type: "INFO" },
+                   { done: false, title: "特別営業時間の設定", description: "来週の祝日の営業時間を設定してください", action: "EDIT_HOURS", type: "INFO" },
+                   { done: true, title: "ビジネスの説明文の最適化", description: "キーワード「ランチ」を含めた説明文に更新済み", action: "EDIT_DESCRIPTION", type: "SUCCESS" },
+                   { done: false, title: "Q&Aに回答する", description: "未回答の質問が2件あります", action: "GO_TO_QA", type: "URGENT" }
+               ]);
+           }, 1500);
+           return;
+      }
+
+      const fetchOptimization = async () => {
+          if (!userInfo?.store_id) return;
+          setAnalyzing(true);
+          try {
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/optimization/${userInfo.store_id}`, {
+                  headers: { Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}` }
+              });
+              if (res.ok) {
+                  const data = await res.json();
+                  setScore(data.score);
+                  setSuggestions(data.suggestions.map((s: any) => ({
+                      ...s,
+                      done: false, // Backend currently returns pending suggestions
+                      impact: s.type === 'URGENT' ? 'High' : 'Medium'
+                  })));
+              }
+          } catch (e) {
+              console.error(e);
+          } finally {
+              setAnalyzing(false);
+          }
+      };
+
+      fetchOptimization();
+  }, [userInfo, isDemoMode]);
 
   return (
     <div className="space-y-8">
@@ -63,36 +97,21 @@ export default function OptimizePage() {
                   <div className="space-y-4">
                       {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-800/50 rounded-lg animate-pulse" />)}
                   </div>
-              ) : isDemoMode ? (
+              ) : suggestions.length > 0 ? (
                   <div className="space-y-3">
-                      <SuggestionItem 
-                        done={false} 
-                        title="最新の写真を5枚追加しましょう" 
-                        desc="写真が豊富な店舗はクリック率が30%向上します"
-                        impact="High"
-                      />
-                      <SuggestionItem 
-                        done={false} 
-                        title="特別営業時間の設定" 
-                        desc="来週の祝日の営業時間を設定してください"
-                        impact="Medium"
-                      />
-                      <SuggestionItem 
-                        done={true} 
-                        title="ビジネスの説明文の最適化" 
-                        desc="キーワード「ランチ」を含めた説明文に更新済み"
-                        impact="High"
-                      />
-                      <SuggestionItem 
-                        done={false} 
-                        title="Q&Aに回答する" 
-                        desc="未回答の質問が2件あります"
-                        impact="Medium"
-                      />
+                      {suggestions.map((s, i) => (
+                          <SuggestionItem 
+                            key={i}
+                            done={s.done} 
+                            title={s.title} 
+                            desc={s.description}
+                            impact={s.impact || (s.type === 'URGENT' ? 'High' : 'Medium')}
+                          />
+                      ))}
                   </div>
               ) : (
                   <div className="text-slate-500 text-center py-8">
-                      データがありません。デモモードでご確認ください。
+                      提案事項はありません。現在の状態は良好です。
                   </div>
               )}
           </div>
