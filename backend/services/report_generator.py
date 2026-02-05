@@ -8,14 +8,26 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from io import BytesIO
 from datetime import datetime
 
+from reportlab.pdfbase.ttfonts import TTFont
+import os
+
 class ReportGenerator:
     def __init__(self):
-        # Register Japanese Font
+        # Register Japanese Font (NotoSansCJKjp)
+        self.font_name = 'Helvetica' # Init with fallback
         try:
-            pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
-            self.font_name = 'HeiseiMin-W3'
-        except Exception:
-            self.font_name = 'Helvetica' # Fallback
+            # Try embedded font first
+            font_path = os.path.join(os.path.dirname(__file__), '..', 'fonts', 'NotoSansCJKjp-Regular.otf')
+            if os.path.exists(font_path):
+                pdfmetrics.registerFont(TTFont('NotoSans', font_path))
+                self.font_name = 'NotoSans'
+            else:
+                # Try global HeiseiMin as fallback
+                pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
+                self.font_name = 'HeiseiMin-W3'
+        except Exception as e:
+            print(f"Font Load Error: {e}")
+            self.font_name = 'Helvetica' # Ultimate fallback
 
     def generate_report(self, store_name: str, insights: dict, sentiment: dict):
         buffer = BytesIO()

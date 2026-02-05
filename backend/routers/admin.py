@@ -214,7 +214,14 @@ def update_store_auto_reply(
     if settings.prompt is not None:
         store.auto_reply_prompt = settings.prompt
     
-    db.commit()
+    try:
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to save auto-reply settings: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database Update Failed: {str(e)}")
     
     return {
         "message": f"Auto-reply {'enabled' if settings.enabled else 'disabled'} for {store.name}",
