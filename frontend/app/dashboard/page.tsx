@@ -130,7 +130,7 @@ function DashboardContent() {
         </div>
         <div className="flex gap-2 sm:gap-3">
            <a href="/dashboard/reports" className="px-3 sm:px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-xs sm:text-sm font-medium">レポート出力</a>
-           <a href="/dashboard/posts/new" className="px-3 sm:px-4 py-2 rounded-lg bg-aurora-purple hover:bg-aurora-purple/80 transition-colors text-xs sm:text-sm font-medium shadow-lg shadow-purple-500/20">投稿を作成</a>
+           <a href="/dashboard/posts?new=true" className="px-3 sm:px-4 py-2 rounded-lg bg-aurora-purple hover:bg-aurora-purple/80 transition-colors text-xs sm:text-sm font-medium shadow-lg shadow-purple-500/20">投稿を作成</a>
         </div>
       </div>
 
@@ -204,7 +204,7 @@ function DashboardContent() {
                 <p className="text-slate-400 text-sm mb-6">
                   {isDemoMode ? '今週のランチタイム検索が20%増加していますが、最新のランチ写真は2週間前のものです。' : `前回の投稿から${dashboardState.daysSinceLastPost}日が経過しています。定期的な発信は検索順位に良い影響を与えます。`}
                 </p>
-                <a href="/dashboard/posts/new" className="block w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors text-center">
+                <a href="/dashboard/posts?new=true" className="block w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors text-center">
                    AIで投稿を作成
                 </a>
              </div>

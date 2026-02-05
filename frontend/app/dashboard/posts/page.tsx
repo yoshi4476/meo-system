@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useDashboard } from '../../../contexts/DashboardContext';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -25,11 +26,18 @@ const demoImages = [
   { id: 5, name: 'ディナーコース.jpg', url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=500&q=80', date: '2025-12-15' },
 ];
 
-export default function PostsPage() {
+function PostsContent() {
+    const searchParams = useSearchParams();
     const { userInfo, isDemoMode } = useDashboard();
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setIsCreating(true);
+        }
+    }, [searchParams]);
 
     // AI Studio State
     const [postType, setPostType] = useState<'update' | 'event' | 'offer'>('update');
@@ -703,5 +711,13 @@ export default function PostsPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function PostsPage() {
+    return (
+        <Suspense fallback={<div className="text-white p-8">Loading...</div>}>
+            <PostsContent />
+        </Suspense>
     );
 }
