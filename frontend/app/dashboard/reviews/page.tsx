@@ -137,7 +137,7 @@ export default function ReviewsPage() {
             const token = localStorage.getItem('meo_auth_token');
             
             // 1. Save to Store Settings (for Auto-Reply)
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stores/${userInfo?.store_id}/auto-reply`, {
+            const res1 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stores/${userInfo?.store_id}/auto-reply`, {
                 method: 'PATCH',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -149,6 +149,8 @@ export default function ReviewsPage() {
                     include_past_reviews: includePastReviews
                 })
             });
+            
+            if (!res1.ok) throw new Error("Auto-reply settings save failed");
 
             // 2. Save to Global Prompt (for Manual Generation consistency)
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts`, {
