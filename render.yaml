@@ -1,0 +1,13 @@
+# Render Blueprint for MEO System Backend
+services:
+  - type: web
+    name: meo-system
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+    autoDeploy: true
+    branch: main
+    rootDir: ""
