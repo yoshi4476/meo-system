@@ -17,6 +17,7 @@ class LocationUpdate(BaseModel):
     phoneNumbers: Optional[Dict] = None # {primaryPhone: ...}
     regularHours: Optional[Dict] = None # {periods: [{openDay: ..., openTime: ..., closeDay: ..., closeTime: ...}]}
     categories: Optional[Dict] = None # {primaryCategory: {name: "categories/gcid:..."}}
+    profile: Optional[Dict] = None # {description: "..."}
     
     # Add other fields as needed
 
@@ -125,6 +126,9 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
     if update_data.categories:
         mask_parts.append("categories")
         data["categories"] = update_data.categories
+    if update_data.profile:
+        mask_parts.append("profile")
+        data["profile"] = update_data.profile
         
     if not mask_parts:
         return {"message": "No changes detected"}
@@ -137,7 +141,12 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
         # Sync back basics to local DB if title changed
         if update_data.title:
             store.name = update_data.title
-            db.commit()
+        
+        # Sync description
+        if update_data.profile and "description" in update_data.profile:
+             store.description = update_data.profile["description"]
+
+        db.commit()
             
         return updated_location
     except Exception as e:

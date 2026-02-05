@@ -155,7 +155,8 @@ export default function ProfilePage() {
             const body: any = {
                 title: formData.title,
                 websiteUri: formData.websiteUri,
-                phoneNumbers: { primaryPhone: formData.primaryPhone }
+                phoneNumbers: { primaryPhone: formData.primaryPhone },
+                profile: { description: formData.description }
             };
 
             // Format category

@@ -157,6 +157,8 @@ def get_monthly_report(
 @router.get("/download/{store_id}")
 def download_report(
     store_id: str, 
+    year: int = None,
+    month: int = None,
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user),
     x_openai_api_key: str = APIHeader(None, alias="X-OpenAI-Api-Key")
@@ -166,10 +168,27 @@ def download_report(
         raise HTTPException(status_code=404, detail="Store not found")
         
     try:
-        # 1. Fetch Insights (aggregate from DB)
-        insights = db.query(models.Insight).filter(
-            models.Insight.store_id == store_id
-        ).order_by(models.Insight.date.desc()).limit(30).all()
+        # Determine Period
+        period_label = "直近30日"
+        start_date = None
+        end_date = None
+        
+        if year and month:
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1) - timedelta(seconds=1)
+            else:
+                end_date = datetime(year, month + 1, 1) - timedelta(seconds=1)
+            period_label = f"{year}年{month}月"
+
+        # 1. Fetch Insights
+        query = db.query(models.Insight).filter(models.Insight.store_id == store_id)
+        if start_date:
+            query = query.filter(models.Insight.date >= start_date, models.Insight.date <= end_date).order_by(models.Insight.date.asc())
+        else:
+            query = query.order_by(models.Insight.date.desc()).limit(30)
+            
+        insights = query.all()
         
         insight_data = {
             "views_search": sum(i.views_search or 0 for i in insights),
@@ -187,8 +206,15 @@ def download_report(
         }
         
         try:
-            reviews = db.query(models.Review).filter(models.Review.store_id == store_id).order_by(models.Review.create_time.desc()).limit(10).all()
-            logger.info(f"Found {len(reviews)} reviews for store {store_id}")
+            r_query = db.query(models.Review).filter(models.Review.store_id == store_id)
+            if start_date:
+                r_query = r_query.filter(models.Review.create_time >= start_date, models.Review.create_time <= end_date)
+            else:
+                r_query = r_query.order_by(models.Review.create_time.desc()).limit(20) # Analyze recent 20 for default
+                
+            reviews = r_query.all()
+            
+            logger.info(f"Found {len(reviews)} reviews for store {store_id} ({period_label})")
             if reviews:
                 review_data = [{"text": r.comment, "rating": r.star_rating} for r in reviews if r.comment]
                 logger.info(f"Reviews with comments: {len(review_data)}")
@@ -205,9 +231,9 @@ def download_report(
         # Generate PDF
         logger.info(f"Generating PDF for store {store.name}")
         generator = report_generator.ReportGenerator()
-        pdf_buffer = generator.generate_report(store.name, insight_data, sentiment_data)
+        pdf_buffer = generator.generate_report(store.name, insight_data, sentiment_data, period_label=period_label)
         
-        filename = f"report_{store.name}_{datetime.now().strftime('%Y%m')}.pdf"
+        filename = f"report_{store.name}_{year or 'recent'}{month or ''}.pdf"
         
         return StreamingResponse(
             pdf_buffer, 

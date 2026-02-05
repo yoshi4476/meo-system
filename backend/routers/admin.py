@@ -218,17 +218,15 @@ def update_store_auto_reply(
         db.commit()
     except Exception as e:
         logger.error(f"Failed to save auto-reply settings: {e}")
-        import traceback
-        traceback.print_exc()
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database Update Failed: {str(e)}")
-    
+        raise HTTPException(status_code=500, detail=f"保存に失敗しました: {str(e)}")
+        
     return {
         "message": f"Auto-reply {'enabled' if settings.enabled else 'disabled'} for {store.name}",
         "auto_reply_enabled": store.auto_reply_enabled,
         "auto_reply_prompt": store.auto_reply_prompt,
         "auto_reply_start_date": store.auto_reply_start_date
     }
+
 
 @router.get("/stores/{store_id}/auto-reply")
 def get_store_auto_reply(

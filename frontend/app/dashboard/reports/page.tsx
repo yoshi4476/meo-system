@@ -6,6 +6,8 @@ import { useDashboard } from '@/contexts/DashboardContext';
 export default function ReportsPage() {
     const { userInfo, isDemoMode } = useDashboard();
     const [isGenerating, setIsGenerating] = useState(false);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-12
 
     const handleDownload = async () => {
         setIsGenerating(true);
@@ -19,7 +21,8 @@ export default function ReportsPage() {
 
         if (!userInfo?.store_id) return;
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/download/${userInfo.store_id}`, {
+            const query = `?year=${selectedYear}&month=${selectedMonth}`;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/download/${userInfo.store_id}${query}`, {
                 headers: { 
                     'Authorization': `Bearer ${localStorage.getItem('meo_auth_token')}`,
                     'X-OpenAI-Api-Key': localStorage.getItem('openai_api_key') || ''
@@ -32,12 +35,12 @@ export default function ReportsPage() {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `report_${userInfo.store_id}.pdf`;
+                a.download = `report_${userInfo.store_id}_${selectedYear}${String(selectedMonth).padStart(2, '0')}.pdf`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
             } else {
-                alert("レポート生成に失敗しました");
+                alert("レポート生成に失敗しました: " + await res.text());
             }
         } catch (e) {
             console.error(e);
@@ -49,11 +52,36 @@ export default function ReportsPage() {
 
     if (!userInfo?.store_id) return <div className="p-8 text-slate-400">店舗を選択してください</div>;
 
+    const currentYear = new Date().getFullYear();
+    const years = [currentYear, currentYear - 1, currentYear - 2];
+    const months = Array.from({length: 12}, (_, i) => i + 1);
+
     return (
         <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold text-white">レポート出力</h1>
                 <p className="text-slate-400 mt-1">店舗のパフォーマンスとAI分析結果をPDFレポートとして出力します</p>
+            </div>
+
+            {/* Date Selection */}
+            <div className="flex gap-4 items-center bg-slate-800/50 p-4 rounded-lg w-fit border border-white/5">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-400">対象期間:</span>
+                    <select 
+                        value={selectedYear} 
+                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                        className="bg-slate-900 border border-white/10 rounded px-3 py-1 text-white text-sm focus:border-aurora-cyan outline-none"
+                    >
+                        {years.map(y => <option key={y} value={y}>{y}年</option>)}
+                    </select>
+                    <select 
+                        value={selectedMonth} 
+                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                        className="bg-slate-900 border border-white/10 rounded px-3 py-1 text-white text-sm focus:border-aurora-cyan outline-none"
+                    >
+                        {months.map(m => <option key={m} value={m}>{m}月</option>)}
+                    </select>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -65,7 +93,7 @@ export default function ReportsPage() {
                         </div>
                         <h3 className="text-xl font-bold text-white mb-2">月次パフォーマンスレポート</h3>
                         <p className="text-slate-400 text-sm mb-6">
-                            検索数、アクション数、クチコミ感情分析など、MEO対策の成果をまとめた総合レポートです。<br/>
+                            {selectedYear}年{selectedMonth}月の検索数、アクション数、クチコミ感情分析など、MEO対策の成果をまとめた総合レポートです。<br/>
                             クライアントへの報告や社内共有に最適です。
                         </p>
                     </div>
@@ -91,22 +119,7 @@ export default function ReportsPage() {
                     </button>
                 </div>
 
-                {/* Placeholder for future reports */}
-                <div className="glass-card p-6 flex flex-col justify-between h-full opacity-50 border border-dashed border-slate-700">
-                    <div>
-                        <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center mb-4 text-slate-500">
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-400 mb-2">競合比較レポート</h3>
-                        <p className="text-slate-500 text-sm mb-6">
-                            近隣の競合店舗との順位・クチコミ比較レポート。<br/>
-                            (Comming Soon)
-                        </p>
-                    </div>
-                    <button disabled className="w-full bg-slate-800 text-slate-500 font-bold py-3 rounded-lg cursor-not-allowed">
-                        準備中
-                    </button>
-                </div>
+
             </div>
         </div>
     );

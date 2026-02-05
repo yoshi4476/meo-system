@@ -29,7 +29,7 @@ class ReportGenerator:
             print(f"Font Load Error: {e}")
             self.font_name = 'Helvetica' # Ultimate fallback
 
-    def generate_report(self, store_name: str, insights: dict, sentiment: dict):
+    def generate_report(self, store_name: str, insights: dict, sentiment: dict, period_label: str = "直近30日"):
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
         
@@ -68,11 +68,12 @@ class ReportGenerator:
         # --- Title ---
         elements.append(Paragraph(f"月次運用レポート", title_style))
         elements.append(Paragraph(f"店舗名: {store_name}", heading_style))
+        elements.append(Paragraph(f"対象期間: {period_label}", body_style))
         elements.append(Paragraph(f"作成日: {datetime.now().strftime('%Y年%m月%d日')}", body_style))
         elements.append(Spacer(1, 20))
         
         # --- Performance Insights ---
-        elements.append(Paragraph("1. パフォーマンス概要 (直近30日)", heading_style))
+        elements.append(Paragraph(f"1. パフォーマンス概要 ({period_label})", heading_style))
         
         # Data Preparation
         data = [
