@@ -1,153 +1,123 @@
+from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Frame, PageTemplate
 from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-import io
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from io import BytesIO
 from datetime import datetime
 
 class ReportGenerator:
     def __init__(self):
         # Register Japanese Font
-        self.font_name = 'Helvetica'
         try:
-            pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
-            self.font_name = 'HeiseiKakuGo-W5'
+            pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
+            self.font_name = 'HeiseiMin-W3'
         except Exception:
-            try:
-                pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
-                self.font_name = 'HeiseiMin-W3'
-            except:
-                pass
+            self.font_name = 'Helvetica' # Fallback
 
-        # Styles
-        self.styles = getSampleStyleSheet()
-        self.styles.add(ParagraphStyle(
-            name='JapaneseNormal',
-            fontName=self.font_name,
-            fontSize=10,
-            leading=14
-        ))
-        self.styles.add(ParagraphStyle(
-            name='JapaneseTitle',
+    def generate_report(self, store_name: str, insights: dict, sentiment: dict):
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+        
+        styles = getSampleStyleSheet()
+        # Custom Styles for Japanese
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Title'],
             fontName=self.font_name,
             fontSize=24,
             leading=30,
-            spaceAfter=20,
+            spaceAfter=30,
             alignment=1 # Center
-        ))
-        self.styles.add(ParagraphStyle(
-            name='JapaneseHeading',
+        )
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
             fontName=self.font_name,
-            fontSize=14,
-            leading=18,
-            spaceBefore=15,
+            fontSize=16,
+            leading=20,
+            spaceBefore=20,
             spaceAfter=10,
             textColor=colors.darkblue
-        ))
-        self.styles.add(ParagraphStyle(
-            name='JapaneseSubHeader',
-            fontName=self.font_name,
-            fontSize=11,
-            leading=14,
-            textColor=colors.gray
-        ))
-
-    def _header_footer(self, canvas, doc):
-        canvas.saveState()
-        canvas.setFont(self.font_name, 9)
-        canvas.drawString(A4[0] - 200, A4[1] - 30, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-        canvas.line(30, A4[1] - 40, A4[0] - 30, A4[1] - 40)
-        
-        canvas.drawString(30, 20, "MEO Mastermind AI System Report")
-        canvas.drawRightString(A4[0] - 30, 20, f"Page {doc.page}")
-        canvas.restoreState()
-
-    def generate_report(self, store_info: dict, insights_data: dict, sentiment_data: dict):
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=A4,
-            rightMargin=50, leftMargin=50,
-            topMargin=60, bottomMargin=50
         )
-
+        body_style = ParagraphStyle(
+            'CustomBody',
+            parent=styles['Normal'],
+            fontName=self.font_name,
+            fontSize=10,
+            leading=15,
+            spaceAfter=5
+        )
+        
         elements = []
-
-        # 1. Title Section
-        elements.append(Paragraph(f"月次パフォーマンスレポート", self.styles['JapaneseTitle']))
-        elements.append(Paragraph(f"店舗名: {store_info.get('name', '')}", self.styles['JapaneseHeading']))
-        elements.append(Paragraph(f"住所: {store_info.get('address', '')}", self.styles['JapaneseNormal']))
-        elements.append(Paragraph(f"対象期間: {insights_data.get('period_label', '-')}", self.styles['JapaneseNormal']))
-        elements.append(Spacer(1, 20))
-
-        # 2. Performance Metrics
-        elements.append(Paragraph("1. パフォーマンス・インサイト", self.styles['JapaneseHeading']))
-        elements.append(Paragraph("Googleビジネスプロフィールの表示回数およびアクション数の推移です。", self.styles['JapaneseNormal']))
-        elements.append(Spacer(1, 10))
-
-        # Table Data
-        current = insights_data.get('current', {})
-        prev = insights_data.get('previous', {})
         
-        def diff_str(curr, prev):
-            if not prev: return "-"
-            diff = curr - prev
-            if diff > 0: return f"+{diff} ⬆"
-            elif diff < 0: return f"{diff} ⬇"
-            return "0"
-
+        # --- Title ---
+        elements.append(Paragraph(f"月次運用レポート", title_style))
+        elements.append(Paragraph(f"店舗名: {store_name}", heading_style))
+        elements.append(Paragraph(f"作成日: {datetime.now().strftime('%Y年%m月%d日')}", body_style))
+        elements.append(Spacer(1, 20))
+        
+        # --- Performance Insights ---
+        elements.append(Paragraph("1. パフォーマンス概要 (直近30日)", heading_style))
+        
+        # Data Preparation
         data = [
-            ["指標 (Metrics)", "今月 (Current)", "前月 (Previous)", "前月比"],
-            ["検索表示数", current.get('views_search', 0), prev.get('views_search', 0), diff_str(current.get('views_search', 0), prev.get('views_search', 0))],
-            ["マップ表示数", current.get('views_maps', 0), prev.get('views_maps', 0), diff_str(current.get('views_maps', 0), prev.get('views_maps', 0))],
-            ["ウェブサイト", current.get('actions_website', 0), prev.get('actions_website', 0), diff_str(current.get('actions_website', 0), prev.get('actions_website', 0))],
-            ["電話アクション", current.get('actions_phone', 0), prev.get('actions_phone', 0), diff_str(current.get('actions_phone', 0), prev.get('actions_phone', 0))],
-            ["ルート検索", current.get('actions_driving_directions', 0), prev.get('actions_driving_directions', 0), diff_str(current.get('actions_driving_directions', 0), prev.get('actions_driving_directions', 0))],
+            ["指標", "数値"],
+            ["検索表示回数 (Search Views)", f"{insights.get('views_search', 0):,}"],
+            ["マップ表示回数 (Map Views)", f"{insights.get('views_maps', 0):,}"],
+            ["ウェブサイトへのアクセス", f"{insights.get('actions_website', 0):,}"],
+            ["電話の問い合わせ", f"{insights.get('actions_phone', 0):,}"],
         ]
-
-        t = Table(data, colWidths=[140, 100, 100, 100])
-        t.setStyle(TableStyle([
+        
+        table = Table(data, colWidths=[200, 150])
+        table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), self.font_name),
-            ('BACKGROUND', (0, 0), (-1, 0), colors.aliceblue),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkblue),
+            ('BACKGROUND', (0, 0), (1, 0), colors.aliceblue), # Header bg
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.navy),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('ALIGN', (0, 0), (0, -1), 'LEFT'), # First col left align
-            ('GRID', (0, 0), (-1, -1), 1, colors.lightgrey),
-            ('PADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('PADDING', (0, 0), (-1, -1), 10),
         ]))
-        elements.append(t)
+        elements.append(table)
         elements.append(Spacer(1, 20))
-
-        # 3. AI Sentiment Analysis
-        elements.append(Paragraph("2. AI クチコミ分析結果", self.styles['JapaneseHeading']))
-        elements.append(Paragraph(f"センチメントスコア: <b>{sentiment_data.get('sentiment_score', '-')} / 100</b>", self.styles['JapaneseNormal']))
+        
+        # --- Sentiment Analysis ---
+        elements.append(Paragraph("2. AIクチコミ分析結果", heading_style))
+        
+        sentiment_score = sentiment.get('sentiment_score', 0)
+        score_color = colors.green if sentiment_score >= 80 else (colors.orange if sentiment_score >= 50 else colors.red)
+        
+        elements.append(Paragraph(f"センチメントスコア: {sentiment_score} / 100", ParagraphStyle('Score', parent=body_style, fontSize=14, textColor=score_color, spaceAfter=10)))
+        
+        elements.append(Paragraph("【総評】", ParagraphStyle('SubHeading', parent=body_style, fontName=self.font_name, fontSize=11, textColor=colors.black, spaceAfter=5)))
+        elements.append(Paragraph(sentiment.get('summary', 'データなし'), body_style))
         elements.append(Spacer(1, 10))
         
-        # Summary Box
-        elements.append(Paragraph("【AI総評】", self.styles['JapaneseSubHeader']))
-        elements.append(Paragraph(sentiment_data.get('summary', 'データなし'), self.styles['JapaneseNormal']))
-        elements.append(Spacer(1, 10))
+        # Positive Points
+        positives = sentiment.get('positive_points', [])
+        if positives:
+            elements.append(Paragraph("【高評価ポイント】", ParagraphStyle('SubHeadingPos', parent=body_style, textColor=colors.darkgreen)))
+            for p in positives:
+                elements.append(Paragraph(f"・{p}", body_style))
+            elements.append(Spacer(1, 10))
 
-        # Points
-        if sentiment_data.get('positive_points'):
-            elements.append(Paragraph("【高評価ポイント】", self.styles['JapaneseSubHeader']))
-            for p in sentiment_data['positive_points']:
-                elements.append(Paragraph(f"• {p}", self.styles['JapaneseNormal']))
-            elements.append(Spacer(1, 5))
-
-        if sentiment_data.get('negative_points'):
-            elements.append(Paragraph("【改善のヒント】", self.styles['JapaneseSubHeader']))
-            for p in sentiment_data['negative_points']:
-                elements.append(Paragraph(f"• {p}", self.styles['JapaneseNormal']))
+        # Negative Points
+        negatives = sentiment.get('negative_points', [])
+        if negatives:
+            elements.append(Paragraph("【改善のヒント】", ParagraphStyle('SubHeadingNeg', parent=body_style, textColor=colors.firebrick)))
+            for n in negatives:
+                elements.append(Paragraph(f"・{n}", body_style))
+            elements.append(Spacer(1, 10))
+            
+        elements.append(Spacer(1, 30))
         
-        elements.append(Spacer(1, 20))
-        elements.append(Paragraph("※ このレポートはAIによって自動生成されています。", self.styles['JapaneseSubHeader']))
-
+        # --- Footer ---
+        elements.append(Paragraph("※本レポートはAIによる分析結果を含みます。実際のお客様の声と併せてご確認ください。", ParagraphStyle('Footer', parent=body_style, fontSize=8, textColor=colors.grey)))
+        
         # Build PDF
-        doc.build(elements, onFirstPage=self._header_footer, onLaterPages=self._header_footer)
-        
+        doc.build(elements)
         buffer.seek(0)
         return buffer
