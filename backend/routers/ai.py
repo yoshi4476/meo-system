@@ -43,6 +43,7 @@ class PromptUpdate(BaseModel):
 @router.post("/generate/post")
 def generate_post(
     req: GeneratePostRequest, 
+    db: Session = Depends(database.get_db),
     current_user: models.User = Depends(auth.get_current_user),
     x_openai_api_key: Optional[str] = APIHeader(None, alias="X-OpenAI-Api-Key"),
     x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
@@ -51,6 +52,15 @@ def generate_post(
         # Prioritize OpenAI key, fallback to Gemini key (User might have old UI)
         api_key = x_openai_api_key or x_gemini_api_key
         
+        # Fetch past posts (latest 5) for context
+        past_posts_data = []
+        if current_user.store_id:
+            past_posts = db.query(models.Post).filter(
+                models.Post.store_id == current_user.store_id
+            ).order_by(models.Post.create_time.desc()).limit(5).all()
+            
+            past_posts_data = [p.content for p in past_posts if p.content]
+
         client = ai_generator.AIClient(api_key=api_key)
         content = client.generate_post_content(
             keywords=req.keywords, 
@@ -58,7 +68,8 @@ def generate_post(
             tone=req.tone,
             custom_prompt=req.custom_prompt,
             keywords_region=req.keywords_region,
-            char_count=req.char_count
+            char_count=req.char_count,
+            past_posts=past_posts_data
         )
         return {"content": content}
     except Exception as e:

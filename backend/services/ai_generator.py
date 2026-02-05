@@ -37,7 +37,7 @@ class AIClient:
             print(f"Error calling OpenAI API: {e}")
             return f"生成エラー: {str(e)}"
 
-    def generate_post_content(self, keywords: str, length_option: str, tone: str = "friendly", custom_prompt: str = None, keywords_region: str = None, char_count: int = None):
+    def generate_post_content(self, keywords: str, length_option: str, tone: str = "friendly", custom_prompt: str = None, keywords_region: str = None, char_count: int = None, past_posts: list = None):
         # length_option: "SHORT", "MEDIUM", "LONG" or specific char_count
         
         length_guide = ""
@@ -56,7 +56,18 @@ class AIClient:
 
         additional_instruction = ""
         if custom_prompt:
-             additional_instruction = f"追加指示: {custom_prompt}"
+             additional_instruction = f"追加指示: {custom_prompt}\n"
+
+        past_posts_instruction = ""
+        if past_posts:
+            past_content_str = "\n".join([f"- {p}" for p in past_posts])
+            past_posts_instruction = f"""
+以下の「過去の投稿」を参照し、それらとは表現や構成を60〜70%程度変えて、マンネリ化を防いだ新しい投稿を作成してください。
+過去の投稿と同じような言い回しは避けてください。
+
+【過去の投稿】
+{past_content_str}
+"""
 
         system_prompt = f"""
 あなたはGoogleビジネスプロフィールの投稿作成のエキスパートです。
@@ -65,10 +76,11 @@ class AIClient:
 言語: 日本語
 """
         user_prompt = f"""
-キーワード: {keywords}
+キーサード: {keywords}
 {region_instruction}
 文字数目安: {length_guide}
 
+{past_posts_instruction}
 {additional_instruction}
 
 投稿文を作成してください。ハッシュタグも含めてください。 
