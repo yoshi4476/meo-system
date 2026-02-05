@@ -105,7 +105,7 @@ def generate_post(
         if current_user.store_id:
             past_posts = db.query(models.Post).filter(
                 models.Post.store_id == current_user.store_id
-            ).order_by(models.Post.create_time.desc()).limit(5).all()
+            ).order_by(models.Post.created_at.desc()).limit(5).all()
             
             past_posts_data = [p.content for p in past_posts if p.content]
 
