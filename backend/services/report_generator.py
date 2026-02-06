@@ -152,7 +152,7 @@ class ReportGenerator:
         elements.append(Paragraph(f"センチメントスコア: {sentiment_score} / 100", ParagraphStyle('Score', parent=body_style, fontSize=14, textColor=score_color, spaceAfter=15)))
         
         # Summary with more space
-        elements.append(Paragraph("【総評】", ParagraphStyle('SubHeading', parent=body_style, fontName=self.font_name, fontSize=12, textColor=colors.black, spaceAfter=8, fontName='Helvetica-Bold')))
+        elements.append(Paragraph("【総評】", ParagraphStyle('SubHeading', parent=body_style, fontName=self.font_name, fontSize=12, textColor=colors.black, spaceAfter=8)))
         
         summary_style = ParagraphStyle(
             'DetailedBody', 
