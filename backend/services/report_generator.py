@@ -14,20 +14,22 @@ import os
 class ReportGenerator:
     def __init__(self):
         # Register Japanese Font (NotoSansCJKjp)
-        self.font_name = 'Helvetica' # Init with fallback
+        self.font_name = 'HeiseiMin-W3' # Default to CID font which is built-in for many PDF readers/ReportLab
         try:
-            # Try embedded font first
-            font_path = os.path.join(os.path.dirname(__file__), '..', 'fonts', 'NotoSansCJKjp-Regular.otf')
-            if os.path.exists(font_path):
-                pdfmetrics.registerFont(TTFont('NotoSans', font_path))
-                self.font_name = 'NotoSans'
-            else:
-                # Try global HeiseiMin as fallback
-                pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
-                self.font_name = 'HeiseiMin-W3'
+            # Try global HeiseiMin first as it is most reliable for basic Japanese without external files
+            pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
+            self.font_name = 'HeiseiMin-W3'
+            
+            # Optional: Check for custom font file if you really want it
+            # font_path = os.path.join(os.path.dirname(__file__), '..', 'fonts', 'NotoSansCJKjp-Regular.otf')
+            # if os.path.exists(font_path):
+            #     pdfmetrics.registerFont(TTFont('NotoSans', font_path))
+            #     self.font_name = 'NotoSans'
         except Exception as e:
             print(f"Font Load Error: {e}")
-            self.font_name = 'Helvetica' # Ultimate fallback
+            # If CID font fails, we have a problem. 
+            # But usually it is available in reportlab.
+            pass
 
     def generate_report(self, store_name: str, insights: dict, sentiment: dict, period_label: str = "直近30日"):
         buffer = BytesIO()
@@ -72,10 +74,10 @@ class ReportGenerator:
         elements.append(Paragraph(f"作成日: {datetime.now().strftime('%Y年%m月%d日')}", body_style))
         elements.append(Spacer(1, 20))
         
-        # --- Performance Insights ---
+        # --- Performance Insights (Graph) ---
         elements.append(Paragraph(f"1. パフォーマンス概要 ({period_label})", heading_style))
         
-        # Data Preparation
+        # Data Preparation for Table
         data = [
             ["指標", "数値"],
             ["検索表示回数 (Search Views)", f"{insights.get('views_search', 0):,}"],
@@ -96,6 +98,50 @@ class ReportGenerator:
         ]))
         elements.append(table)
         elements.append(Spacer(1, 20))
+
+        # --- Chart (Views & Actions) ---
+        from reportlab.graphics.shapes import Drawing
+        from reportlab.graphics.charts.barcharts import VerticalBarChart
+
+        drawing = Drawing(400, 200)
+        data_views = [
+            (insights.get('views_search', 0), insights.get('views_maps', 0)),
+            (insights.get('actions_website', 0), insights.get('actions_phone', 0))
+        ]
+        
+        bc = VerticalBarChart()
+        bc.x = 50
+        bc.y = 50
+        bc.height = 125
+        bc.width = 300
+        bc.data = data_views
+        bc.strokeColor = colors.black
+        
+        # Bar Labels
+        bc.categoryAxis.categoryNames = ['表示回数', 'アクション']
+        bc.categoryAxis.labels.boxAnchor = 'n'
+        bc.categoryAxis.labels.dy = -10
+        bc.categoryAxis.labels.fontName = self.font_name
+        bc.categoryAxis.labels.fontSize = 10
+        
+        # Values
+        bc.valueAxis.valueMin = 0
+        maxValue = max(
+            insights.get('views_search', 0) + insights.get('views_maps', 0),
+            insights.get('actions_website', 0) + insights.get('actions_phone', 0)
+        )
+        bc.valueAxis.valueMax = maxValue * 1.2 if maxValue > 0 else 100
+        bc.valueAxis.valueStep = (maxValue * 1.2) / 5 if maxValue > 0 else 20
+        bc.valueAxis.labels.fontName = self.font_name
+        
+        # Legend (Custom simple legend using bars colors if needed, or just labels)
+        # Using colors
+        bc.bars[0].fillColor = colors.blue
+        bc.bars[1].fillColor = colors.green
+        
+        drawing.add(bc)
+        elements.append(drawing)
+        elements.append(Spacer(1, 20))
         
         # --- Sentiment Analysis ---
         elements.append(Paragraph("2. AIクチコミ分析結果", heading_style))
@@ -103,11 +149,21 @@ class ReportGenerator:
         sentiment_score = sentiment.get('sentiment_score', 0)
         score_color = colors.green if sentiment_score >= 80 else (colors.orange if sentiment_score >= 50 else colors.red)
         
-        elements.append(Paragraph(f"センチメントスコア: {sentiment_score} / 100", ParagraphStyle('Score', parent=body_style, fontSize=14, textColor=score_color, spaceAfter=10)))
+        elements.append(Paragraph(f"センチメントスコア: {sentiment_score} / 100", ParagraphStyle('Score', parent=body_style, fontSize=14, textColor=score_color, spaceAfter=15)))
         
-        elements.append(Paragraph("【総評】", ParagraphStyle('SubHeading', parent=body_style, fontName=self.font_name, fontSize=11, textColor=colors.black, spaceAfter=5)))
-        elements.append(Paragraph(sentiment.get('summary', 'データなし'), body_style))
-        elements.append(Spacer(1, 10))
+        # Summary with more space
+        elements.append(Paragraph("【総評】", ParagraphStyle('SubHeading', parent=body_style, fontName=self.font_name, fontSize=12, textColor=colors.black, spaceAfter=8, fontName='Helvetica-Bold')))
+        
+        summary_style = ParagraphStyle(
+            'DetailedBody', 
+            parent=body_style, 
+            fontSize=10.5, 
+            leading=16, 
+            spaceAfter=15,
+            textColor=colors.black
+        )
+        elements.append(Paragraph(sentiment.get('summary', 'データなし'), summary_style))
+        elements.append(Spacer(1, 15))
         
         # Positive Points
         positives = sentiment.get('positive_points', [])

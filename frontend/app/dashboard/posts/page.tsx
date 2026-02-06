@@ -652,14 +652,20 @@ function PostsContent() {
                                             type="date" 
                                             value={scheduleDate} 
                                             onChange={e=>setScheduleDate(e.target.value)} 
-                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm scheme-dark" 
+                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm scheme-dark focus:outline-none focus:border-aurora-cyan" 
                                         />
-                                        <input 
-                                            type="time" 
+                                        <select
                                             value={scheduleTime} 
                                             onChange={e=>setScheduleTime(e.target.value)} 
-                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm scheme-dark" 
-                                        />
+                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-aurora-cyan"
+                                        >
+                                            {Array.from({length: 48}).map((_, i) => {
+                                                const hour = Math.floor(i / 2).toString().padStart(2, '0');
+                                                const min = (i % 2 === 0) ? '00' : '30';
+                                                const time = `${hour}:${min}`;
+                                                return <option key={time} value={time}>{time}</option>;
+                                            })}
+                                        </select>
                                     </div>
                                 )}
                             </div>

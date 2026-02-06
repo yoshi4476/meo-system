@@ -13,11 +13,15 @@ router = APIRouter(
 
 class LocationUpdate(BaseModel):
     title: Optional[str] = None
+    storeCode: Optional[str] = None
     websiteUri: Optional[str] = None
     phoneNumbers: Optional[Dict] = None # {primaryPhone: ...}
     regularHours: Optional[Dict] = None # {periods: [{openDay: ..., openTime: ..., closeDay: ..., closeTime: ...}]}
     categories: Optional[Dict] = None # {primaryCategory: {name: "categories/gcid:..."}}
     profile: Optional[Dict] = None # {description: "..."}
+    postalAddress: Optional[Dict] = None # {postalCode: ..., regionCode: "JP", ...}
+    labels: Optional[List[str]] = None
+    openInfo: Optional[Dict] = None # {openingDate: {year: ..., month: ..., day: ...}}
     
     # Add other fields as needed
 
@@ -46,7 +50,7 @@ def list_available_locations(db: Session = Depends(database.get_db), current_use
         return []
 
 @router.get("/{store_id}")
-def get_location_details(store_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+def get_location_details(store_id: str, force_refresh: bool = False, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
     Get location details directly from Google Business Profile.
     """
@@ -64,12 +68,11 @@ def get_location_details(store_id: str, db: Session = Depends(database.get_db), 
     
     # Caching Logic
     # 1. Check if we have cached data and it is recent (< 1 hour)
-    should_fetch = True
-    if store.gbp_data and store.last_synced_at:
+    should_fetch = force_refresh
+    if not should_fetch and store.gbp_data and store.last_synced_at:
         # Check if cache is fresh (e.g. 1 hour)
         if datetime.utcnow() - store.last_synced_at < timedelta(hours=1):
             should_fetch = False
-            # Check for force_refresh query param if implemented, or just rely on manual sync for forcing
             
     if not should_fetch:
         return store.gbp_data
@@ -114,6 +117,9 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
     if update_data.title:
         mask_parts.append("title")
         data["title"] = update_data.title
+    if update_data.storeCode:
+        mask_parts.append("storeCode")
+        data["storeCode"] = update_data.storeCode
     if update_data.websiteUri:
         mask_parts.append("websiteUri")
         data["websiteUri"] = update_data.websiteUri
@@ -129,6 +135,15 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
     if update_data.profile:
         mask_parts.append("profile")
         data["profile"] = update_data.profile
+    if update_data.postalAddress:
+        mask_parts.append("postalAddress")
+        data["postalAddress"] = update_data.postalAddress
+    if update_data.labels is not None:
+        mask_parts.append("labels")
+        data["labels"] = update_data.labels
+    if update_data.openInfo:
+        mask_parts.append("openInfo")
+        data["openInfo"] = update_data.openInfo
         
     if not mask_parts:
         return {"message": "No changes detected"}
@@ -149,6 +164,14 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
         # Sync description
         if update_data.profile and "description" in update_data.profile:
              store.description = update_data.profile["description"]
+
+        # Sync address (flattened for simple DB storage if needed, but currently address is just String or JSON)
+        if update_data.postalAddress:
+             # Basic update for list view
+             addr_str = f"{update_data.postalAddress.get('administrativeArea', '')}{update_data.postalAddress.get('locality', '')}"
+             if update_data.postalAddress.get('addressLines'):
+                 addr_str += "".join(update_data.postalAddress['addressLines'])
+             store.address = addr_str
 
         db.commit()
             

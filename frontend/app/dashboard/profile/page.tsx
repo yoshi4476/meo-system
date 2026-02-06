@@ -27,6 +27,14 @@ type LocationDetails = {
     profile?: {
         description?: string;
     };
+    postalAddress?: {
+        regionCode?: string;
+        languageCode?: string;
+        postalCode?: string;
+        administrativeArea?: string;
+        locality?: string;
+        addressLines?: string[];
+    };
     serviceArea?: {
         businessType: string;
         places?: { placeInfos: Array<{ name: string; placeId: string }> };
@@ -39,7 +47,20 @@ type LocationDetails = {
         mapsUri?: string;
         newReviewUri?: string;
     };
+    labels?: string[];
+    openInfo?: {
+        status: string;
+        canReopen?: boolean;
+        openingDate?: {
+            year: number;
+            month: number;
+            day: number;
+        };
+    };
 };
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_LABELS: {[key:string]: string} = { 'Monday': '月曜日', 'Tuesday': '火曜日', 'Wednesday': '水曜日', 'Thursday': '木曜日', 'Friday': '金曜日', 'Saturday': '土曜日', 'Sunday': '日曜日' };
 
 export default function ProfilePage() {
     const { userInfo, isLoading: userLoading, isDemoMode } = useDashboard();
@@ -56,7 +77,19 @@ export default function ProfilePage() {
         websiteUri: '',
         primaryPhone: '',
         rawCategoryId: '',
+        storeCode: '',
+        openingDate: '',
+        // Address
+        postalCode: '',
+        administrativeArea: '',
+        locality: '',
+        addressLine1: '',
+        addressLine2: '',
+        labels: '', // Comma separated
     });
+
+    // Hours State: { Day: { open: "0900", close: "1700", isClosed: false } }
+    const [hoursState, setHoursState] = useState<{[key:string]: {open: string, close: string, isClosed: boolean}}>({});
 
     useEffect(() => {
         if (userInfo?.store_id) {
@@ -64,13 +97,13 @@ export default function ProfilePage() {
         }
     }, [userInfo]);
 
-    const fetchDetails = async (storeId: string) => {
+    const fetchDetails = async (storeId: string, force: boolean = false) => {
         setLoading(true);
         setError(null);
         try {
             if (isDemoMode) {
                  await new Promise(resolve => setTimeout(resolve, 800));
-                 setDetails({
+                 const demoData: LocationDetails = {
                      name: 'locations/1234567890',
                      title: 'MEO Cafe 渋谷店 (Demo)',
                      storeCode: 'DEMO-001',
@@ -92,21 +125,24 @@ export default function ProfilePage() {
                          additionalCategories: [{ displayName: '喫茶店', categoryId: 'coffee_shop' }]
                      },
                      profile: { description: '渋谷駅徒歩5分の落ち着いたカフェです。自家焙煎のコーヒーと手作りケーキが自慢です。Wi-Fi完備でリモートワークにも最適。' },
+                     postalAddress: {
+                         postalCode: '150-0002',
+                         administrativeArea: '東京都',
+                         locality: '渋谷区',
+                         addressLines: ['渋谷2-2-2', '青山ビル1F']
+                     },
                      latlng: { latitude: 35.658034, longitude: 139.701636 },
                      metadata: { mapsUri: 'https://goo.gl/maps/example' }
-                 });
-                 setFormData({
-                    title: 'MEO Cafe 渋谷店 (Demo)',
-                    description: '渋谷駅徒歩5分の落ち着いたカフェです。自家焙煎のコーヒーと手作りケーキが自慢です。Wi-Fi完備でリモートワークにも最適。',
-                    websiteUri: 'https://example.com',
-                    primaryPhone: '03-1234-5678',
-                    rawCategoryId: 'gcid:cafe',
-                });
-                return;
+                 };
+                 setDetails(demoData);
+                 mapDataToForm(demoData);
+                 if (force) alert('Googleから最新情報を同期しました(Demo)');
+                 return;
             }
 
             const token = localStorage.getItem('meo_auth_token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/${storeId}`, {
+            const url = `${process.env.NEXT_PUBLIC_API_URL}/locations/${storeId}${force ? '?force_refresh=true' : ''}`;
+            const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error(await res.text());
@@ -114,24 +150,60 @@ export default function ProfilePage() {
             const data: LocationDetails = await res.json();
             
             if (!data) {
-                // Handle null case
                 setDetails({ name: '', title: 'No Data' });
                 return;
             }
 
             setDetails(data);
-            setFormData({
-                title: data.title || '',
-                description: data.profile?.description || '',
-                websiteUri: data.websiteUri || '',
-                primaryPhone: data.phoneNumbers?.primaryPhone || '',
-                rawCategoryId: data.categories?.primaryCategory?.categoryId || '',
-            });
+            mapDataToForm(data);
+            if (force) alert('Googleから最新情報を同期しました');
         } catch (e: any) {
             setError(e.message);
         } finally {
             setLoading(false);
         }
+    };
+
+    const mapDataToForm = (data: LocationDetails) => {
+        setFormData({
+            title: data.title || '',
+            description: data.profile?.description || '',
+            websiteUri: data.websiteUri || '',
+            primaryPhone: data.phoneNumbers?.primaryPhone || '',
+            rawCategoryId: data.categories?.primaryCategory?.categoryId || '',
+            storeCode: data.storeCode || '',
+            openingDate: (data as any).openInfo?.openingDate ? 
+                `${(data as any).openInfo.openingDate.year}-${String((data as any).openInfo.openingDate.month).padStart(2,'0')}-${String((data as any).openInfo.openingDate.day).padStart(2,'0')}` 
+                : '',
+            // Address mapping
+            postalCode: data.postalAddress?.postalCode || '',
+            administrativeArea: data.postalAddress?.administrativeArea || '',
+            locality: data.postalAddress?.locality || '',
+            addressLine1: data.postalAddress?.addressLines?.[0] || '',
+            addressLine2: data.postalAddress?.addressLines?.[1] || '',
+            // Labels (if available in type, add to type def if missing)
+            labels: (data as any).labels ? (data as any).labels.join(', ') : '',
+        });
+
+        // Map Hours
+        const initialHours: any = {};
+        DAYS.forEach(day => {
+            const period = data.regularHours?.periods?.find(p => p.openDay?.toUpperCase() === day.toUpperCase());
+            if (period) {
+                // Time coming from Google is likely "HH:MM" or "HHMM"
+                const cleanOpen = period.openTime.replace(':', '');
+                const cleanClose = period.closeTime.replace(':', '');
+                
+                initialHours[day] = {
+                    open: cleanOpen.slice(0,2) + ":" + cleanOpen.slice(2),
+                    close: cleanClose.slice(0,2) + ":" + cleanClose.slice(2),
+                    isClosed: false
+                };
+            } else {
+                initialHours[day] = { open: '09:00', close: '18:00', isClosed: true };
+            }
+        });
+        setHoursState(initialHours);
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -141,8 +213,7 @@ export default function ProfilePage() {
             setSaving(true);
             await new Promise(r => setTimeout(r, 1500));
             setSaving(false);
-            setFormData(prev => ({...prev, title: prev.title.replace(' (Updated)', '') + ' (Updated)' }));
-            alert('デモモード: 店舗情報 (タイトル, Web, TEL) を更新しました！\n(※実際のGoogleビジネスプロフィールには反映されません)');
+            alert('デモモード: 店舗情報を更新しました！\n(※実際のGoogleビジネスプロフィールには反映されません)');
             return;
         }
 
@@ -151,46 +222,66 @@ export default function ProfilePage() {
         setSaving(true);
         try {
             const token = localStorage.getItem('meo_auth_token');
-            // Construct update payload carefully
             const body: any = {
                 title: formData.title,
+                storeCode: formData.storeCode,
                 websiteUri: formData.websiteUri,
                 phoneNumbers: { primaryPhone: formData.primaryPhone },
-                profile: { description: formData.description }
+                profile: { description: formData.description },
+                postalAddress: {
+                    regionCode: "JP",
+                    postalCode: formData.postalCode,
+                    administrativeArea: formData.administrativeArea,
+                    locality: formData.locality,
+                    addressLines: [formData.addressLine1, formData.addressLine2].filter(Boolean)
+                }
             };
+
+            // Opening Date
+            if (formData.openingDate) {
+                const [y, m, d] = formData.openingDate.split('-').map(Number);
+                if (y && m && d) {
+                    body.openInfo = {
+                        status: "OPEN", // Default to OPEN
+                        openingDate: { year: y, month: m, day: d }
+                    };
+                }
+            }
 
             // Format category
             if (formData.rawCategoryId) {
-                // Ensure prefix if user forgot
                 let catId = formData.rawCategoryId.trim();
-                // Google format: categories/gcid:xxx or just gcid:xxx, but API often wants resource name or just id.
-                // The API spec for categories says "categories/{categoryId}".
-                // But update mask for Location says "categories.primaryCategory.name".
-                // backend locations.py passes dict directly.
-                // We'll construct the dict as expected by Google: { primaryCategory: { name: "categories/gcid:..." } }
-                
                 if (!catId.startsWith('categories/')) {
                      if (!catId.startsWith('gcid:')) {
                          catId = `gcid:${catId}`;
                      }
                      catId = `categories/${catId}`;
                 }
-                
                 body.categories = {
-                    primaryCategory: {
-                        name: catId
-                    }
+                    primaryCategory: { name: catId }
                 };
             }
-
-
-            // Add description if changed (Profile object)
-            // Note: The backend update logic currently handles flat fields. 
-            // We might need to update backend to handle 'profile' object or flatten it there.
-            // For now, let's assume backend is smart enough or we add extended logic later.
-            // But checking backend `locations.py`, it supports title, websiteUri, phoneNumbers.
-            // Description support needs to be added to backend `patch` method if not present.
             
+            // Labels
+            if (formData.labels) {
+                body.labels = formData.labels.split(',').map(l => l.trim()).filter(Boolean);
+            }
+
+            // Format Hours
+            const periods: any[] = [];
+            DAYS.forEach(day => {
+                const h = hoursState[day];
+                if (h && !h.isClosed && h.open && h.close) {
+                    periods.push({
+                        openDay: day.toUpperCase(),
+                        openTime: h.open, // Keep HH:MM format
+                        closeDay: day.toUpperCase(),
+                        closeTime: h.close // Keep HH:MM format
+                    });
+                }
+            });
+            body.regularHours = { periods };
+
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/${userInfo.store_id}`, {
                 method: 'PATCH',
                 headers: { 
@@ -257,9 +348,22 @@ export default function ProfilePage() {
                     </div>
                 </div>
                 <div className="text-right">
-                    <span className="inline-block px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20">
+                    <span className="inline-block px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20 mb-2">
                         Google連携中
                     </span>
+                    <button
+                        onClick={() => {
+                            if (userInfo?.store_id) {
+                                if (confirm('Googleから最新の情報を再取得しますか？\n(ローカルの未保存の変更は破棄されます)')) {
+                                    fetchDetails(userInfo.store_id, true);
+                                }
+                            }
+                        }}
+                        disabled={loading}
+                        className="block w-full text-xs text-aurora-cyan hover:underline"
+                    >
+                        🔄 最新情報を同期
+                    </button>
                 </div>
             </div>
 
@@ -323,6 +427,27 @@ export default function ProfilePage() {
                                     <a href="https://developers.google.com/my-business/content/categories" target="_blank" className="underline hover:text-aurora-cyan">カテゴリID一覧はこちら</a>
                                 </p>
                             </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm text-slate-400">店舗コード (Store Code)</label>
+                                    <input 
+                                        value={formData.storeCode}
+                                        onChange={(e) => setFormData({...formData, storeCode: e.target.value})}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
+                                        placeholder="STORE-001"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm text-slate-400">開業日 (Opening Date)</label>
+                                    <input 
+                                        type="date"
+                                        value={formData.openingDate}
+                                        onChange={(e) => setFormData({...formData, openingDate: e.target.value})}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan scheme-dark"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -346,6 +471,55 @@ export default function ProfilePage() {
                                     onChange={(e) => setFormData({...formData, websiteUri: e.target.value})}
                                     className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
                                 />
+                            </div>
+                        </div>
+
+                        {/* ADDRESS SECTION */}
+                        <div className="border-t border-white/5 pt-6 space-y-4">
+                            <h3 className="text-sm font-bold text-slate-300">店舗住所</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-slate-400">郵便番号</label>
+                                    <input 
+                                        value={formData.postalCode}
+                                        onChange={(e) => setFormData({...formData, postalCode: e.target.value})}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                                        placeholder="100-0001"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-400">都道府県</label>
+                                    <input 
+                                        value={formData.administrativeArea}
+                                        onChange={(e) => setFormData({...formData, administrativeArea: e.target.value})}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                                        placeholder="東京都"
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="text-xs text-slate-400">市区町村・番地</label>
+                                    <input 
+                                        value={formData.locality}
+                                        onChange={(e) => setFormData({...formData, locality: e.target.value})}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                                        placeholder="千代田区千代田1-1"
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="text-xs text-slate-400">住所ライン2 (ビル名など)</label>
+                                    <input 
+                                        value={formData.addressLine1}
+                                        onChange={(e) => setFormData({...formData, addressLine1: e.target.value})}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-2"
+                                        placeholder=""
+                                    />
+                                     <input 
+                                        value={formData.addressLine2}
+                                        onChange={(e) => setFormData({...formData, addressLine2: e.target.value})}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                                        placeholder=""
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -374,31 +548,74 @@ export default function ProfilePage() {
                 {/* HOURS TAB */}
                 {activeTab === 'hours' && (
                     <div className="space-y-6 animate-fadeIn">
-                        <h3 className="text-sm font-bold text-slate-300">通常営業時間</h3>
-                        {details?.regularHours?.periods ? (
-                            <div className="space-y-2">
-                                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => {
-                                    const periods = details.regularHours?.periods.filter(p => p.openDay === day);
-                                    return (
-                                        <div key={day} className="flex justify-between py-2 border-b border-white/5 last:border-0">
-                                            <span className="text-slate-400 w-24">{day}</span>
-                                            <div className="text-white text-right flex-1">
-                                                {periods && periods.length > 0 ? (
-                                                    periods.map((p, i) => (
-                                                        <div key={i}>{p.openTime.slice(0,2)}:{p.openTime.slice(2)} - {p.closeTime.slice(0,2)}:{p.closeTime.slice(2)}</div>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-slate-600">定休日</span>
-                                                )}
+                        <div className="flex justify-between items-center">
+                             <h3 className="text-sm font-bold text-slate-300">通常営業時間</h3>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            {DAYS.map(day => {
+                                const h = hoursState[day];
+                                return (
+                                    <div key={day} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-white/5 last:border-0 gap-2">
+                                        <div className="w-24 text-slate-300 font-medium">{DAY_LABELS[day]}</div>
+                                        <div className="flex-1 flex items-center gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={h?.isClosed}
+                                                    onChange={(e) => {
+                                                        const isClosed = e.target.checked;
+                                                        setHoursState(prev => ({
+                                                            ...prev,
+                                                            [day]: { ...prev[day], isClosed }
+                                                        }));
+                                                    }}
+                                                    className="rounded bg-slate-800 border-slate-600"
+                                                />
+                                                <span className={`text-sm ${h?.isClosed ? 'text-red-400' : 'text-slate-500'}`}>定休日</span>
                                             </div>
+                                            
+                                            {!h?.isClosed && (
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        value={h?.open || '09:00'}
+                                                        onChange={(e) => setHoursState(prev => ({
+                                                            ...prev,
+                                                            [day]: { ...prev[day], open: e.target.value }
+                                                        }))}
+                                                        className="bg-slate-800 border border-white/10 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-aurora-cyan"
+                                                    >
+                                                        {Array.from({length: 48}).map((_, i) => {
+                                                            const hour = Math.floor(i / 2).toString().padStart(2, '0');
+                                                            const min = (i % 2 === 0) ? '00' : '30';
+                                                            const time = `${hour}:${min}`;
+                                                            return <option key={time} value={time}>{time}</option>;
+                                                        })}
+                                                    </select>
+                                                    <span className="text-slate-500">〜</span>
+                                                    <select
+                                                        value={h?.close || '18:00'}
+                                                        onChange={(e) => setHoursState(prev => ({
+                                                            ...prev,
+                                                            [day]: { ...prev[day], close: e.target.value }
+                                                        }))}
+                                                        className="bg-slate-800 border border-white/10 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-aurora-cyan"
+                                                    >
+                                                        {Array.from({length: 48}).map((_, i) => {
+                                                            const hour = Math.floor(i / 2).toString().padStart(2, '0');
+                                                            const min = (i % 2 === 0) ? '00' : '30';
+                                                            const time = `${hour}:${min}`;
+                                                            return <option key={time} value={time}>{time}</option>;
+                                                        })}
+                                                    </select>
+                                                </div>
+                                            )}
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div className="text-slate-500">営業時間が設定されていません</div>
-                        )}
-                        <p className="text-xs text-slate-500 mt-4">※営業時間の編集機能は次回アップデートで追加予定です</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-4">※時間は24時間表記で入力してください。</p>
                     </div>
                 )}
 
@@ -407,9 +624,19 @@ export default function ProfilePage() {
                     <div className="space-y-6 animate-fadeIn">
                          <div className="space-y-4">
                             <h3 className="text-sm font-bold text-slate-300">サービスオプション・属性</h3>
-                            <div className="p-4 bg-slate-900/30 rounded border border-white/5 text-center text-slate-500 text-sm">
-                                属性情報は現在読み取り専用です。<br/>
-                                詳細な編集はGoogleビジネスプロフィール画面で行ってください。
+                             <div className="p-4 bg-slate-900/30 rounded border border-white/5 text-center text-slate-500 text-sm mb-4">
+                                属性情報（Attributes）の編集は現在Googleビジネスプロフィール画面で行ってください。
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="text-sm text-slate-400">ラベル (Labels)</label>
+                                <input 
+                                    value={formData.labels}
+                                    onChange={(e) => setFormData({...formData, labels: e.target.value})}
+                                    className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
+                                    placeholder="例: 本店, 24時間, WiFiあり (カンマ区切り)"
+                                />
+                                <p className="text-xs text-slate-500">店舗管理用のラベルです。カンマ(,)で区切って複数入力できます。</p>
                             </div>
                          </div>
                     </div>
