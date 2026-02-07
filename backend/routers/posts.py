@@ -117,7 +117,13 @@ def delete_post(post_id: str, db: Session = Depends(database.get_db), current_us
              # We need user connection
              if current_user.google_connection and current_user.google_connection.access_token:
                  client = google_api.GBPClient(current_user.google_connection.access_token)
-                 client.delete_local_post(post.google_post_id)
+                 
+                 # Store has location ID?
+                 store = db.query(models.Store).filter(models.Store.id == post.store_id).first()
+                 location_id = store.google_location_id if store else None
+                 
+                 client.delete_local_post(post.google_post_id, location_name=location_id)
+                 print(f"DEBUG: Deleted post {post.google_post_id} from Google")
         except Exception as e:
              print(f"Warning: Failed to delete post from Google: {e}")
              # We still delete locally

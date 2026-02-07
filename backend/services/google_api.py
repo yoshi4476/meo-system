@@ -311,13 +311,28 @@ class GBPClient:
             # Return empty list to avoid crashing the UI
             return {"questions": []}
 
-    def delete_local_post(self, post_name: str):
+    def delete_local_post(self, post_name: str, location_name: str = None):
         """
         Delete a local post.
-        post_name: "accounts/{accountId}/locations/{locationId}/localPosts/{localPostId}"
+        post_name: "accounts/{accountId}/locations/{locationId}/localPosts/{localPostId}" OR just "{localPostId}"
+        location_name: "locations/{locationId}" (Required if post_name is short)
         """
-        # Ensure it's a v4 URL
-        url = f"https://mybusiness.googleapis.com/v4/{post_name}"
+        full_name = post_name
+        
+        # If it's just an ID or short path, try to resolve it using location_name
+        if not post_name.startswith("accounts/"):
+             if not location_name:
+                 raise ValueError("location_name is required to resolve short post_id")
+                 
+             # Resolve parent location v4 path
+             v4_location = self._get_v4_location_path(location_name)
+             
+             # Clean post_id
+             post_id = post_name.split("/")[-1]
+             
+             full_name = f"{v4_location}/localPosts/{post_id}"
+
+        url = f"https://mybusiness.googleapis.com/v4/{full_name}"
         response = requests.delete(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
