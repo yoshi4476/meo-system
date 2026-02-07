@@ -299,7 +299,7 @@ function PostsContent() {
                 media_url: newPostMedia,
                 status: status,
                 created_at: new Date().toISOString(),
-                scheduled_at: scheduleEnabled ? `${scheduleDate}T${scheduleTime}:00` : undefined
+                scheduled_at: scheduleEnabled ? new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString() : undefined
             };
             setPosts([newPost, ...posts]);
             setIsCreating(false);
@@ -329,7 +329,7 @@ function PostsContent() {
                     content: newPostContent,
                     media_url: newPostMedia || undefined,
                     status: scheduleEnabled ? 'SCHEDULED' : (isEdit ? editingPost.status : 'DRAFT'), 
-                    scheduled_at: scheduleEnabled ? `${scheduleDate}T${scheduleTime}:00` : undefined
+                    scheduled_at: scheduleEnabled ? new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString() : undefined
                 })
             });
             

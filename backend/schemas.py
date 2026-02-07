@@ -77,3 +77,10 @@ class User(UserBase):
 
     class Config:
         from_attributes = True
+
+class UserUpdate(BaseModel):
+    email: Optional[str] = None
+    password: Optional[str] = None
+
+class UserSettingsUpdate(BaseModel):
+    openai_api_key: Optional[str] = None

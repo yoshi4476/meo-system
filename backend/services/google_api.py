@@ -118,7 +118,7 @@ class GBPClient:
 
     def list_locations(self, account_name: str):
         url = f"{self.base_url}/{account_name}/locations"
-        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea"}
+        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,attributes"}
         all_locations = []
         next_page_token = None
         

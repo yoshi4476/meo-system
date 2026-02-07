@@ -160,7 +160,8 @@ app.include_router(reports.router)
 app.include_router(sync.router)
 app.include_router(optimization.router)
 app.include_router(messages.router)
-from routers import debug
+from routers import users, debug
+app.include_router(users.router)
 app.include_router(debug.router)
 
 @app.on_event("startup")
@@ -194,65 +195,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/users/me", response_model=schemas.User)
-def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
-    return current_user
 
-@app.post("/users/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    # 1. Email Uniqueness Check
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    # 2. Super Admin Limit Check
-    if user.role == "SUPER_ADMIN":
-        existing_super_admin = db.query(models.User).filter(models.User.role == "SUPER_ADMIN").first()
-        if existing_super_admin:
-             raise HTTPException(
-                 status_code=400, 
-                 detail="A Super Admin already exists. Only one is allowed per system."
-             )
+# User routes moved to routers/users.py
 
-    hashed_password = auth.get_password_hash(user.password)
-    db_user = models.User(email=user.email, role=user.role, hashed_password=hashed_password, is_active=True)
-    
-    # Optional context-assignment if requester is logged in (future enhancement)
-    # For now, company_id/store_id must be assigned by Admin via update
-    
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-@app.get("/users/", response_model=list[schemas.User])
-def read_users(
-    skip: int = 0, 
-    limit: int = 100, 
-    db: Session = Depends(get_db), 
-    current_user: models.User = Depends(auth.get_current_user)
-):
-    print(f"DEBUG: read_users requested by {current_user.email} ({current_user.role})")
-    
-    if current_user.role == "SUPER_ADMIN":
-        # Super Admin sees everyone
-        users = db.query(models.User).offset(skip).limit(limit).all()
-        return users
-        
-    elif current_user.role == "COMPANY_ADMIN":
-        # Company Admin sees users in their company
-        if not current_user.company_id:
-             return [current_user] # Fallback if no company assigned
-             
-        users = db.query(models.User).filter(
-            models.User.company_id == current_user.company_id
-        ).offset(skip).limit(limit).all()
-        return users
-        
-    else:
-        # Regular user sees only themselves
-        # Or return empty list/403 depending on UX. Returning self for now.
-        return [current_user]
 
 @app.get("/")
 def read_root():

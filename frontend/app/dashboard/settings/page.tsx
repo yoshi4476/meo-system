@@ -136,10 +136,35 @@ export default function SettingsPage() {
     loadSettings();
   }, [isDemoMode]);
 
-  const handleSaveApiKeys = () => {
+  const handleSaveApiKeys = async () => {
+    // Save to LocalStorage (Legacy/Fallback)
     localStorage.setItem('google_api_key', apiKeys.google);
     localStorage.setItem('openai_api_key', apiKeys.openai);
-    alert('APIキーを保存しました');
+
+    // Save to Backend (New)
+    try {
+        const token = localStorage.getItem('meo_auth_token');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/users/me/settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                openai_api_key: apiKeys.openai
+            })
+        });
+
+        if (res.ok) {
+            alert('APIキーをサーバーに保存しました（自動返信機能などで使用されます）');
+        } else {
+            console.error("Failed to save to server", await res.text());
+            alert('サーバーへの保存に失敗しました(LocalStorageには保存されました)');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('エラー: サーバーへの保存に失敗しました');
+    }
   };
 
   const getStatusBadge = (status: string) => {

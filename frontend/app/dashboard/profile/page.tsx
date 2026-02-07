@@ -413,21 +413,21 @@ export default function ProfilePage() {
                                 <p className="text-xs text-slate-500">※Google検索やマップに表示される説明文です (750文字以内)</p>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm text-slate-400">カテゴリ (Category ID)</label>
-                                <div className="flex gap-2">
+                                <label className="text-sm text-slate-400">カテゴリ</label>
+                                <div className="p-3 bg-slate-800 rounded text-sm text-white flex justify-between items-center">
+                                    <span>{details?.categories?.primaryCategory?.displayName || '未設定'}</span>
+                                    {/* <span className="text-xs text-slate-500 font-mono">{details?.categories?.primaryCategory?.categoryId}</span> */}
+                                </div>
+                                {/* Hiding raw ID input to prevent confusion */}
+                                <div className="hidden">
                                     <input
                                         value={formData.rawCategoryId}
                                         onChange={(e) => setFormData({...formData, rawCategoryId: e.target.value})}
-                                        placeholder="gcid:cafe"
-                                        className="flex-1 bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan font-mono text-sm"
+                                        className="hidden"
                                     />
-                                    <div className="p-2 bg-slate-800 rounded text-xs text-slate-400 flex items-center">
-                                       現在: {details?.categories?.primaryCategory?.displayName}
-                                    </div>
                                 </div>
                                 <p className="text-xs text-slate-500">
-                                    ※GoogleカテゴリIDを入力してください (例: <code>gcid:cafe</code>, <code>gcid:japanese_restaurant</code>)<br/>
-                                    <a href="https://developers.google.com/my-business/content/categories" target="_blank" className="underline hover:text-aurora-cyan">カテゴリID一覧はこちら</a>
+                                    ※カテゴリの変更はGoogleビジネスプロフィールの管理画面から行うことを推奨します。<br/>
                                 </p>
                             </div>
 
@@ -626,12 +626,32 @@ export default function ProfilePage() {
                 {activeTab === 'attributes' && (
                     <div className="space-y-6 animate-fadeIn">
                          <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-slate-300">サービスオプション・属性</h3>
-                             <div className="p-4 bg-slate-900/30 rounded border border-white/5 text-center text-slate-500 text-sm mb-4">
-                                属性情報（Attributes）の編集は現在Googleビジネスプロフィール画面で行ってください。
+                            <h3 className="text-sm font-bold text-slate-300">属性 (Attributes)</h3>
+                             
+                            {/* Attribute List */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {(details as any).attributes?.map((attr: any, i: number) => (
+                                    <div key={i} className="p-3 bg-slate-800/50 rounded border border-white/5 flex flex-col">
+                                        <span className="text-sm font-bold text-white">{attr.displayName || attr.attributeId}</span>
+                                        <span className="text-xs text-aurora-cyan mt-1">
+                                            {attr.valueType === 'BOOL' 
+                                                ? (attr.values?.includes(true) ? '✅ あり' : 'Unknown') 
+                                                : (attr.values?.join(', ') || '設定あり')}
+                                        </span>
+                                    </div>
+                                ))}
+                                {!(details as any).attributes && (
+                                    <div className="col-span-2 text-slate-500 text-sm text-center py-4">
+                                        属性情報が取得できていません（または設定されていません）
+                                    </div>
+                                )}
+                            </div>
+
+                             <div className="p-4 bg-slate-900/30 rounded border border-white/5 text-center text-slate-500 text-sm mt-4">
+                                属性情報（支払い方法、バリアフリー設備など）の編集は、より複雑な設定が必要なため、現在はGoogleビジネスプロフィールの管理画面から直接行うことを推奨しています。
                             </div>
                             
-                            <div className="space-y-2">
+                            <div className="space-y-2 mt-6 pt-6 border-t border-white/5">
                                 <label className="text-sm text-slate-400">ラベル (Labels)</label>
                                 <input 
                                     value={formData.labels}
