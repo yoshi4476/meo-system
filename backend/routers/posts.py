@@ -74,6 +74,35 @@ def update_post(post_id: str, post_update: PostUpdate, db: Session = Depends(dat
     
     db.commit()
     db.refresh(post)
+    
+    # Sync update to Google if published
+    if post.status == 'PUBLISHED' and post.google_post_id and current_user.google_connection:
+        try:
+             # Refresh token if needed
+             connection = current_user.google_connection
+             if connection.expiry and connection.expiry < datetime.utcnow() and connection.refresh_token:
+                 new_tokens = google_api.refresh_access_token(connection.refresh_token)
+                 connection.access_token = new_tokens.get("access_token")
+                 connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
+                 db.commit()
+                 
+             client = google_api.GBPClient(connection.access_token)
+             
+             # Prepare Update Data
+             post_data = {
+                 "summary": post.content,
+                 "topicType": "STANDARD",
+             }
+             if post.media_url:
+                 post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": post.media_url}]
+                 
+             client.update_local_post(post.google_post_id, post_data)
+             print(f"DEBUG: Updated post {post.google_post_id} on Google")
+             
+        except Exception as e:
+             print(f"Warning: Failed to sync post update to Google: {e}")
+             # Non-fatal for local update
+    
     return post
 
 @router.delete("/{post_id}")

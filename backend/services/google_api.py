@@ -318,6 +318,20 @@ class GBPClient:
         """
         # Ensure it's a v4 URL
         url = f"https://mybusiness.googleapis.com/v4/{post_name}"
+        response = requests.delete(url, headers=self._get_headers())
+        response.raise_for_status()
+        return response.json()
+
+    def update_local_post(self, post_name: str, post_data: dict, update_mask: str = "summary,callToAction,media"):
+        """
+        Update a local post.
+        post_name: "accounts/{accountId}/locations/{locationId}/localPosts/{localPostId}"
+        """
+        url = f"https://mybusiness.googleapis.com/v4/{post_name}"
+        params = {"updateMask": update_mask}
+        response = requests.patch(url, headers=self._get_headers(), params=params, json=post_data)
+        response.raise_for_status()
+        return response.json()
         print(f"DEBUG: Deleting post {url}")
         response = requests.delete(url, headers=self._get_headers())
         response.raise_for_status()
@@ -374,7 +388,7 @@ class GBPClient:
         # Note: list_locations returns "locations/..." format ID from the new API
         # but we might need to handle mixed formats if we used the old v4 API manually
         url = f"{self.base_url}/{location_name}"
-        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo"}
+        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,postalAddress"}
         response = requests.get(url, headers=self._get_headers(), params=params)
         response.raise_for_status()
         return response.json()
