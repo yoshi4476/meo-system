@@ -84,8 +84,30 @@ def get_location_details(store_id: str, force_refresh: bool = False, db: Session
         details = client.get_location_details(store.google_location_id)
         
         # Save to DB for caching/display
+        # Save to DB for caching/display
         store.gbp_data = details
         store.last_synced_at = datetime.utcnow()
+
+        # Update core fields from GBP data to ensure consistency
+        if details.get("title"):
+             store.name = details.get("title")
+        
+        # Address
+        if details.get("postalAddress"):
+             addr = details["postalAddress"]
+             addr_str = f"{addr.get('administrativeArea', '')}{addr.get('locality', '')}"
+             if addr.get("addressLines"):
+                 addr_str += "".join(addr["addressLines"])
+             store.address = addr_str
+        
+        # Category
+        if details.get("categories") and details["categories"].get("primaryCategory"):
+             store.category = details["categories"]["primaryCategory"].get("displayName")
+        
+        # Description
+        if details.get("profile") and details["profile"].get("description"):
+             store.description = details["profile"]["description"]
+
         db.commit()
         
         return details

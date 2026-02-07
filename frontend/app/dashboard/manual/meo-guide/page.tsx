@@ -257,6 +257,49 @@ export default function MeoGuidePage() {
            </div>
         </section>
 
+        {/* 8. キーワード選定の重要性 */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
+           <h2 className="text-2xl font-bold text-white mb-6">8. 検索されるための「キーワード選定」</h2>
+           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
+             <p className="text-slate-300">
+                どれだけ良いお店でも、ユーザーが検索する言葉（キーワード）とマッチしていなければ表示されません。
+             </p>
+             <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-xl border border-white/5">
+                <h4 className="font-bold text-white mb-4">正しいキーワードの方程式</h4>
+                <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
+                    <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30 text-blue-300 font-bold">
+                        地域名 (Where)
+                    </div>
+                    <div className="text-slate-500">+</div>
+                    <div className="bg-emerald-900/30 p-3 rounded-lg border border-emerald-500/30 text-emerald-300 font-bold">
+                        業種 (What)
+                    </div>
+                    <div className="text-slate-500">+</div>
+                    <div className="bg-purple-900/30 p-3 rounded-lg border border-purple-500/30 text-purple-300 font-bold">
+                        目的・特徴 (Why/How)
+                    </div>
+                </div>
+                <div className="mt-4 bg-black/20 p-4 rounded-lg text-sm text-slate-400">
+                    <p className="mb-1"><strong className="text-white">例1:</strong> 「新宿 居酒屋 個室」</p>
+                    <p className="mb-1"><strong className="text-white">例2:</strong> 「大阪 美容院 髪質改善」</p>
+                    <p><strong className="text-white">例3:</strong> 「横浜 カフェ Wi-Fiあり」</p>
+                </div>
+             </div>
+
+             <div className="space-y-4 pt-4">
+                <h4 className="font-bold text-white">キーワードをどこに入れるべきか？</h4>
+                <ul className="list-disc list-inside text-slate-300 space-y-2">
+                    <li><strong className="text-emerald-400">ビジネスの説明文:</strong> 自然な文章の中で、ターゲットとするキーワードを盛り込みます。</li>
+                    <li><strong className="text-emerald-400">投稿（最新情報）:</strong> 毎回、「春の宴会」「歓送迎会」など季節やイベントに合わせたキーワードを入れます。</li>
+                    <li><strong className="text-emerald-400">クチコミへの返信:</strong> お客様のコメントにあるキーワードを拾って返信します（「個室のご利用ありがとうございました」等）。</li>
+                    <li><strong className="text-emerald-400">Q&A:</strong> 質問と回答の中にキーワードを含めます。</li>
+                    <li><strong className="text-red-400">注意:</strong> 店舗名（ビジネス名）に不要なキーワードを詰め込むのはGoogleの規約違反です（アカウント停止のリスクがあります）。</li>
+                </ul>
+             </div>
+           </div>
+        </section>
+
       </div>
     </div>
   );
