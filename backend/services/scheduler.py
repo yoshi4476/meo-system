@@ -100,8 +100,9 @@ def start_scheduler():
     if not scheduler.running:
         scheduler.add_job(check_and_publish_scheduled_posts, 'interval', minutes=1)
         scheduler.add_job(auto_reply_to_reviews, 'interval', minutes=5)  # Check every 5 minutes
+        scheduler.add_job(sync_all_locations, 'interval', minutes=60) # Sync every hour
         scheduler.start()
-        logger.info("Scheduler started with post publishing and auto-reply jobs.")
+        logger.info("Scheduler started with post publishing, auto-reply, and hourly sync jobs.")
 
 def shutdown_scheduler():
     if scheduler.running:
@@ -203,9 +204,59 @@ async def auto_reply_to_reviews():
                     logger.error(f"Failed to auto-reply to review {review.id}: {e}")
                     continue
             
+            
             db.commit()
             
     except Exception as e:
         logger.error(f"Auto-reply scheduler error: {e}")
     finally:
         db.close()
+
+async def sync_all_locations():
+    """
+    Periodically sync location details from Google for all connected stores.
+    """
+    logger.info("Scheduler: Syncing all location details...")
+    db: Session = SessionLocal()
+    try:
+        from services.sync_service import get_sync_service
+        from services import google_api
+        
+        stores = db.query(models.Store).filter(models.Store.google_location_id != None).all()
+        
+        for store in stores:
+            try:
+                # Find a valid connection
+                valid_connection = None
+                for user in store.users:
+                    if user.google_connection and user.google_connection.access_token:
+                        valid_connection = user.google_connection
+                        break
+                
+                if not valid_connection:
+                    continue
+
+                # Refresh if needed
+                if valid_connection.expiry and valid_connection.expiry < datetime.utcnow():
+                    if valid_connection.refresh_token:
+                        new_tokens = google_api.refresh_access_token(valid_connection.refresh_token)
+                        valid_connection.access_token = new_tokens.get("access_token")
+                        expires_in = new_tokens.get("expires_in", 3600)
+                        valid_connection.expiry = datetime.utcnow() + timedelta(seconds=expires_in)
+                        db.commit()
+
+                # Sync
+                client = google_api.GBPClient(valid_connection.access_token)
+                service = google_api.GoogleSyncService(client)
+                await service.sync_location_details(db, store.id, store.google_location_id)
+                logger.info(f"Synced location details for {store.name}")
+                
+            except Exception as e:
+                logger.error(f"Error syncing store {store.id}: {e}")
+                continue
+                
+    except Exception as e:
+        logger.error(f"Sync scheduler error: {e}")
+    finally:
+        db.close()
+
