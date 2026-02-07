@@ -151,16 +151,31 @@ async def auto_reply_to_reviews():
             valid_connection = None
             api_key = None
             
-            for user in store.users:
+            # Combine store users and company users (if company exists)
+            potential_users = list(store.users)
+            if store.company and store.company.users:
+                # Add company users who might not be currently selecting this store
+                company_users = [u for u in store.company.users if u.id not in [su.id for su in store.users]]
+                potential_users.extend(company_users)
+                
+            for user in potential_users:
                 if user.google_connection and user.google_connection.access_token:
-                    valid_connection = user.google_connection
                     # Check if user has OpenAI key saved (in settings)
                     user_settings = db.query(models.UserSettings).filter(
                         models.UserSettings.user_id == user.id
                     ).first()
+                    
                     if user_settings and user_settings.openai_api_key:
+                        valid_connection = user.google_connection
                         api_key = user_settings.openai_api_key
-                    break
+                        logger.info(f"Found valid connection and API key from user {user.email}")
+                        break
+            
+            # If still no connection, check if any user has connection, and any user has API key? 
+            # (Currently we require same user to have both for simplicity/security, 
+            # but we could mix if they belong to same company)
+            
+            if not valid_connection:
             
             if not valid_connection:
                 logger.warning(f"No valid Google connection for store {store.name}")
@@ -231,7 +246,12 @@ async def sync_all_locations():
             try:
                 # Find a valid connection
                 valid_connection = None
-                for user in store.users:
+                
+                potential_users = list(store.users)
+                if store.company and store.company.users:
+                     potential_users.extend([u for u in store.company.users if u.id not in [su.id for su in store.users]])
+
+                for user in potential_users:
                     if user.google_connection and user.google_connection.access_token:
                         valid_connection = user.google_connection
                         break
