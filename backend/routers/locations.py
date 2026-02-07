@@ -223,6 +223,16 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
                  addr_str += "".join(update_data.postalAddress['addressLines'])
              store.address = addr_str
 
+        # Sync Category
+        if update_data.categories and update_data.categories.get("primaryCategory"):
+             store.category = update_data.categories["primaryCategory"].get("name") 
+             # Ideally we fetch from response if available
+             if updated_location.get("categories") and updated_location["categories"].get("primaryCategory"):
+                 store.category = updated_location["categories"]["primaryCategory"].get("displayName")
+        
+        # Sync Website (Future Proof)
+        # if update_data.websiteUri: ...
+
         db.commit()
             
         return updated_location
