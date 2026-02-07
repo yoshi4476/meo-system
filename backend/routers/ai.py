@@ -102,7 +102,18 @@ def generate_post(
 
         # Fetch past posts (latest 5) for context
         past_posts_data = []
+        store_context = {}
+        
         if current_user.store_id:
+            store = db.query(models.Store).filter(models.Store.id == current_user.store_id).first()
+            if store:
+                 store_context = {
+                     "store_name": store.name,
+                     "store_description": store.description,
+                     "store_category": store.category,
+                     "store_address": store.address
+                 }
+
             past_posts = db.query(models.Post).filter(
                 models.Post.store_id == current_user.store_id
             ).order_by(models.Post.created_at.desc()).limit(5).all()
@@ -117,7 +128,8 @@ def generate_post(
             custom_prompt=req.custom_prompt,
             keywords_region=req.keywords_region,
             char_count=req.char_count,
-            past_posts=past_posts_data
+            past_posts=past_posts_data,
+            **store_context # Pass store details
         )
         return {"content": content}
     except Exception as e:
@@ -186,6 +198,16 @@ def generate_reply(
         
         custom_instruction = global_prompt.content if global_prompt else None
 
+        store_context = {}
+        if current_user.store_id:
+            store = db.query(models.Store).filter(models.Store.id == current_user.store_id).first()
+            if store:
+                 store_context = {
+                     "store_name": store.name,
+                     "store_description": store.description,
+                     "store_category": store.category,
+                 }
+
         api_key = x_openai_api_key or x_gemini_api_key
         client = ai_generator.AIClient(api_key=api_key)
         content = client.generate_review_reply(
@@ -193,7 +215,8 @@ def generate_reply(
             reviewer_name=req.reviewer_name, 
             star_rating=req.star_rating, 
             tone=req.tone,
-            custom_instruction=custom_instruction
+            custom_instruction=custom_instruction,
+            **store_context
         )
         return {"content": content}
     except Exception as e:

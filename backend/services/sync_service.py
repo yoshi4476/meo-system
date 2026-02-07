@@ -388,13 +388,31 @@ class GoogleSyncService:
              store = db.query(models.Store).filter(models.Store.id == store_id).first()
              if store:
                  store.gbp_data = details
-                 # Also update top-level fields for easier querying if needed
-                 if details.get("title"): store.name = details.get("title")
-                 # db.add(store) # Not needed if queried
+                 
+                 # Map top-level fields for system consistency (AI context, etc.)
+                 if details.get("title"): 
+                     store.name = details.get("title")
+                 
+                 # Description
+                 if details.get("profile") and details["profile"].get("description"):
+                     store.description = details["profile"]["description"]
+                 
+                 # Category
+                 if details.get("categories") and details["categories"].get("primaryCategory"):
+                     store.category = details["categories"]["primaryCategory"].get("displayName")
+
+                 # Address (Flatten to string)
+                 if details.get("postalAddress"):
+                     addr = details["postalAddress"]
+                     addr_str = f"{addr.get('administrativeArea', '')}{addr.get('locality', '')}"
+                     if addr.get("addressLines"):
+                         addr_str += "".join(addr["addressLines"])
+                     store.address = addr_str
+
                  db.commit()
              return {"status": "success", "message": "Location details updated"}
         except Exception as e:
-             return {"status": "error", "message": str(e)}
+             return {"status": "error", "message": f"Sync Location Error: {str(e)}"}
 
 # Helper to instantiate service
 # Helper to instantiate service

@@ -37,7 +37,7 @@ class AIClient:
             print(f"Error calling OpenAI API: {e}")
             return f"生成エラー: {str(e)}"
 
-    def generate_post_content(self, keywords: str, length_option: str, tone: str = "friendly", custom_prompt: str = None, keywords_region: str = None, char_count: int = None, past_posts: list = None):
+    def generate_post_content(self, keywords: str, length_option: str, tone: str = "friendly", custom_prompt: str = None, keywords_region: str = None, char_count: int = None, past_posts: list = None, store_name: str = None, store_description: str = None, store_category: str = None, store_address: str = None):
         # length_option: "SHORT", "MEDIUM", "LONG" or specific char_count
         
         length_guide = ""
@@ -53,10 +53,21 @@ class AIClient:
         region_instruction = ""
         if keywords_region:
             region_instruction = f"ターゲット地域: {keywords_region} (地域名を自然に盛り込んでください)"
+        elif store_address:
+             # Use store address if no specific region keyword
+             region_instruction = f"店舗所在地: {store_address} (地域の話題を適切に盛り込んでください)"
 
         additional_instruction = ""
         if custom_prompt:
              additional_instruction = f"追加指示: {custom_prompt}\n"
+
+        store_info_prompt = ""
+        if store_name:
+            store_info_prompt += f"店舗名: {store_name}\n"
+        if store_category:
+            store_info_prompt += f"業種: {store_category}\n"
+        if store_description:
+            store_info_prompt += f"店舗概要: {store_description}\n"
 
         past_posts_instruction = ""
         if past_posts:
@@ -71,12 +82,15 @@ class AIClient:
 
         system_prompt = f"""
 あなたはGoogleビジネスプロフィールの投稿作成のエキスパートです。
-以下の条件に従って、集客効果の高い投稿文を作成してください。
+以下の店舗情報に基づき、集客効果の高い投稿文を作成してください。
+
+{store_info_prompt}
+
 トーン: {tone}
 言語: 日本語
 """
         user_prompt = f"""
-キーサード: {keywords}
+キーワード: {keywords}
 {region_instruction}
 文字数目安: {length_guide}
 
@@ -87,10 +101,20 @@ class AIClient:
 """
         return self.generate_text(system_prompt, user_prompt)
 
-    def generate_review_reply(self, review_text: str, reviewer_name: str, star_rating: str, tone: str = "polite", custom_instruction: str = None):
+    def generate_review_reply(self, review_text: str, reviewer_name: str, star_rating: str, tone: str = "polite", custom_instruction: str = None, store_name: str = None, store_description: str = None, store_category: str = None):
+        
+        store_info_prompt = ""
+        if store_name:
+            store_info_prompt += f"店舗名: {store_name}\n"
+        if store_category:
+            store_info_prompt += f"業種: {store_category}\n"
+            
         system_prompt = f"""
 あなたは店舗のオーナーとして、お客様からのクチコミに返信します。
-丁寧で感謝の気持ちが伝わる返信を作成してください。
+以下の店舗情報に基づき、丁寧で感謝の気持ちが伝わる返信を作成してください。
+
+{store_info_prompt}
+
 トーン: {tone}
 言語: 日本語
 """
