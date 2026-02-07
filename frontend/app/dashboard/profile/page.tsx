@@ -190,16 +190,22 @@ export default function ProfilePage() {
         DAYS.forEach(day => {
             const period = data.regularHours?.periods?.find(p => p.openDay?.toUpperCase() === day.toUpperCase());
             if (period) {
-                // Time coming from Google is likely "HH:MM" or "HHMM"
-                const rawOpen = period.openTime ? String(period.openTime) : "09:00";
-                const rawClose = period.closeTime ? String(period.closeTime) : "18:00";
-                
-                const cleanOpen = rawOpen.replace(':', '');
-                const cleanClose = rawClose.replace(':', '');
+                // Function to format time
+                const formatTime = (t: any) => {
+                    if (!t) return "09:00";
+                    if (typeof t === 'string') return t; // Already "HH:MM"
+                    if (typeof t === 'object' && t.hours !== undefined) {
+                        return `${String(t.hours).padStart(2, '0')}:${String(t.minutes || 0).padStart(2, '0')}`;
+                    }
+                    return "09:00";
+                };
+
+                const openTime = formatTime(period.openTime);
+                const closeTime = formatTime(period.closeTime);
                 
                 initialHours[day] = {
-                    open: cleanOpen.slice(0,2) + ":" + cleanOpen.slice(2),
-                    close: cleanClose.slice(0,2) + ":" + cleanClose.slice(2),
+                    open: openTime,
+                    close: closeTime,
                     isClosed: false
                 };
             } else {

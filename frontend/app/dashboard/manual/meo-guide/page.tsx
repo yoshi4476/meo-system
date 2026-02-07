@@ -2,118 +2,143 @@
 
 export default function MeoGuidePage() {
   return (
-    <div className="h-full flex flex-col p-8 overflow-y-auto w-full max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">MEO対策パーフェクトガイド</h1>
-        <p className="text-slate-400">集客を最大化するためのGoogleマップ上位表示テクニック（クライアント様向け）</p>
+    <div className="h-full flex flex-col p-8 overflow-y-auto w-full max-w-5xl mx-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+      <div className="mb-10 text-center">
+        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-4 tracking-tight">
+          MEO対策 パーフェクトガイド
+        </h1>
+        <p className="text-slate-400 max-w-2xl mx-auto">
+          Googleマップで地域No.1を目指すための、具体的かつ実践的なノウハウ集。
+          今日から始める「勝つための習慣」を解説します。
+        </p>
       </div>
 
-      <div className="space-y-12 pb-20">
+      <div className="space-y-20 pb-20">
 
-        {/* 1. MEOとは？ */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 border-b border-white/10 pb-2">
-            1. MEO（マップエンジン最適化）とは？
-          </h2>
-          <div className="bg-slate-800/50 p-6 rounded-2xl border border-white/5 space-y-4 text-slate-300 leading-relaxed">
+        {/* 1. MEOの本質 */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
+          <h2 className="text-2xl font-bold text-white mb-6">1. なぜ今、MEO対策なのか？</h2>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 text-slate-300 leading-8">
             <p>
-              MEO（Map Engine Optimization）とは、Googleマップでの検索結果において、あなたのお店の情報を上位に表示させるための施策のことです。
-              「地域名 + 業種」（例：「新宿 居酒屋」）で検索したユーザーは、<strong className="text-white bg-green-500/20 px-1 rounded">来店意欲が非常に高い</strong>ため、MEO対策は最も費用対効果の高い集客方法と言われています。
+              スマートフォンの普及により、ユーザーの検索行動は激変しました。
+              「近くのカフェ」「新宿 ランチ」のように、「地域 + 業種」で検索するユーザーは、
+              <strong className="text-white underline decoration-emerald-500/50 decoration-2 underline-offset-4">「今すぐ行きたい」「予約したい」という強い意思</strong>を持っています。
+            </p>
+            <p className="mt-4">
+              MEO（マップ検索最適化）で上位3位以内（ローカルパック）に入ると、
+              ポータルサイトに広告費を払うよりも、はるかに高い確率で来店に繋がります。
+              これは単なる「設定」ではなく、店舗経営における<span className="text-emerald-400 font-bold">最強の集客資産</span>を作る投資です。
             </p>
           </div>
         </section>
 
-        {/* 2. 上位表示の3大要素 */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 border-b border-white/10 pb-2">
-            2. Googleが重視する3つの評価基準
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-slate-800/80 p-6 rounded-2xl border border-white/10">
-                <div className="text-4xl mb-4">🎯</div>
-                <h3 className="text-xl font-bold text-white mb-2">関連性 (Relevance)</h3>
-                <p className="text-slate-400 text-sm">
-                    検索されたキーワードと、お店の情報がどれだけ一致しているか。
-                    <br/><br/>
-                    <span className="text-green-400">対策:</span> 正しいカテゴリ設定、説明文へのキーワード含有、投稿でのキーワード発信。
-                </p>
+        {/* 2. 最重要アクション：投稿頻度 */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-emerald-500 to-cyan-500 rounded-full"></div>
+          <div className="flex items-center gap-3 mb-6">
+              <span className="bg-emerald-500 text-black text-xs font-bold px-2 py-1 rounded uppercase">Must Do</span>
+              <h2 className="text-3xl font-bold text-white">2. 投稿は「質」より「頻度」！</h2>
+          </div>
+          
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-2xl border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+            <div className="text-center mb-8">
+                <p className="text-xl font-bold text-slate-200 mb-2">Googleに「生きている店舗」と認識させる唯一の方法</p>
+                <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 my-4">
+                    週2〜3回以上
+                </div>
+                <p className="text-slate-400">これを下回ると、効果は半減します。</p>
             </div>
-            <div className="bg-slate-800/80 p-6 rounded-2xl border border-white/10">
-                <div className="text-4xl mb-4">📍</div>
-                <h3 className="text-xl font-bold text-white mb-2">距離 (Distance)</h3>
-                <p className="text-slate-400 text-sm">
-                    検索しているユーザーの現在地から、お店までの距離。
-                    <br/><br/>
-                    <span className="text-green-400">対策:</span> コントロール不可ですが、正確な住所登録が必須です。
-                </p>
+
+            <div className="grid md:grid-cols-2 gap-8 mt-8">
+                <div className="bg-black/20 p-6 rounded-xl border border-white/5">
+                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <span className="text-red-400">✖</span> ダメなパターン
+                    </h3>
+                    <ul className="space-y-3 text-slate-400">
+                        <li>気が向いた時に月1回だけ投稿</li>
+                        <li>完璧な写真を撮ろうとして更新が止まる</li>
+                        <li>毎回同じ「営業しています」だけの定型文</li>
+                    </ul>
+                </div>
+                <div className="bg-emerald-500/10 p-6 rounded-xl border border-emerald-500/20">
+                    <h3 className="text-lg font-bold text-emerald-300 mb-3 flex items-center gap-2">
+                        <span className="text-emerald-400">◎</span> 勝てるパターン
+                    </h3>
+                    <ul className="space-y-3 text-slate-200">
+                        <li className="font-bold text-white">週2〜3回、できれば毎日投稿する</li>
+                        <li>スマホ写真でOK！リアルな日常を見せる</li>
+                        <li>「雨の日はポイント2倍」などリアルタイムな情報</li>
+                    </ul>
+                </div>
             </div>
-            <div className="bg-slate-800/80 p-6 rounded-2xl border border-white/10">
-                <div className="text-4xl mb-4">⭐</div>
-                <h3 className="text-xl font-bold text-white mb-2">知名度 (Prominence)</h3>
-                <p className="text-slate-400 text-sm">
-                    Web上での認知度や評価の高さ。
-                    <br/><br/>
-                    <span className="text-green-400">対策:</span> <span className="underline decoration-green-500/50">クチコミの数と評価</span>、返信率、写真の充実度、サイテーション（他サイトでの言及）。
-                </p>
+
+            <div className="mt-8 bg-slate-800 p-4 rounded-xl border border-white/10 text-center">
+                 <p className="text-slate-300">
+                    <span className="text-yellow-400 font-bold">💡 なぜ「多ければ多いほどいい」のか？</span><br/>
+                    Googleのアルゴリズムは「情報の鮮度」を極めて重視します。更新頻度が高い店舗は「ユーザーに有益な情報を提供している」と判断され、検索順位が優遇される傾向にあります。<br/>
+                    <span className="text-sm mt-2 block text-slate-500">（SEOにおけるブログ更新と同じ原理です）</span>
+                 </p>
             </div>
           </div>
         </section>
 
-        {/* 3. 具体的なアクションプラン */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 border-b border-white/10 pb-2">
-            3. 今日からできるアクションプラン
-          </h2>
-          <div className="bg-slate-800/50 p-6 rounded-2xl border border-white/5 space-y-6">
-            
-            <div className="flex gap-4">
-                <div className="flex-none w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-xl">1</div>
-                <div>
-                    <h3 className="text-xl font-bold text-white">クチコミを集め、必ず返信する</h3>
-                    <p className="text-slate-400 mt-1">
-                        クチコミは最大のランキング要因です。会計時にお客様に依頼したり、QRコードを活用しましょう。また、投稿されたクチコミには<strong className="text-green-400">2日以内に返信</strong>することが推奨されます。キーワード（例：「ランチ」「個室」）を返信に含めるとさらに効果的です。
-                    </p>
-                    <div className="mt-3 p-3 bg-slate-900/50 rounded-lg text-sm text-slate-300 border border-white/5">
-                        💡 当システムの「自動返信機能」を使えば、返信漏れを防ぎ、AIが丁寧な文章を作成してくれます。
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex gap-4">
-                <div className="flex-none w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-xl">2</div>
-                <div>
-                    <h3 className="text-xl font-bold text-white">最新情報を週1回以上投稿する</h3>
-                    <p className="text-slate-400 mt-1">
-                        Googleは「活動している店舗」を好みます。新メニュー、イベント、休業案内、日常の様子などを定期的に「投稿機能」でアップしましょう。写真は必須です。
-                    </p>
-                </div>
-            </div>
-
-            <div className="flex gap-4">
-                <div className="flex-none w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-xl">3</div>
-                <div>
-                    <h3 className="text-xl font-bold text-white">写真を充実させる</h3>
-                    <p className="text-slate-400 mt-1">
-                        ユーザーは写真でお店を選びます。料理、内観、外観、スタッフなどの写真をカテゴリごとにアップロードしましょう。高画質な写真はクリック率を高めます。
-                    </p>
-                </div>
-            </div>
-
+        {/* 3. クチコミ戦略 */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
+          <h2 className="text-2xl font-bold text-white mb-6">3. クチコミは「数」と「返信」</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+             <div className="bg-slate-800/50 p-6 rounded-2xl border border-white/5">
+                <h3 className="text-xl font-bold text-white mb-3">数を集める技術</h3>
+                <ul className="list-disc list-inside space-y-3 text-slate-300">
+                    <li>会計時の一言「Googleで応援コメントいただけると嬉しいです」が最強。</li>
+                    <li>QRコードをテーブルやレジ横に設置する（手間を省く）。</li>
+                    <li><span className="text-red-400">禁止事項:</span> 割引やサービスの対価としてクチコミを強要すること（インセンティブ禁止）。</li>
+                </ul>
+             </div>
+             <div className="bg-slate-800/50 p-6 rounded-2xl border border-white/5">
+                <h3 className="text-xl font-bold text-white mb-3">返信の鉄則</h3>
+                <ul className="list-disc list-inside space-y-3 text-slate-300">
+                    <li><strong className="text-emerald-400">全件返信</strong>が基本です。★のみの評価にも返信しましょう。</li>
+                    <li><strong className="text-emerald-400">キーワードを入れる</strong>。「ランチのご利用ありがとうございます」「個室はいかがでしたか？」など、検索されたいワードを自然に盛り込むのが高等テクニックです。</li>
+                    <li>当システムのAI自動返信を使えば、この最適化を自動で行えます。</li>
+                </ul>
+             </div>
           </div>
         </section>
 
-        {/* 4. 禁止事項 */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-bold text-red-400 border-b border-white/10 pb-2">
-            ⚠ やってはいけないこと（ガイドライン違反）
-          </h2>
-          <div className="bg-red-500/5 p-6 rounded-2xl border border-red-500/10 space-y-2 text-slate-300">
-             <ul className="list-disc list-inside space-y-2">
-                <li><strong className="text-red-300">ビジネス名にキーワードを詰め込む:</strong> 例：「新宿居酒屋 ランチがお得な〇〇店」などはNG。正式名称「〇〇店」のみ登録してください。アカウント停止のリスクがあります。</li>
-                <li><strong className="text-red-300">自作自演のクチコミ:</strong> スタッフや関係者によるクチコミ投稿は禁止されています。</li>
-                <li><strong className="text-red-300">クチコミの見返りに金品を提供する:</strong> 「クチコミ書いてくれたら割引」はガイドライン違反です。</li>
-             </ul>
-          </div>
+        {/* 4. 写真の充実 */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
+           <h2 className="text-2xl font-bold text-white mb-6">4. 写真で選ばれるお店になる</h2>
+           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
+             <p className="text-slate-300 text-lg">
+                人間が視覚から得る情報は8割以上と言われます。
+                メニュー名だけでは伝わらない魅力を、写真で伝えましょう。
+             </p>
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                 <div className="bg-slate-900 p-4 rounded-lg text-center border border-white/5">
+                     <span className="block text-2xl mb-2">🥘</span>
+                     <span className="text-sm text-slate-300 font-bold">商品・メニュー</span>
+                 </div>
+                 <div className="bg-slate-900 p-4 rounded-lg text-center border border-white/5">
+                     <span className="block text-2xl mb-2">🪑</span>
+                     <span className="text-sm text-slate-300 font-bold">内観・座席</span>
+                 </div>
+                 <div className="bg-slate-900 p-4 rounded-lg text-center border border-white/5">
+                     <span className="block text-2xl mb-2">🏢</span>
+                     <span className="text-sm text-slate-300 font-bold">外観・看板</span>
+                 </div>
+                 <div className="bg-slate-900 p-4 rounded-lg text-center border border-white/5">
+                     <span className="block text-2xl mb-2">👩‍🍳</span>
+                     <span className="text-sm text-slate-300 font-bold">スタッフ</span>
+                 </div>
+             </div>
+             <p className="text-slate-400 text-sm mt-4">
+                ※ ユーザー投稿の写真も重要ですが、オーナー投稿のきれいな写真は信頼感を高めます。<br/>
+                ※ 投稿機能を使って、最低でも<strong className="text-white">月に10枚以上</strong>は新しい写真を追加し続けましょう。
+             </p>
+           </div>
         </section>
 
       </div>
