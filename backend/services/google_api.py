@@ -295,8 +295,33 @@ class GBPClient:
              location_id = f"locations/{location_id}"
 
         url = f"https://mybusinessqanda.googleapis.com/v1/{location_id}/questions"
-        params = {"pageSize": 50}
-        response = requests.get(url, headers=self._get_headers(), params=params)
+        # Removed pageSize as it caused 400 Bad Request for some users/contexts
+        # params = {"pageSize": 50} 
+        try:
+            response = requests.get(url, headers=self._get_headers()) #, params=params)
+            
+            if response.status_code == 404:
+                 return {"questions": []}
+                 
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            print(f"List Questions Error: {e.response.status_code} {e.response.text}")
+            # If 400, maybe the location ID is invalid for this API or Q&A not enabled?
+            # Return empty list to avoid crashing the UI
+            return {"questions": []}
+
+    def delete_local_post(self, post_name: str):
+        """
+        Delete a local post.
+        post_name: "accounts/{accountId}/locations/{locationId}/localPosts/{localPostId}"
+        """
+        # Ensure it's a v4 URL
+        url = f"https://mybusiness.googleapis.com/v4/{post_name}"
+        print(f"DEBUG: Deleting post {url}")
+        response = requests.delete(url, headers=self._get_headers())
+        response.raise_for_status()
+        return response.json()
         
         if response.status_code == 404:
              return {"questions": []}

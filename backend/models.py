@@ -64,6 +64,7 @@ class Post(Base):
 
     id = Column(String, primary_key=True, default=generate_uuid)
     store_id = Column(String, ForeignKey("stores.id"))
+    google_post_id = Column(String, nullable=True) # Resource name "locations/.../localPosts/..."
     content = Column(String)
     media_url = Column(String, nullable=True)
     status = Column(String, default='DRAFT') # DRAFT, SCHEDULED, PUBLISHED

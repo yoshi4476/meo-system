@@ -81,6 +81,18 @@ def delete_post(post_id: str, db: Session = Depends(database.get_db), current_us
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
+    
+    # Try to delete from Google if it was published
+    if post.status == 'PUBLISHED' and post.google_post_id:
+        try:
+             # We need user connection
+             if current_user.google_connection and current_user.google_connection.access_token:
+                 client = google_api.GBPClient(current_user.google_connection.access_token)
+                 client.delete_local_post(post.google_post_id)
+        except Exception as e:
+             print(f"Warning: Failed to delete post from Google: {e}")
+             # We still delete locally
+             
     db.delete(post)
     db.commit()
     return {"message": "Post deleted"}
@@ -124,6 +136,9 @@ def publish_post(post_id: str, db: Session = Depends(database.get_db), current_u
         
         # Update post status
         post.status = "PUBLISHED"
+        if result.get("name"):
+            post.google_post_id = result.get("name")
+            
         db.commit()
         
         return {"message": "Post published successfully", "google_post_id": result.get("name")}
@@ -200,7 +215,8 @@ def sync_posts_from_google(store_id: str, db: Session = Depends(database.get_db)
                     content=summary,
                     media_url=media_url,
                     status="PUBLISHED", # Captured from Google, so it's published
-                    created_at=created_at
+                    created_at=created_at,
+                    google_post_id=post_name
                 )
                 db.add(new_post)
                 synced_count += 1

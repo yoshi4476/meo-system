@@ -81,9 +81,12 @@ async def check_and_publish_scheduled_posts():
                     post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": post.media_url}]
 
                 logger.info(f"Publishing post {post.id} to {store.name}...")
-                client.create_local_post(store.google_location_id, post_data)
+                result = client.create_local_post(store.google_location_id, post_data)
                 
                 post.status = "PUBLISHED"
+                if result.get("name"):
+                    post.google_post_id = result.get("name")
+                    
                 logger.info(f"Post {post.id} published successfully.")
 
             except Exception as e:
