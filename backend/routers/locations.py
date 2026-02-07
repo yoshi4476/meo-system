@@ -128,7 +128,35 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
         data["phoneNumbers"] = update_data.phoneNumbers
     if update_data.regularHours:
         mask_parts.append("regularHours")
-        data["regularHours"] = update_data.regularHours
+        # Convert HH:MM strings to TimeOfDay objects for Google V1 API
+        periods = []
+        if update_data.regularHours.periods:
+            for p in update_data.regularHours.periods:
+                period_data = {
+                     "openDay": p.openDay,
+                     "closeDay": p.closeDay
+                }
+                
+                # Parse Open Time
+                if p.openTime and isinstance(p.openTime, str):
+                    try:
+                        h, m = map(int, p.openTime.split(':'))
+                        period_data["openTime"] = {"hours": h, "minutes": m, "seconds": 0, "nanos": 0}
+                    except:
+                        pass # Skip invalid time
+                
+                # Parse Close Time
+                if p.closeTime and isinstance(p.closeTime, str):
+                    try:
+                        h, m = map(int, p.closeTime.split(':'))
+                        period_data["closeTime"] = {"hours": h, "minutes": m, "seconds": 0, "nanos": 0}
+                    except:
+                        pass
+                
+                if "openTime" in period_data and "closeTime" in period_data:
+                    periods.append(period_data)
+        
+        data["regularHours"] = {"periods": periods}
     if update_data.categories:
         mask_parts.append("categories")
         data["categories"] = update_data.categories
