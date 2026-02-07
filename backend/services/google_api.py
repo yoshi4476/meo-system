@@ -374,7 +374,7 @@ class GBPClient:
         # Note: list_locations returns "locations/..." format ID from the new API
         # but we might need to handle mixed formats if we used the old v4 API manually
         url = f"{self.base_url}/{location_name}"
-        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo"}
+        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,attributes"}
         response = requests.get(url, headers=self._get_headers(), params=params)
         response.raise_for_status()
         return response.json()
