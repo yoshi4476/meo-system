@@ -191,6 +191,78 @@ export default function UsageManualPage() {
           </div>
         </section>
 
+        {/* ■ 6. 複数店舗管理 */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">6</div>
+               <h2 className="text-2xl font-bold text-white">複数店舗の管理</h2>
+          </div>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
+            <p className="text-slate-300">
+                本システムは、1つのアカウントで複数のGoogleビジネスプロフィールを管理できます。
+                全店舗の状況を切り替えて確認・操作することが可能です。
+            </p>
+            <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1 bg-slate-900/50 p-5 rounded-xl border border-white/5">
+                    <h4 className="font-bold text-white mb-2">店舗の切り替え方法</h4>
+                    <ol className="list-decimal list-inside text-slate-400 text-sm space-y-2">
+                        <li>画面左側のサイドバー上部にあるドロップダウンメニューをクリックします。</li>
+                        <li>登録されている店舗名の一覧が表示されます。</li>
+                        <li>操作したい店舗をクリックすると、ダッシュボードの内容が瞬時にその店舗のものに切り替わります。</li>
+                    </ol>
+                </div>
+                <div className="flex-1 bg-slate-900/50 p-5 rounded-xl border border-white/5">
+                    <h4 className="font-bold text-white mb-2">一括管理機能（予定）</h4>
+                    <p className="text-sm text-slate-400">
+                        サイドバーの「一括管理」メニューからは、全店舗のパフォーマンス比較や、特定エリア単位での投稿一括作成などが可能になる予定です。<br/>
+                        <span className="text-xs text-slate-500">※現在開発中の機能です。</span>
+                    </p>
+                </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ■ 7. ユーザー・店舗設定 */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">7</div>
+               <h2 className="text-2xl font-bold text-white">ユーザー・店舗管理（管理者向け）</h2>
+          </div>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
+            
+            <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white border-b border-white/10 pb-2">ユーザー管理</h3>
+                <p className="text-slate-300">
+                    一緒に店舗を管理するスタッフを招待したり、権限を管理できます。
+                </p>
+                <ul className="list-disc list-inside text-slate-400 ml-4 space-y-2">
+                    <li><strong className="text-white">招待方法:</strong> 「ユーザー管理」画面右上の「新規ユーザー招待」をクリックし、メールアドレスを入力します。</li>
+                    <li><strong className="text-white">権限設定:</strong>
+                        <ul className="list-circle list-inside ml-6 mt-1 text-sm">
+                            <li><span className="text-purple-300">カンパニー管理者:</span> 全店舗の閲覧・編集、ユーザー管理が可能。</li>
+                            <li><span className="text-blue-300">店舗管理者:</span> 割り当てられた店舗のみ閲覧・編集が可能。</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div className="space-y-4 pt-4">
+                <h3 className="text-xl font-bold text-white border-b border-white/10 pb-2">店舗管理</h3>
+                <p className="text-slate-300">
+                    システムに表示する店舗の追加や削除、連携解除を行います。
+                </p>
+                <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                    <p className="text-sm text-slate-400">
+                        <span className="text-yellow-400 font-bold">！ 店舗の追加について:</span><br/>
+                        Googleアカウント連携を行うと、そのアカウントが管理しているすべての店舗が自動的にインポートされます。<br/>
+                        もし新しい店舗が表示されない場合は、「設定」画面で「Google連携」を一度解除し、再度連携し直してください（最新の店舗リストが取得されます）。
+                    </p>
+                </div>
+            </div>
+
+          </div>
+        </section>
+
       </div>
     </div>
   );

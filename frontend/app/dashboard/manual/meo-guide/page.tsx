@@ -141,7 +141,118 @@ export default function MeoGuidePage() {
            </div>
         </section>
 
-      </div>
-    </div>
-  );
-}
+        {/* 5. サイテーション（NAP情報）の統一 */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
+           <h2 className="text-2xl font-bold text-white mb-6">5. 基礎中の基礎：NAPの統一</h2>
+           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
+             <div className="flex items-start gap-4">
+                <div className="flex-1">
+                    <p className="text-slate-300 mb-4">
+                        Googleはインターネット上の情報を巡回し、あなたのお店の信頼性を判断しています。
+                        その際、以下の3情報（NAP）が<strong className="text-white">一字一句完全に一致しているか</strong>が重要です。
+                    </p>
+                    <div className="bg-slate-900 border border-slate-700 p-4 rounded-lg flex justify-around text-center mb-4">
+                        <div>
+                            <span className="block text-slate-500 text-xs uppercase">Name</span>
+                            <span className="font-bold text-white text-lg">店名</span>
+                        </div>
+                        <div className="w-px bg-slate-700"></div>
+                        <div>
+                            <span className="block text-slate-500 text-xs uppercase">Address</span>
+                            <span className="font-bold text-white text-lg">住所</span>
+                        </div>
+                        <div className="w-px bg-slate-700"></div>
+                        <div>
+                            <span className="block text-slate-500 text-xs uppercase">Phone</span>
+                            <span className="font-bold text-white text-lg">電話番号</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex-1 bg-red-900/10 border border-red-500/20 p-4 rounded-xl">
+                    <h4 className="font-bold text-red-300 mb-2 text-sm">よくある失敗例 (NG)</h4>
+                    <ul className="space-y-2 text-sm text-slate-400">
+                        <li>Google: 「お好み焼き オコノミ」</li>
+                        <li>HP: 「お好み焼き <span className="text-red-400">OKONOMI</span>」</li>
+                        <li>インスタ: 「お好み焼きオコノミ <span className="text-red-400">新宿本店</span>」</li>
+                        <li>住所: 「1-2-3」と「1丁目2番地3号」の表記ゆれ</li>
+                    </ul>
+                </div>
+             </div>
+             <p className="text-emerald-400 font-bold text-center border-t border-white/10 pt-4">
+                HP、SNS、ポータルサイト（食べログ等）の表記を、Googleビジネスプロフィールの登録内容と完全に統一しましょう。
+             </p>
+           </div>
+        </section>
+
+        {/* 6. Q&Aの活用 */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
+           <h2 className="text-2xl font-bold text-white mb-6">6. Q&A（質問と回答）を自作自演する</h2>
+           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
+             <p className="text-slate-300">
+                Googleマップにはユーザーが質問できる機能がありますが、実は<strong className="text-white">オーナー自身が質問を投稿し、回答する</strong>ことも公式に認められています（FAQとして機能します）。
+             </p>
+             <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-slate-900/50 p-4 rounded-xl">
+                    <h4 className="font-bold text-blue-300 mb-2">メリット</h4>
+                    <ul className="list-disc list-inside text-sm text-slate-400 space-y-1">
+                        <li>ユーザーの疑問を先回りして解消（電話問い合わせ削減）。</li>
+                        <li>回答の中にキーワード（「子供連れ」「ベビーカー」等）を盛り込めるため、MEO対策になる。</li>
+                    </ul>
+                </div>
+                <div className="bg-slate-900/50 p-4 rounded-xl">
+                    <h4 className="font-bold text-emerald-300 mb-2">おすすめの質問例</h4>
+                    <ul className="list-disc list-inside text-sm text-slate-400 space-y-1">
+                        <li>「駐車場はありますか？」</li>
+                        <li>「クレジットカードは使えますか？」</li>
+                        <li>「予約なしでも入れますか？」</li>
+                        <li>「テイクアウトは可能ですか？」</li>
+                    </ul>
+                </div>
+             </div>
+           </div>
+        </section>
+
+        {/* 7. インサイト分析とPDCA */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
+           <h2 className="text-2xl font-bold text-white mb-6">7. 数字で見るPDCAサイクル</h2>
+           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6">
+             <p className="text-slate-300">
+                ダッシュボードの数字を見て、以下のように対策を打ち分けましょう。
+             </p>
+             
+             <div className="space-y-4">
+                 
+                 <div className="flex items-center gap-4 bg-slate-900/30 p-4 rounded-xl border border-white/5">
+                    <div className="w-32 font-bold text-purple-400">検索数が少ない</div>
+                    <div className="text-slate-500">→</div>
+                    <div className="flex-1 text-slate-300">
+                        <strong className="text-white">露出不足です。</strong><br/>
+                        投稿頻度を上げ、写真を追加し、SNSでGoogleマップのリンクを拡散しましょう。
+                    </div>
+                 </div>
+
+                 <div className="flex items-center gap-4 bg-slate-900/30 p-4 rounded-xl border border-white/5">
+                    <div className="w-32 font-bold text-blue-400">閲覧表示が多いのに<br/>アクションが少ない</div>
+                    <div className="text-slate-500">→</div>
+                    <div className="flex-1 text-slate-300">
+                        <strong className="text-white">魅力不足です。</strong><br/>
+                        「写真が美味しくなさそう」「悪いクチコミが目立つ」「情報が古い」可能性があります。<br/>
+                        トップに来る写真を入れ替え、クチコミに丁寧に返信しましょう。
+                    </div>
+                 </div>
+
+                 <div className="flex items-center gap-4 bg-slate-900/30 p-4 rounded-xl border border-white/5">
+                    <div className="w-32 font-bold text-emerald-400">順調に伸びている</div>
+                    <div className="text-slate-500">→</div>
+                    <div className="flex-1 text-slate-300">
+                        <strong className="text-white">継続が鍵です。</strong><br/>
+                        MEOは「やめたら落ちる」ゲームです。今のペースを維持し、さらに「投稿キャンペーン」などでブーストをかけましょう。
+                    </div>
+                 </div>
+
+             </div>
+           </div>
+        </section>
