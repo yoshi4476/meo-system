@@ -191,8 +191,11 @@ export default function ProfilePage() {
             const period = data.regularHours?.periods?.find(p => p.openDay?.toUpperCase() === day.toUpperCase());
             if (period) {
                 // Time coming from Google is likely "HH:MM" or "HHMM"
-                const cleanOpen = period.openTime.replace(':', '');
-                const cleanClose = period.closeTime.replace(':', '');
+                const rawOpen = period.openTime ? String(period.openTime) : "09:00";
+                const rawClose = period.closeTime ? String(period.closeTime) : "18:00";
+                
+                const cleanOpen = rawOpen.replace(':', '');
+                const cleanClose = rawClose.replace(':', '');
                 
                 initialHours[day] = {
                     open: cleanOpen.slice(0,2) + ":" + cleanOpen.slice(2),

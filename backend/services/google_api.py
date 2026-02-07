@@ -276,30 +276,57 @@ class GBPClient:
     def list_questions(self, location_name: str):
         """
         List questions.
-        location_name: Can be any format, will be converted to v4 format.
+        location_name: "locations/{locationId}" (New API) or "accounts/.../locations/..." (Old).
+        We need "locations/{locationId}" for the new API.
         """
-        v4_path = self._get_v4_location_path(location_name)
-        url = f"https://mybusiness.googleapis.com/v4/{v4_path}/questions"
-        response = requests.get(url, headers=self._get_headers())
+        # Extract location ID
+        location_id = location_name
+        if "/" in location_name:
+            if "locations/" in location_name:
+                 # Check if it is v4 format "accounts/.../locations/..."
+                 if "accounts/" in location_name:
+                      location_id = "locations/" + location_name.split("/locations/")[1]
+                 # Else assume it is already "locations/..." or just ID
+            else:
+                 location_id = f"locations/{location_name}"
+        
+        # Ensure it starts with locations/
+        if not location_id.startswith("locations/"):
+             location_id = f"locations/{location_id}"
+
+        url = f"https://mybusinessqanda.googleapis.com/v1/{location_id}/questions"
+        params = {"pageSize": 50}
+        response = requests.get(url, headers=self._get_headers(), params=params)
+        
+        if response.status_code == 404:
+             return {"questions": []}
+             
         response.raise_for_status()
         return response.json()
 
     def list_answers(self, question_name: str):
         """
         List answers for a question.
-        question_name: Format "accounts/{accountId}/locations/{locationId}/questions/{questionId}"
+        question_name: "locations/{locationId}/questions/{questionId}"
         """
-        url = f"https://mybusiness.googleapis.com/v4/{question_name}/answers"
-        response = requests.get(url, headers=self._get_headers())
+        # Ensure question name format
+        # If it comes from v4 it might be wrong, but usually we get it from list_questions which is now v1
+        url = f"https://mybusinessqanda.googleapis.com/v1/{question_name}/answers"
+        params = {"pageSize": 50}
+        response = requests.get(url, headers=self._get_headers(), params=params)
+        
+        if response.status_code == 404:
+             return {"answers": []}
+
         response.raise_for_status()
         return response.json()
 
     def create_answer(self, question_name: str, text: str):
         """
         Answer a question.
-        question_name: Format "accounts/{accountId}/locations/{locationId}/questions/{questionId}"
+        question_name: "locations/{locationId}/questions/{questionId}"
         """
-        url = f"https://mybusiness.googleapis.com/v4/{question_name}/answers"
+        url = f"https://mybusinessqanda.googleapis.com/v1/{question_name}/answers"
         data = {"text": text}
         response = requests.post(url, headers=self._get_headers(), json=data)
         response.raise_for_status()

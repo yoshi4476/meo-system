@@ -67,6 +67,7 @@ function PostsContent() {
     const [newPostContent, setNewPostContent] = useState('');
     const [newPostMedia, setNewPostMedia] = useState('');
     const [showImageGallery, setShowImageGallery] = useState(false);
+    const [editingPost, setEditingPost] = useState<Post | null>(null);
     
     // Schedule State
     const [scheduleEnabled, setScheduleEnabled] = useState(false);
@@ -309,10 +310,16 @@ function PostsContent() {
         }
 
         try {
-            // Always create the post first
-             const token = localStorage.getItem('meo_auth_token');
-             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/`, {
-                method: 'POST',
+            // Determine Method and URL
+            const isEdit = !!editingPost;
+            const method = isEdit ? 'PATCH' : 'POST';
+            const url = isEdit 
+                ? `${process.env.NEXT_PUBLIC_API_URL}/posts/${editingPost.id}`
+                : `${process.env.NEXT_PUBLIC_API_URL}/posts/`;
+
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(url, {
+                method: method,
                 headers: { 
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -321,7 +328,7 @@ function PostsContent() {
                     store_id: userInfo?.store_id,
                     content: newPostContent,
                     media_url: newPostMedia || undefined,
-                    status: scheduleEnabled ? 'SCHEDULED' : 'DRAFT', // Create as DRAFT first if publishing
+                    status: scheduleEnabled ? 'SCHEDULED' : (isEdit ? editingPost.status : 'DRAFT'), 
                     scheduled_at: scheduleEnabled ? `${scheduleDate}T${scheduleTime}:00` : undefined
                 })
             });
@@ -352,6 +359,7 @@ function PostsContent() {
                 }
                 
                 setNewPostContent('');
+                setEditingPost(null);
                 setIsCreating(false);
                 fetchPosts();
             } else {
@@ -361,6 +369,37 @@ function PostsContent() {
             console.error(e);
             alert('エラーが発生しました');
         }
+    };
+
+    const handleEdit = (post: Post) => {
+        setEditingPost(post);
+        setNewPostContent(post.content);
+        setNewPostMedia(post.media_url || '');
+        setIsCreating(true);
+    };
+
+    const handleDuplicate = (post: Post) => {
+        setEditingPost(null);
+        setNewPostContent(post.content);
+        setNewPostMedia(post.media_url || '');
+        setIsCreating(true);
+    };
+
+    const handleDelete = async (postId: string) => {
+        if (!confirm('本当に削除しますか？')) return;
+        try {
+            const token = localStorage.getItem('meo_auth_token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${postId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setPosts(posts.filter(p => p.id !== postId));
+                alert('削除しました');
+            } else {
+                alert('削除に失敗しました');
+            }
+        } catch(e) { console.error(e); alert('エラーが発生しました'); }
     };
 
     return (
@@ -374,7 +413,11 @@ function PostsContent() {
                             <p className="text-slate-400 mt-1">AIを活用して魅力的な記事を作成・管理します</p>
                         </div>
                         <button 
-                            onClick={() => setIsCreating(true)}
+                            onClick={() => {
+                                setEditingPost(null);
+                                setNewPostContent('');
+                                setIsCreating(true);
+                            }}
                             className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
                         >
                             + 新規投稿を作成
@@ -416,9 +459,9 @@ function PostsContent() {
                                         </div>
                                         <p className="text-slate-200 whitespace-pre-wrap line-clamp-3">{post.content}</p>
                                         <div className="flex gap-2">
-                                            <button className="text-sm text-slate-400 hover:text-white">編集</button>
-                                            <button className="text-sm text-slate-400 hover:text-white">複製</button>
-                                            <button className="text-sm text-red-400 hover:text-red-300">削除</button>
+                                            <button onClick={() => handleEdit(post)} className="text-sm text-slate-400 hover:text-white">編集</button>
+                                            <button onClick={() => handleDuplicate(post)} className="text-sm text-slate-400 hover:text-white">複製</button>
+                                            <button onClick={() => handleDelete(post.id)} className="text-sm text-red-400 hover:text-red-300">削除</button>
                                         </div>
                                     </div>
                                 </div>
@@ -434,7 +477,8 @@ function PostsContent() {
                             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                                 <span className="text-aurora-purple">✨</span> AI投稿スタジオ
                             </h2>
-                            <button onClick={() => setIsCreating(false)} className="text-slate-400 hover:text-white">
+
+                            <button onClick={() => { setIsCreating(false); setEditingPost(null); setNewPostContent(''); }} className="text-slate-400 hover:text-white">
                                 キャンセル
                             </button>
                         </div>
