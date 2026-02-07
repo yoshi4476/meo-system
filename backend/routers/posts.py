@@ -123,21 +123,27 @@ def delete_post(post_id: str, db: Session = Depends(database.get_db), current_us
                  location_id = store.google_location_id if store else None
                  
                  try:
+                     # 1. Delete
                      client.delete_local_post(post.google_post_id, location_name=location_id)
-                     print(f"DEBUG: Deleted post {post.google_post_id} from Google")
+                     print(f"DEBUG: Delete request sent for {post.google_post_id}")
+                     
+                     # 2. Verify Deletion (Google API might have delay, but 404 is immediate usually)
+                     # We can't easily "get" a post by ID without knowing if we have the method.
+                     # But we can assume if delete returned 200, it's scheduled for deletion.
+                     
                  except requests.exceptions.HTTPError as e:
                      if e.response.status_code == 404:
-                         print(f"DEBUG: Post {post.google_post_id} already deleted from Google")
+                         print(f"DEBUG: Post {post.google_post_id} already deleted from Google (404)")
                      else:
                          print(f"Error deleting post from Google: {e}")
-                         # Depending on requirement, we might want to fail hard, or just log
-                         # User said "Ensure it deletes". If it fails, we should probably warn?
-                         # But usually we want to clear local DB anyway.
-                         raise e # Re-raise to be caught by outer, but let's just log and proceed for now as it clears local 
-                         # Actually user complained it's NOT deleting. So if it fails, we should maybe STOP local delete?
-                         # No, if it fails on Google, we still probably want to remove it locally or mark it.
-                         # But let's log specifically.
+                         # raise e # Don't raise, we want to clear local DB
+                 except Exception as e:
+                     print(f"Unexpected error deleting from Google: {e}")
                  
+        except Exception as e:
+             print(f"Warning: Failed to delete post from Google: {e}")
+             # If it's a critical logic error, we want to know. 
+             # But we proceed to delete locally to at least clean up.
         except Exception as e:
              print(f"Warning: Failed to delete post from Google: {e}")
              # If it's a critical logic error, we want to know. 

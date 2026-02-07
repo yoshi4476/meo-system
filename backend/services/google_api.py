@@ -43,6 +43,8 @@ def get_tokens(code: str):
         "grant_type": "authorization_code"
     }
     response = requests.post(token_url, data=data)
+    if not response.ok:
+        print(f"Token Error: {response.text}")
     response.raise_for_status()
     return response.json()
 
@@ -337,6 +339,9 @@ class GBPClient:
         url = f"https://mybusiness.googleapis.com/v4/{full_name}"
         print(f"DEBUG: Deleting Google Post via URL: {url}")
         response = requests.delete(url, headers=self._get_headers())
+        if not response.ok:
+             print(f"Delete Post Error: {response.status_code} {response.text}")
+             
         response.raise_for_status()
         return response.json()
 
@@ -406,10 +411,42 @@ class GBPClient:
         # Note: list_locations returns "locations/..." format ID from the new API
         # but we might need to handle mixed formats if we used the old v4 API manually
         url = f"{self.base_url}/{location_name}"
-        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,postalAddress"}
-        response = requests.get(url, headers=self._get_headers(), params=params)
-        response.raise_for_status()
-        return response.json()
+        # Strategy: Full -> Safe -> Minimal
+        # Full: All fields
+        # Safe: Core fields (excluding serviceArea, openInfo, regularHours which differ by business type)
+        # Minimal: Just identity
+        
+        masks = [
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,postalAddress",
+            "name,title,storeCode,categories,profile,postalAddress,phoneNumbers,websiteUri", # Safe
+            "name,title,storeCode" # Minimal
+        ]
+        
+        last_error = None
+        for i, mask in enumerate(masks):
+            params = {"readMask": mask}
+            response = requests.get(url, headers=self._get_headers(), params=params)
+            
+            if response.ok:
+                if i > 0:
+                    print(f"DEBUG: Recovered Location Details using mask level {i}: {mask}")
+                return response.json()
+            
+            # If not OK, log and continue to next mask if 400
+            print(f"Get Location Details Failed (Mask {i}): {response.status_code} {response.text}")
+            last_error = response
+            
+            # Only retry on 400 (Bad Request). 403/404 should probably fail immediately (but 403 might be field permission?)
+            # Let's retry on 400 and 403 (Permission Denied often means field denied)
+            if response.status_code not in [400, 403]:
+                break
+        
+        # If we get here, all retries failed
+        if last_error:
+            last_error.raise_for_status()
+        
+        # Should not happen
+        return {}
 
     def update_location(self, location_name: str, data: dict, update_mask: str):
         """
