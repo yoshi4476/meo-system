@@ -176,8 +176,6 @@ async def auto_reply_to_reviews():
             # but we could mix if they belong to same company)
             
             if not valid_connection:
-            
-            if not valid_connection:
                 logger.warning(f"No valid Google connection for store {store.name}")
                 continue
                 
