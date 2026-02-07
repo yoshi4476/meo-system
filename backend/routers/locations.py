@@ -77,6 +77,11 @@ def get_location_details(store_id: str, force_refresh: bool = False, db: Session
     if not should_fetch:
         return store.gbp_data
 
+    # Hard Reset if forced: Clear existing data to prevent merge issues
+    if force_refresh:
+        store.gbp_data = None
+        db.commit()
+
     client = google_api.GBPClient(current_user.google_connection.access_token)
     
     try:

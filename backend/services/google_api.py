@@ -332,7 +332,10 @@ class GBPClient:
              
              full_name = f"{v4_location}/localPosts/{post_id}"
 
+             full_name = f"{v4_location}/localPosts/{post_id}"
+
         url = f"https://mybusiness.googleapis.com/v4/{full_name}"
+        print(f"DEBUG: Deleting Google Post via URL: {url}")
         response = requests.delete(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()

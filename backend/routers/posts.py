@@ -250,12 +250,22 @@ def sync_posts_from_google(store_id: str, db: Session = Depends(database.get_db)
             # But the user asked for sync.
             # I will create a new post if no post with same content exists for this store.
             
+            # Check for existence 
             existing = db.query(models.Post).filter(
                 models.Post.store_id == store_id, 
                 models.Post.content == summary
             ).first()
             
-            if not existing:
+            if existing:
+                # Update existing post with Google ID if missing
+                if not existing.google_post_id:
+                    existing.google_post_id = post_name
+                if existing.status != 'PUBLISHED':
+                     existing.status = 'PUBLISHED'
+                # Update scheduled/created time if needed? 
+                # Ideally we respect local, but for sync, Google is truth.
+                synced_count += 0 # It's an update, technically
+            else:
                 media_url = None
                 if post_data.get("media"):
                     media_url = post_data.get("media")[0].get("sourceUrl")
@@ -264,7 +274,7 @@ def sync_posts_from_google(store_id: str, db: Session = Depends(database.get_db)
                     store_id=store_id,
                     content=summary,
                     media_url=media_url,
-                    status="PUBLISHED", # Captured from Google, so it's published
+                    status="PUBLISHED",
                     created_at=created_at,
                     google_post_id=post_name
                 )
@@ -272,6 +282,6 @@ def sync_posts_from_google(store_id: str, db: Session = Depends(database.get_db)
                 synced_count += 1
         
         db.commit()
-        return {"message": f"Synced {synced_count} posts from Google", "total_google": len(google_posts.get("localPosts", []))}
+        return {"message": f"Synced {synced_count} new posts (and updated existing links)", "total_google": len(google_posts.get("localPosts", []))}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
