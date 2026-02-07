@@ -256,3 +256,8 @@ export default function MeoGuidePage() {
              </div>
            </div>
         </section>
+
+      </div>
+    </div>
+  );
+}
