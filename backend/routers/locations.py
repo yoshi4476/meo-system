@@ -201,40 +201,15 @@ def update_location_details(store_id: str, update_data: LocationUpdate, db: Sess
     update_mask = ",".join(mask_parts)
     
     try:
-        updated_location = client.update_location(store.google_location_id, data, update_mask)
+        # 1. Update Google
+        client.update_location(store.google_location_id, data, update_mask)
         
-        # Update Cache immediately so UI reflects changes
-        store.gbp_data = updated_location
-        store.last_synced_at = datetime.utcnow()
-        
-        # Sync back basics to local DB if title changed
-        if update_data.title:
-            store.name = update_data.title
-        
-        # Sync description
-        if update_data.profile and "description" in update_data.profile:
-             store.description = update_data.profile["description"]
-
-        # Sync address (flattened for simple DB storage if needed, but currently address is just String or JSON)
-        if update_data.postalAddress:
-             # Basic update for list view
-             addr_str = f"{update_data.postalAddress.get('administrativeArea', '')}{update_data.postalAddress.get('locality', '')}"
-             if update_data.postalAddress.get('addressLines'):
-                 addr_str += "".join(update_data.postalAddress['addressLines'])
-             store.address = addr_str
-
-        # Sync Category
-        if update_data.categories and update_data.categories.get("primaryCategory"):
-             store.category = update_data.categories["primaryCategory"].get("name") 
-             # Ideally we fetch from response if available
-             if updated_location.get("categories") and updated_location["categories"].get("primaryCategory"):
-                 store.category = updated_location["categories"]["primaryCategory"].get("displayName")
-        
-        # Sync Website (Future Proof)
-        # if update_data.websiteUri: ...
-
-        db.commit()
+        # 2. Force Refresh from Google to ensure 100% consistency
+        # This overwrites store.gbp_data and all local columns (name, address, category, etc.)
+        # with exactly what Google has confirmed.
+        refreshed_details = get_location_details(store_id, force_refresh=True, db=db, current_user=current_user)
             
-        return updated_location
+        return refreshed_details
     except Exception as e:
+        print(f"Update failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
