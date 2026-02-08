@@ -417,9 +417,12 @@ class GBPClient:
         # Minimal: Just identity
         
         masks = [
-            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,postalAddress,attributes",
-            "name,title,storeCode,categories,profile,postalAddress,phoneNumbers,websiteUri", # Safe
-            "name,title,storeCode" # Minimal
+            # Safe Full Mask (Fields known to work based on diagnostics)
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo",
+            # Fallback Safe
+            "name,title,storeCode,categories,profile,phoneNumbers,websiteUri", 
+            # Minimal
+            "name,title,storeCode"
         ]
         
         last_error = None
@@ -427,7 +430,7 @@ class GBPClient:
         
         for i, mask in enumerate(masks):
             params = {"readMask": mask}
-            print(f"DEBUG: Attempt {i+1} with mask: {mask[:20]}...")
+            # print(f"DEBUG: Attempt {i+1} with mask: {mask[:20]}...") 
             response = requests.get(url, headers=self._get_headers(), params=params)
             
             if response.ok:
@@ -439,8 +442,7 @@ class GBPClient:
             print(f"Get Location Details Failed (Mask {i}): {response.status_code} {response.text}")
             last_error = response
             
-            # Only retry on 400 (Bad Request). 403/404 should probably fail immediately (but 403 might be field permission?)
-            # Let's retry on 400 and 403 (Permission Denied often means field denied)
+            # Only retry on 400 (Bad Request).
             if response.status_code not in [400, 403]:
                 print("DEBUG: Non-400 error, aborting retry.")
                 break
