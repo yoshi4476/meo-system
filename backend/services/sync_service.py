@@ -435,30 +435,17 @@ class GoogleSyncService:
                  except Exception as fb_err:
                      print(f"DEBUG: Fallback fetch failed: {fb_err}")
 
-             # --- Splinter Strategy: "Divide and Conquer" Rescue ---
-             # Even if robust search failed (or degraded to Level 3), we still want to try fetching
-             # specific fields individually. Sometimes "attributes" works alone but fails in a group.
+             # --- Splinter Strategy: "Divide and Conquer" Rescue (Integrated Parachute) ---
+             # Even if robust search failed, we try to fetch specific fields individually.
+             # This now acts as the "Emergency Parachute" within the service layer.
              
              # Rescue Address
              if not details.get("postalAddress") or not details.get("postalAddress", {}).get("postalCode"):
                  print("DEBUG: Attempting isolated rescue for postalAddress...")
                  rescue_data = self.gbp.get_location_details(location_id, read_mask="postalAddress")
                  if rescue_data.get("postalAddress"):
-                     addr = rescue_data["postalAddress"]
-                     # --- ADDRESS POLYFILL ---
-                     if not addr.get("addressLines") and addr.get("subLocality"):
-                         addr["addressLines"] = [addr["subLocality"]]
-                         print("DEBUG: Polyfilled addressLines with subLocality (Sync Service)")
-                     
-                     details["postalAddress"] = addr
+                     details["postalAddress"] = rescue_data["postalAddress"]
                      print("DEBUG: Isolated rescue for postalAddress SUCCESS")
-             elif details.get("postalAddress"):
-                 # Polyfill for standard fetch too
-                 addr = details["postalAddress"]
-                 if not addr.get("addressLines") and addr.get("subLocality"):
-                      addr["addressLines"] = [addr["subLocality"]]
-                      details["postalAddress"] = addr
-                      print("DEBUG: Polyfilled addressLines with subLocality (Standard Path)")
 
              # Rescue Attributes
              if not details.get("attributes"):
@@ -481,6 +468,25 @@ class GoogleSyncService:
                   rescue_data = self.gbp.get_location_details(location_id, read_mask="serviceArea")
                   if rescue_data.get("serviceArea"):
                       details["serviceArea"] = rescue_data["serviceArea"]
+             
+             # --- DATA SANITIZATION / POLYFILL (Write-Time) ---
+             # Ensure data is consistent before saving to DB.
+             
+             # Address Polyfill
+             if details.get("postalAddress"):
+                 addr = details["postalAddress"]
+                 if not addr.get("addressLines"):
+                      # Strict Fallback Chain
+                      if addr.get("subLocality"):
+                          addr["addressLines"] = [addr["subLocality"]]
+                          print("DEBUG: Sanitizer Polyfilled addressLines with subLocality")
+                      elif addr.get("locality"):
+                          addr["addressLines"] = [addr["locality"]]
+                          print("DEBUG: Sanitizer Polyfilled addressLines with locality")
+                      elif addr.get("administrativeArea"):
+                          addr["addressLines"] = [addr["administrativeArea"]]
+                          print("DEBUG: Sanitizer Polyfilled addressLines with administrativeArea")
+                 details["postalAddress"] = addr
 
              store = db.query(models.Store).filter(models.Store.id == store_id).first()
              if store:
@@ -528,45 +534,19 @@ class GoogleSyncService:
                     address_lines = addr.get("addressLines", [])
             
                     if address_lines:
-                        # If city is missing (sometimes happens in API), try to infer from first line/admin area
-                        if not city_val and not store.prefecture:
-                             # Fallback logic
-                             pass
-
-                        if not city_val:
-                             # Use first part of lines if no city
-                             pass
-
-                        # Robust construction
-                        if city_val:
-                            # Avoid duplication if city is already in address line 0 (Common in Google API)
-                            if address_lines[0].startswith(city_val):
-                                 store.address_line2 = "".join(address_lines) # Just use all lines
-                            else:
-                                 store.address_line2 = "".join(address_lines)
-                        else:
-                             store.address_line2 = "".join(address_lines)
+                         store.address_line2 = "".join(address_lines)
                     else:
                         store.address_line2 = None
                 
                     store.city = city_val
             
                     # Update full address string as fallback/display
-                    # Use Google's formatted address if available, else construct
-                    # Note: API doesn't always return formattedAddress in Details call, mainly list
-                    # But if we have components, let's build it standard JP way
-                    
                     full_addr = f"〒{store.zip_code or ''} {store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
                     store.address = full_addr
                  else:
-                     # If address is definitely missing (e.g. Service Area Business), clear it?
-                     # Or keep existing?
                      # If we have basic info but no address, it might be an SAB.
-                     # Let's check serviceArea
                      if details.get("serviceArea"):
                          store.address = "出張型サービス/非店舗型" # "Service Area Business"
-                     # Only clear if we clearly got a response saying "no address"
-                     # For now, let's not aggressively clear unless sure.
 
                  # Regular Hours
                  if details.get("regularHours"):
@@ -577,17 +557,20 @@ class GoogleSyncService:
                  if details.get("attributes"):
                      store.attributes = details["attributes"]
                      
-                 # Lat/Lng
+                  # Lat/Lng
                  # if details.get("latlng"):
                  #    store.latitude = details["latlng"].get("latitude")
                  #    store.longitude = details["latlng"].get("longitude")
 
                  db.commit()
-             return {"status": "success", "message": "Location details updated"}
-        except Exception as e:
-             import traceback
-             traceback.print_exc()
-             return {"status": "error", "message": f"Sync Location Error: {str(e)}"}
+                 
+                 # Return the final details object so caller has the latest
+                 return {"status": "success", "message": "Location details updated", "data": details}
+                 
+         except Exception as e:
+              import traceback
+              traceback.print_exc()
+              return {"status": "error", "message": f"Sync Location Error: {str(e)}"}
 
 # Helper to instantiate service
 # Helper to instantiate service

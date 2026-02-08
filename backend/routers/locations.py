@@ -93,132 +93,14 @@ async def get_location_details(store_id: str, force_refresh: bool = False, db: S
     sync_service = GoogleSyncService(client)
     
     # This executes the robust logic (get_location_details + fallback find_location_robust)
-    # and updates the DB.
+    # AND the Emergency Parachute + Sanitizer within the service itself.
     result = await sync_service.sync_location_details(db, store.id, store.google_location_id)
     
     if result.get("status") == "error":
         raise HTTPException(status_code=400, detail=result.get("message"))
-    
-    # --- EMERGENCY PARACHUTE (ALL FIELDS) ---
-    # Double-check if we actually got the essential data. If not, try one final "Desperate" fetch for each missing piece.
-    # This bypasses sync_service complexity to ensure we aren't losing data in the layers.
+        
+    # Re-fetch from DB to get the updated data
     db.refresh(store)
-    current_data = store.gbp_data or {}
-    
-    # 1. Rescue Address
-    has_address = current_data.get("postalAddress") and current_data["postalAddress"].get("postalCode")
-    if not has_address:
-        print(f"DEBUG: Emergency Parachute deployed for ADDRESS - {store.name}")
-        try:
-            emergency_data = client.get_location_details(store.google_location_id, read_mask="postalAddress")
-            if emergency_data.get("postalAddress"):
-                print("DEBUG: Emergency Parachute SUCCESS. Address recovered.")
-                new_data = dict(store.gbp_data) if store.gbp_data else {}
-                
-                # --- ADDRESS POLYFILL ---
-                # Frontend expects addressLines[0]. If Google returns subLocality but no addressLines, fail.
-                # So we manually inject subLocality into addressLines if needed.
-                addr = emergency_data["postalAddress"]
-                if not addr.get("addressLines") and addr.get("subLocality"):
-                    addr["addressLines"] = [addr["subLocality"]]
-                    print("DEBUG: Polyfilled addressLines with subLocality")
-                
-                new_data["postalAddress"] = addr
-                store.gbp_data = new_data
-                
-                # Apply mapping logic
-                store.zip_code = addr.get("postalCode")
-                store.prefecture = addr.get("administrativeArea")
-                store.city = addr.get("locality", "")
-                store.address_line2 = "".join(addr.get("addressLines", []))
-                store.address = f"〒{store.zip_code} {store.prefecture}{store.city}{store.address_line2}"
-                db.commit()
-        except Exception as e:
-            print(f"DEBUG: Emergency Parachute Address failed: {e}")
-
-    # 2. Rescue Attributes
-    if not current_data.get("attributes"):
-        print(f"DEBUG: Emergency Parachute deployed for ATTRIBUTES - {store.name}")
-        try:
-            emergency_data = client.get_location_details(store.google_location_id, read_mask="attributes")
-            if emergency_data.get("attributes"):
-                 print("DEBUG: Emergency Parachute SUCCESS. Attributes recovered.")
-                 new_data = dict(store.gbp_data) if store.gbp_data else {}
-                 new_data["attributes"] = emergency_data["attributes"]
-                 store.gbp_data = new_data
-                 store.attributes = emergency_data["attributes"]
-                 db.commit()
-        except Exception as e:
-             print(f"DEBUG: Emergency Parachute Attributes failed: {e}")
-
-    # 3. Rescue Regular Hours
-    if not current_data.get("regularHours"):
-        print(f"DEBUG: Emergency Parachute deployed for HOURS - {store.name}")
-        try:
-            emergency_data = client.get_location_details(store.google_location_id, read_mask="regularHours")
-            if emergency_data.get("regularHours"):
-                 print("DEBUG: Emergency Parachute SUCCESS. Hours recovered.")
-                 new_data = dict(store.gbp_data) if store.gbp_data else {}
-                 new_data["regularHours"] = emergency_data["regularHours"]
-                 store.gbp_data = new_data
-                 store.regular_hours = emergency_data["regularHours"]
-                 db.commit()
-        except Exception as e:
-             print(f"DEBUG: Emergency Parachute Hours failed: {e}")
-
-    # 4. Rescue Service Area
-    if not current_data.get("serviceArea"):
-        # Less critical, but user said "everything"
-        try:
-            emergency_data = client.get_location_details(store.google_location_id, read_mask="serviceArea")
-            if emergency_data.get("serviceArea"):
-                 new_data = dict(store.gbp_data) if store.gbp_data else {}
-                 new_data["serviceArea"] = emergency_data["serviceArea"]
-                 store.gbp_data = new_data
-                 db.commit()
-        except:
-             pass
-
-    # --- READ-TIME SANITIZER ---
-    # Ensure data is frontend-ready before returning, fixing any legacy/cache issues on the fly.
-    db.refresh(store)
-    final_data = dict(store.gbp_data) if store.gbp_data else {}
-    data_changed = False
-
-    # 1. Sanitize Address
-    if final_data.get("postalAddress"):
-        addr = final_data["postalAddress"]
-        # Ensure addressLines exists and is populated
-        if not addr.get("addressLines"):
-            # STRICT FALLBACK CHAIN
-            if addr.get("subLocality"):
-                addr["addressLines"] = [addr["subLocality"]]
-                data_changed = True
-                print("DEBUG: Read-Time Sanitizer: Injected subLocality into addressLines")
-            elif addr.get("locality"):
-                # Fallback to Locality if subLocality is missing
-                # This ensures we at least show the city/ward in the address line field
-                addr["addressLines"] = [addr["locality"]]
-                data_changed = True
-                print("DEBUG: Read-Time Sanitizer: Injected locality into addressLines (Aggressive)")
-            elif addr.get("administrativeArea"):
-                 # Desperate fallback
-                 addr["addressLines"] = [addr["administrativeArea"]]
-                 data_changed = True
-                 
-        final_data["postalAddress"] = addr
-
-    # 2. Sanitize Attributes (Ensure it's a list)
-    if final_data.get("attributes") is None:
-        # If None, maybe we can't do much, but if it's not a list, fix it?
-        pass 
-
-    if data_changed:
-         store.gbp_data = final_data
-         db.commit()
-         db.refresh(store)
-         print(f"DEBUG: Read-Time Sanitization applied and saved for {store.name}")
-
     return store.gbp_data
 
     # --- OLD LEGACY LOGIC REMOVED (Replaced by Sync Service) ---
