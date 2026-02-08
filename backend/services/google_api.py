@@ -147,40 +147,59 @@ class GBPClient:
         """
         Try to find a specific location under an account with a FULL mask.
         Used for fallback sync when direct get_location fails to return address/attributes.
+        Strategy: List ALL locations in the account with full mask and find the match client-side.
+        This provides maximum safety against API filter quirks or 400 errors on specific endpoints.
+        
         location_id: "locations/12345" or just "12345"
         """
         url = f"{self.base_url}/{account_name}/locations"
         
-        # Ensure ID format
-        clean_id = location_id.split("/")[-1]
+        # Ensure ID format for comparison
+        target_lid = location_id.split("/")[-1]
         
-        # Filter by name. Note: API filter expects the full resource name relative to account? 
-        # Or just "storeCode=..."? 
-        # The API documentation says: "name=accounts/{accountId}/locations/{locationId}"
-        # We can try strict filtering.
-        target_name = f"{account_name}/locations/{clean_id}"
+        # Robust Mask
         params = {
-            "filter": f"name={target_name}",
-            "readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,postalAddress,regularHours,attributes,openInfo,websiteUri"
+            "readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,postalAddress,regularHours,attributes,openInfo,websiteUri",
+            "pageSize": 100 
         }
         
-        print(f"DEBUG: robust search in {account_name} for {clean_id}...")
+        print(f"DEBUG: robust search (brute-force list) in {account_name} for {target_lid}...")
+        
+        next_page_token = None
         
         try:
-            response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
-            if response.ok:
+            while True:
+                current_params = params.copy()
+                if next_page_token:
+                    current_params["pageToken"] = next_page_token
+                    
+                response = requests.get(url, headers=self._get_headers(), params=current_params, timeout=15)
+                
+                # If even listing fails with 400, try a simpler mask? 
+                # But we need attributes. If this fails, we really can't get them.
+                if response.status_code == 400:
+                    print(f"DEBUG: Robust list failed with 400. Trying without attributes as last resort.")
+                    current_params["readMask"] = "name,title,storeCode,postalAddress"
+                    response = requests.get(url, headers=self._get_headers(), params=current_params, timeout=15)
+                
+                if not response.ok:
+                    print(f"DEBUG: Robust search error: {response.status_code} {response.text}")
+                    return None
+                    
                 data = response.json()
-                if data.get("locations"):
-                    return data["locations"][0]
-            elif response.status_code == 400:
-                print("DEBUG: Full mask failed in robust search, trying safer mask...")
-                # Try without attributes/address just to confirm existence? 
-                # No, if that failed, we probably can't get the fields we want anyway.
-                # But let's try just Address
-                params["readMask"] = "name,postalAddress"
-                res2 = requests.get(url, headers=self._get_headers(), params=params)
-                if res2.ok and res2.json().get("locations"):
-                    return res2.json()["locations"][0]
+                locations = data.get("locations", [])
+                
+                # Search for our location
+                for loc in locations:
+                    lid = loc["name"].split("/")[-1]
+                    if lid == target_lid:
+                        print("DEBUG: Found target location in robust list!")
+                        return loc
+                
+                next_page_token = data.get("nextPageToken")
+                if not next_page_token:
+                    break
+                    
         except Exception as e:
              print(f"DEBUG: Robust find failed: {e}")
              
