@@ -383,20 +383,61 @@ class GoogleSyncService:
     async def sync_location_details(self, db: Session, store_id: str, location_id: str):
         """Sync basic location info (Hours, Attributes)"""
         try:
-             # Just update the store record with latest JSON
-             details = self.gbp.get_location_details(location_id)
-             
-             # Fallback: If address or attributes are missing (likely due to mask issues in get_location_details),
-             # try to fetch them via list_locations which might have a working mask for this specific account.
-             # We need account_name for list_locations.
-             # We can try to extract it from store.google_location_id if it was stored in v4 format, 
-             # OR we can assume the caller might know it. 
-             # Ideally we should pass v4_location_name to this method. 
-             # But for now, let's try to find the account if we really need to.
-             
-             needs_fallback = False
-             # Robust check: If address is missing postalCode, treat as missing.
-             # If attributes is None or empty dict, treat as missing.
+        if not details or not details.get("name"):
+            print(f"DEBUG: Initial fetch failed/empty for ID {location_id}. Initiating SELF-HEALING...")
+            
+            # --- SELF HEALING: Find the correct Location ID ---
+            try:
+                # 1. Get Accounts
+                accounts = self.gbp.list_accounts()
+                found_new_id = None
+                
+                for account in accounts.get("accounts", []):
+                     # 2. List Locations for each account
+                     locs = self.gbp.list_locations(account["name"])
+                     if not locs.get("locations"):
+                         continue
+                         
+                     # Try to match by stored ID (suffix) or just take the first one if user only has one?
+                     # Let's try to match by ID suffix first
+                     target_suffix = location_id.split("/")[-1]
+                     
+                     for loc in locs.get("locations", []):
+                         current_suffix = loc["name"].split("/")[-1]
+                         if current_suffix == target_suffix:
+                             found_new_id = loc["name"]
+                             print(f"DEBUG: Healing - Found exact match with fresh ID: {found_new_id}")
+                             break
+                     
+                     if found_new_id: break
+                     
+                     # If no exact match, maybe the ID changed entirely?
+                     # If the user only has ONE location, assume it's that one.
+                     if len(locs.get("locations", [])) == 1:
+                          found_new_id = locs["locations"][0]["name"]
+                          print(f"DEBUG: Healing - Only one location found, assuming correct: {found_new_id}")
+                          break
+                
+                if found_new_id:
+                    # Update DB with new ID
+                    store = db.query(models.Store).filter(models.Store.id == store_id).first()
+                    if store:
+                        print(f"DEBUG: Healing - Updating DB with new Google Location ID: {found_new_id}")
+                        store.google_location_id = found_new_id
+                        db.commit()
+                        location_id = found_new_id # Update local var for subsequent calls
+                    
+                    # Retry Fetch
+                    details = self.gbp.get_location_details(location_id)
+                    print(f"DEBUG: Healing - Retry fetch result: {bool(details)}")
+                else:
+                    print("DEBUG: Healing - Could not find location in account.")
+                    
+            except Exception as e:
+                print(f"DEBUG: Healing failed: {e}")
+        
+        # Original fallback logic continues below, now using potentially healed ID
+        # Fallback: If address or attributes are missing (likely due to mask issues)...
              has_address = details.get("postalAddress") and details["postalAddress"].get("postalCode")
              if not has_address or not details.get("attributes") or not details.get("regularHours"):
                  needs_fallback = True
