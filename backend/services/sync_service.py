@@ -478,158 +478,137 @@ class GoogleSyncService:
                         break # Stop searching accounts if found
             except Exception as fb_err:
                 print(f"DEBUG: Fallback fetch failed: {fb_err}")
-                             
-                             if loc.get("postalAddress"):
-                                 details["postalAddress"] = loc["postalAddress"]
-                                 print("DEBUG: Force-Recovered postalAddress")
-                             
-                             if loc.get("attributes"):
-                                 details["attributes"] = loc["attributes"]
-                                 print("DEBUG: Force-Recovered attributes")
-                                 
-                             if loc.get("regularHours"):
-                                 details["regularHours"] = loc["regularHours"]
-                                 print("DEBUG: Force-Recovered regularHours")
-                                 
-                             if loc.get("serviceArea"):
-                                 details["serviceArea"] = loc["serviceArea"]
-                             
-                             break # Found and merged
-                             
-                 except Exception as fb_err:
-                     print(f"DEBUG: Fallback fetch failed: {fb_err}")
-
-             # --- Splinter Strategy: "Divide and Conquer" Rescue (Integrated Parachute) ---
-             # Even if robust search failed, we try to fetch specific fields individually.
-             # This now acts as the "Emergency Parachute" within the service layer.
-             
-             # Rescue Address
-             if not details.get("postalAddress") or not details.get("postalAddress", {}).get("postalCode"):
-                 print("DEBUG: Attempting isolated rescue for postalAddress...")
-                 rescue_data = self.gbp.get_location_details(location_id, read_mask="postalAddress")
-                 if rescue_data.get("postalAddress"):
-                     details["postalAddress"] = rescue_data["postalAddress"]
-                     print("DEBUG: Isolated rescue for postalAddress SUCCESS")
-
-             # Rescue Attributes
-             if not details.get("attributes"):
-                 print("DEBUG: Attempting isolated rescue for attributes...")
-                 rescue_data = self.gbp.get_location_details(location_id, read_mask="attributes")
-                 if rescue_data.get("attributes"):
-                     details["attributes"] = rescue_data["attributes"]
-                     print("DEBUG: Isolated rescue for attributes SUCCESS")
-                     
-             # Rescue Hours
-             if not details.get("regularHours"):
-                 print("DEBUG: Attempting isolated rescue for regularHours...")
-                 rescue_data = self.gbp.get_location_details(location_id, read_mask="regularHours")
-                 if rescue_data.get("regularHours"):
-                     details["regularHours"] = rescue_data["regularHours"]
-                     print("DEBUG: Isolated rescue for regularHours SUCCESS")
-                     
-             # Rescue Service Area
-             if not details.get("serviceArea"):
-                  rescue_data = self.gbp.get_location_details(location_id, read_mask="serviceArea")
-                  if rescue_data.get("serviceArea"):
-                      details["serviceArea"] = rescue_data["serviceArea"]
-             
-             # --- DATA SANITIZATION / POLYFILL (Write-Time) ---
-             # Ensure data is consistent before saving to DB.
-             
-             # Address Polyfill
-             if details.get("postalAddress"):
-                 addr = details["postalAddress"]
-                 if not addr.get("addressLines"):
-                      # Strict Fallback Chain
-                      if addr.get("subLocality"):
-                          addr["addressLines"] = [addr["subLocality"]]
-                          print("DEBUG: Sanitizer Polyfilled addressLines with subLocality")
-                      elif addr.get("locality"):
-                          addr["addressLines"] = [addr["locality"]]
-                          print("DEBUG: Sanitizer Polyfilled addressLines with locality")
-                      elif addr.get("administrativeArea"):
-                          addr["addressLines"] = [addr["administrativeArea"]]
-                          print("DEBUG: Sanitizer Polyfilled addressLines with administrativeArea")
-                 details["postalAddress"] = addr
-
-             store = db.query(models.Store).filter(models.Store.id == store_id).first()
-             if store:
-                 store.gbp_data = details
-                 store.last_synced_at = datetime.utcnow()
-                 
-                 # Map top-level fields for system consistency (AI context, etc.)
-                 if details.get("title"): 
-                     store.name = details.get("title")
-                 
-                 # Description
-                 if details.get("profile") and details["profile"].get("description"):
-                     store.description = details["profile"]["description"]
-                 
-                 # Category
-                 if details.get("categories") and details["categories"].get("primaryCategory"):
-                     store.category = details["categories"]["primaryCategory"].get("displayName")
-
-                 # --- Detailed Sync Implementation (Copied from locations.py) ---
-        
-                 # Phone Number
-                 if details.get("phoneNumbers") and details["phoneNumbers"].get("primaryPhone"):
-                    store.phone_number = details["phoneNumbers"]["primaryPhone"]
+            # --- Splinter Strategy: "Divide and Conquer" Rescue (Integrated Parachute) ---
+            # Even if robust search failed, we try to fetch specific fields individually.
+            # This now acts as the "Emergency Parachute" within the service layer.
             
-                 # Website
-                 if details.get("websiteUri"):
-                    store.website_url = details["websiteUri"]
-            
-                 # Address Components
-                 # Try to use formatted address first as it's most reliable for display
-                 if details.get("postalAddress"):
-                    addr = details["postalAddress"]
-                    store.zip_code = addr.get("postalCode")
-                    store.prefecture = addr.get("administrativeArea")
-            
-                    # Logic for Japanese Addresses usually:
-                    # Prefecture + Locality + AddressLines
+            # Rescue Address
+            if not details.get("postalAddress") or not details.get("postalAddress", {}).get("postalCode"):
+                print("DEBUG: Attempting isolated rescue for postalAddress...")
+                rescue_data = self.gbp.get_location_details(location_id, read_mask="postalAddress")
+                if rescue_data.get("postalAddress"):
+                    details["postalAddress"] = rescue_data["postalAddress"]
+                    print("DEBUG: Isolated rescue for postalAddress SUCCESS")
+
+            # Rescue Attributes
+            if not details.get("attributes"):
+                print("DEBUG: Attempting isolated rescue for attributes...")
+                rescue_data = self.gbp.get_location_details(location_id, read_mask="attributes")
+                if rescue_data.get("attributes"):
+                    details["attributes"] = rescue_data["attributes"]
+                    print("DEBUG: Isolated rescue for attributes SUCCESS")
                     
-                    city_val = addr.get("locality", "")
-                    sub_locality = addr.get("subLocality", "") # Some JP addresses use this
+            # Rescue Hours
+            if not details.get("regularHours"):
+                print("DEBUG: Attempting isolated rescue for regularHours...")
+                rescue_data = self.gbp.get_location_details(location_id, read_mask="regularHours")
+                if rescue_data.get("regularHours"):
+                    details["regularHours"] = rescue_data["regularHours"]
+                    print("DEBUG: Isolated rescue for regularHours SUCCESS")
                     
-                    if sub_locality:
-                         city_val = f"{city_val}{sub_locality}"
-
-                    address_lines = addr.get("addressLines", [])
+            # Rescue Service Area
+            if not details.get("serviceArea"):
+                 rescue_data = self.gbp.get_location_details(location_id, read_mask="serviceArea")
+                 if rescue_data.get("serviceArea"):
+                     details["serviceArea"] = rescue_data["serviceArea"]
             
-                    if address_lines:
-                         store.address_line2 = "".join(address_lines)
-                    else:
-                        store.address_line2 = None
+            # --- DATA SANITIZATION / POLYFILL (Write-Time) ---
+            # Ensure data is consistent before saving to DB.
+            
+            # Address Polyfill
+            if details.get("postalAddress"):
+                addr = details["postalAddress"]
+                if not addr.get("addressLines"):
+                     # Strict Fallback Chain
+                     if addr.get("subLocality"):
+                         addr["addressLines"] = [addr["subLocality"]]
+                         print("DEBUG: Sanitizer Polyfilled addressLines with subLocality")
+                     elif addr.get("locality"):
+                         addr["addressLines"] = [addr["locality"]]
+                         print("DEBUG: Sanitizer Polyfilled addressLines with locality")
+                     elif addr.get("administrativeArea"):
+                         addr["addressLines"] = [addr["administrativeArea"]]
+                         print("DEBUG: Sanitizer Polyfilled addressLines with administrativeArea")
+                details["postalAddress"] = addr
+
+            store = db.query(models.Store).filter(models.Store.id == store_id).first()
+            if store:
+                store.gbp_data = details
+                store.last_synced_at = datetime.utcnow()
                 
-                    store.city = city_val
-            
-                    # Update full address string as fallback/display
-                    full_addr = f"〒{store.zip_code or ''} {store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
-                    store.address = full_addr
-                 else:
-                     # If we have basic info but no address, it might be an SAB.
-                     if details.get("serviceArea"):
-                         store.address = "出張型サービス/非店舗型" # "Service Area Business"
+                # Map top-level fields for system consistency (AI context, etc.)
+                if details.get("title"): 
+                    store.name = details.get("title")
+                
+                # Description
+                if details.get("profile") and details["profile"].get("description"):
+                    store.description = details["profile"]["description"]
+                
+                # Category
+                if details.get("categories") and details["categories"].get("primaryCategory"):
+                    store.category = details["categories"]["primaryCategory"].get("displayName")
 
-                 # Regular Hours
-                 if details.get("regularHours"):
-                    # Store as JSON 
-                    store.regular_hours = details["regularHours"]
-            
-                 # Attributes
-                 if details.get("attributes"):
-                     store.attributes = details["attributes"]
-                     
-                  # Lat/Lng
-                 # if details.get("latlng"):
-                 #    store.latitude = details["latlng"].get("latitude")
-                 #    store.longitude = details["latlng"].get("longitude")
+                # --- Detailed Sync Implementation (Copied from locations.py) ---
+       
+                # Phone Number
+                if details.get("phoneNumbers") and details["phoneNumbers"].get("primaryPhone"):
+                   store.phone_number = details["phoneNumbers"]["primaryPhone"]
+           
+                # Website
+                if details.get("websiteUri"):
+                   store.website_url = details["websiteUri"]
+           
+                # Address Components
+                # Try to use formatted address first as it's most reliable for display
+                if details.get("postalAddress"):
+                   addr = details["postalAddress"]
+                   store.zip_code = addr.get("postalCode")
+                   store.prefecture = addr.get("administrativeArea")
+           
+                   # Logic for Japanese Addresses usually:
+                   # Prefecture + Locality + AddressLines
+                   
+                   city_val = addr.get("locality", "")
+                   sub_locality = addr.get("subLocality", "") # Some JP addresses use this
+                   
+                   if sub_locality:
+                        city_val = f"{city_val}{sub_locality}"
 
-                 db.commit()
-                 
-                 # Return the final details object so caller has the latest
-                 return {"status": "success", "message": "Location details updated", "data": details}
+                   address_lines = addr.get("addressLines", [])
+           
+                   if address_lines:
+                        store.address_line2 = "".join(address_lines)
+                   else:
+                       store.address_line2 = None
+               
+                   store.city = city_val
+           
+                   # Update full address string as fallback/display
+                   full_addr = f"〒{store.zip_code or ''} {store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
+                   store.address = full_addr
+                else:
+                    # If we have basic info but no address, it might be an SAB.
+                    if details.get("serviceArea"):
+                        store.address = "出張型サービス/非店舗型" # "Service Area Business"
+
+                # Regular Hours
+                if details.get("regularHours"):
+                   # Store as JSON 
+                   store.regular_hours = details["regularHours"]
+           
+                # Attributes
+                if details.get("attributes"):
+                    store.attributes = details["attributes"]
+                    
+                 # Lat/Lng
+                # if details.get("latlng"):
+                #    store.latitude = details["latlng"].get("latitude")
+                #    store.longitude = details["latlng"].get("longitude")
+
+                db.commit()
+                
+                # Return the final details object so caller has the latest
+                return {"status": "success", "message": "Location details updated", "data": details}
                  
         except Exception as e:
              import traceback
