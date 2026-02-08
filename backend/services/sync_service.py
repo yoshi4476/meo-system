@@ -435,6 +435,40 @@ class GoogleSyncService:
                  except Exception as fb_err:
                      print(f"DEBUG: Fallback fetch failed: {fb_err}")
 
+             # --- Splinter Strategy: "Divide and Conquer" Rescue ---
+             # Even if robust search failed (or degraded to Level 3), we still want to try fetching
+             # specific fields individually. Sometimes "attributes" works alone but fails in a group.
+             
+             # Rescue Address
+             if not details.get("postalAddress") or not details.get("postalAddress", {}).get("postalCode"):
+                 print("DEBUG: Attempting isolated rescue for postalAddress...")
+                 rescue_data = self.gbp.get_location_details(location_id, read_mask="postalAddress")
+                 if rescue_data.get("postalAddress"):
+                     details["postalAddress"] = rescue_data["postalAddress"]
+                     print("DEBUG: Isolated rescue for postalAddress SUCCESS")
+
+             # Rescue Attributes
+             if not details.get("attributes"):
+                 print("DEBUG: Attempting isolated rescue for attributes...")
+                 rescue_data = self.gbp.get_location_details(location_id, read_mask="attributes")
+                 if rescue_data.get("attributes"):
+                     details["attributes"] = rescue_data["attributes"]
+                     print("DEBUG: Isolated rescue for attributes SUCCESS")
+                     
+             # Rescue Hours
+             if not details.get("regularHours"):
+                 print("DEBUG: Attempting isolated rescue for regularHours...")
+                 rescue_data = self.gbp.get_location_details(location_id, read_mask="regularHours")
+                 if rescue_data.get("regularHours"):
+                     details["regularHours"] = rescue_data["regularHours"]
+                     print("DEBUG: Isolated rescue for regularHours SUCCESS")
+                     
+             # Rescue Service Area
+             if not details.get("serviceArea"):
+                  rescue_data = self.gbp.get_location_details(location_id, read_mask="serviceArea")
+                  if rescue_data.get("serviceArea"):
+                      details["serviceArea"] = rescue_data["serviceArea"]
+
              store = db.query(models.Store).filter(models.Store.id == store_id).first()
              if store:
                  store.gbp_data = details

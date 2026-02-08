@@ -468,14 +468,26 @@ class GBPClient:
         response.raise_for_status()
         return response.json()
 
-    def get_location_details(self, location_name: str):
+    def get_location_details(self, location_name: str, read_mask: str = None):
         """
         Fetch detailed location info.
         location_name: "locations/{locationId}" (New API) or "accounts/{accountId}/locations/{locationId}"
+        read_mask: Optional specific mask to use. If None, uses robust retry strategy.
         """
         # Note: list_locations returns "locations/..." format ID from the new API
         # but we might need to handle mixed formats if we used the old v4 API manually
         url = f"{self.base_url}/{location_name}"
+        
+        # If a specific mask is requested, use it directly (Splinter Strategy)
+        if read_mask:
+            params = {"readMask": read_mask}
+            print(f"DEBUG: Single Field Fetch for {location_name} with mask: {read_mask}")
+            response = requests.get(url, headers=self._get_headers(), params=params)
+            if not response.ok:
+                print(f"DEBUG: Single Field Fetch Failed: {response.status_code} {response.text}")
+            # Don't raise, just return empty/partial to allow caller to handle
+            return response.json() if response.ok else {}
+
         # Strategy: Full -> Safe -> Minimal
         # Full: All fields
         # Safe: Core fields (excluding serviceArea, openInfo, regularHours which differ by business type)
@@ -516,9 +528,8 @@ class GBPClient:
         print(f"DEBUG: All retry attempts failed for {location_name}")
         if last_error:
             # Inspecting the error might help debugging
-            last_error.raise_for_status()
+            pass # We return empty dict so at least we don't crash the sync flow
         
-        # Should not happen
         return {}
 
     def update_location(self, location_name: str, data: dict, update_mask: str):
