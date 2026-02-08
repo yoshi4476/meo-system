@@ -33,6 +33,7 @@ type LocationDetails = {
         postalCode?: string;
         administrativeArea?: string;
         locality?: string;
+        subLocality?: string; // Added for robust fallback
         addressLines?: string[];
     };
     serviceArea?: {
