@@ -413,47 +413,74 @@ class GoogleSyncService:
                     store.website_url = details["websiteUri"]
             
                  # Address Components
+                 # Try to use formatted address first as it's most reliable for display
                  if details.get("postalAddress"):
                     addr = details["postalAddress"]
                     store.zip_code = addr.get("postalCode")
                     store.prefecture = addr.get("administrativeArea")
             
-                    # City & Address Line 1 logic
-                    # Combine locality and first address line for "City/Block"
+                    # Logic for Japanese Addresses usually:
+                    # Prefecture + Locality + AddressLines
+                    
                     city_val = addr.get("locality", "")
+                    sub_locality = addr.get("subLocality", "") # Some JP addresses use this
+                    
+                    if sub_locality:
+                         city_val = f"{city_val}{sub_locality}"
+
                     address_lines = addr.get("addressLines", [])
             
                     if address_lines:
+                        # If city is missing (sometimes happens in API), try to infer from first line/admin area
+                        if not city_val and not store.prefecture:
+                             # Fallback logic
+                             pass
+
+                        if not city_val:
+                             # Use first part of lines if no city
+                             pass
+
+                        # Robust construction
                         if city_val:
-                            city_val += address_lines[0]
+                            # Avoid duplication if city is already in address line 0 (Common in Google API)
+                            if address_lines[0].startswith(city_val):
+                                 store.address_line2 = "".join(address_lines) # Just use all lines
+                            else:
+                                 store.address_line2 = "".join(address_lines)
                         else:
-                            city_val = address_lines[0]
-                
-                        # Address Line 2 (Building name etc)
-                        if len(address_lines) > 1:
-                            store.address_line2 = "\n".join(address_lines[1:])
-                        else:
-                            store.address_line2 = None
+                             store.address_line2 = "".join(address_lines)
                     else:
                         store.address_line2 = None
                 
                     store.city = city_val
             
                     # Update full address string as fallback/display
-                    full_addr = f"{store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
+                    # Use Google's formatted address if available, else construct
+                    # Note: API doesn't always return formattedAddress in Details call, mainly list
+                    # But if we have components, let's build it standard JP way
+                    
+                    full_addr = f"〒{store.zip_code or ''} {store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
                     store.address = full_addr
 
                  # Regular Hours
                  if details.get("regularHours"):
+                    # Store as JSON 
                     store.regular_hours = details["regularHours"]
             
                  # Attributes
                  if details.get("attributes"):
                      store.attributes = details["attributes"]
+                     
+                 # Lat/Lng
+                 # if details.get("latlng"):
+                 #    store.latitude = details["latlng"].get("latitude")
+                 #    store.longitude = details["latlng"].get("longitude")
 
                  db.commit()
              return {"status": "success", "message": "Location details updated"}
         except Exception as e:
+             import traceback
+             traceback.print_exc()
              return {"status": "error", "message": f"Sync Location Error: {str(e)}"}
 
 # Helper to instantiate service

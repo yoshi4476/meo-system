@@ -33,181 +33,155 @@ export default function UsageManualPage() {
         {/* ■ 1. 初期設定（Google連携） */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-                <div className="p-6 rounded-2xl bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-100 mb-8">
-                    <h2 className="text-lg font-bold text-blue-900 mb-2 flex items-center gap-2">
-                        <DashboardIcon className="h-5 w-5" />
-                        MEO Mastermind AI の基本的な使い方
-                    </h2>
-                    <p className="text-blue-800">
-                        このシステムを使えば、MEO対策に必要な「投稿」「分析」「クチコミ管理」を
-                        <span className="font-bold">これひとつで完結</span>できます。
-                        まずは左のメニューから機能を選んでみましょう。
-                    </p>
-                </div>
+                <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/30">1</div>
+                <h2 className="text-2xl font-bold text-white">初期設定：Googleアカウント連携</h2>
+          </div>
 
-                {/* Main Features Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-                    {/* Dashboard */}
-                    <div className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                        <div className="p-8">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="p-3 bg-blue-100 rounded-xl text-blue-600 group-hover:scale-110 transition-transform">
-                                    <DashboardIcon className="h-8 w-8" />
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
+            <div className="flex flex-col md:flex-row gap-8 items-center">
+                <div className="flex-1 space-y-4">
+                    <p className="text-slate-300 leading-relaxed">
+                        MEO Mastermind AIを利用するには、まずあなたのGoogleビジネスプロフィールを管理しているGoogleアカウントと連携する必要があります。
+                    </p>
+                    
+                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4">
+                        <h4 className="font-bold text-blue-300 mb-2 flex items-center gap-2">
+                            <Settings className="w-4 h-4" /> 連携の手順
+                        </h4>
+                        <ol className="list-decimal list-inside text-slate-300 space-y-2 text-sm">
+                            <li>サイドメニューの「<span className="text-white font-bold">設定</span>」をクリックします。</li>
+                            <li>「<span className="text-white font-bold">Googleアカウント連携</span>」セクションを探します。</li>
+                            <li>「<span className="bg-white text-black px-2 py-0.5 rounded text-xs font-bold">G</span> 連携する」ボタンをクリックします。</li>
+                            <li>Googleの認証画面が表示されるので、店舗を管理しているアカウントでログインし、権限を許可してください。</li>
+                        </ol>
+                    </div>
+
+                    <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-xl p-4">
+                        <h4 className="font-bold text-yellow-300 mb-2 flex items-center gap-2">
+                             重要：店舗の選択
+                        </h4>
+                        <p className="text-sm text-slate-300">
+                            連携が完了すると、管理可能な店舗の一覧が表示されます。<br/>
+                            <span className="text-white font-bold">操作したい店舗を選択して「保存」</span>を押してください。<br/>
+                            これを行わないと、ダッシュボードにデータが表示されません。
+                        </p>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ■ 2. 機能一覧 */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">2</div>
+                <h2 className="text-2xl font-bold text-white">主な機能の紹介</h2>
+          </div>
+          
+          <div className="ml-14 grid grid-cols-1 md:grid-cols-2 gap-6">
+               {/* Dashboard */}
+                    <div className="group bg-slate-800/50 rounded-2xl border border-white/5 shadow-sm hover:border-blue-500/50 hover:bg-slate-800 transition-all duration-300 overflow-hidden">
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400">
+                                    <DashboardIcon className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900">ダッシュボード</h3>
-                                    <p className="text-sm text-gray-500">最初に表示される画面</p>
+                                    <h3 className="text-lg font-bold text-white">ダッシュボード</h3>
+                                    <p className="text-xs text-slate-400">すべてを俯瞰する</p>
                                 </div>
                             </div>
-                            <ul className="space-y-3 mb-6">
-                                <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                                    <span>店舗ごとのパフォーマンスを一目で確認</span>
+                            <ul className="space-y-2 mb-4 text-sm text-slate-300">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                                    <span>店舗の最新状況をひと目で確認</span>
                                 </li>
-                                <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                                    <span>検索数や閲覧数の推移をグラフ表示</span>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                                    <span>重要な通知ややるべきことを表示</span>
                                 </li>
                             </ul>
-                        </div>
-                        <div className="px-8 py-4 bg-gray-50 border-t border-gray-100">
-                            <a href="/dashboard" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                今すぐ確認する <span aria-hidden="true">&rarr;</span>
-                            </a>
                         </div>
                     </div>
 
                     {/* Posts */}
-                    <div className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                        <div className="p-8">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="p-3 bg-green-100 rounded-xl text-green-600 group-hover:scale-110 transition-transform">
-                                    <PenTool className="h-8 w-8" />
+                    <div className="group bg-slate-800/50 rounded-2xl border border-white/5 shadow-sm hover:border-green-500/50 hover:bg-slate-800 transition-all duration-300 overflow-hidden">
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 bg-green-500/20 rounded-xl text-green-400">
+                                    <PenTool className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900">AI投稿作成</h3>
-                                    <p className="text-sm text-gray-500">最もよく使われる機能</p>
+                                    <h3 className="text-lg font-bold text-white">AI投稿作成</h3>
+                                    <p className="text-xs text-slate-400">集客の要</p>
                                 </div>
                             </div>
-                            <ul className="space-y-3 mb-6">
-                                <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                                    <span>キーワードを入れるだけで記事を自動生成</span>
+                            <ul className="space-y-2 mb-4 text-sm text-slate-300">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                                    <span>キーワードから高品質な記事を自動生成</span>
                                 </li>
-                                <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                                    <span>Googleマップへの予約投稿・即時投稿</span>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                                    <span>予約投稿で運用を自動化</span>
                                 </li>
                             </ul>
-                        </div>
-                        <div className="px-8 py-4 bg-gray-50 border-t border-gray-100">
-                            <a href="/dashboard/posts?new=true" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                投稿を作ってみる <span aria-hidden="true">&rarr;</span>
-                            </a>
                         </div>
                     </div>
 
                     {/* Reviews */}
-                    <div className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                        <div className="p-8">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600 group-hover:scale-110 transition-transform">
-                                    <MessageCircle className="h-8 w-8" />
+                    <div className="group bg-slate-800/50 rounded-2xl border border-white/5 shadow-sm hover:border-yellow-500/50 hover:bg-slate-800 transition-all duration-300 overflow-hidden">
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 bg-yellow-500/20 rounded-xl text-yellow-400">
+                                    <MessageCircle className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900">クチコミ管理</h3>
-                                    <p className="text-sm text-gray-500">信頼を獲得する</p>
+                                    <h3 className="text-lg font-bold text-white">クチコミ管理</h3>
+                                    <p className="text-xs text-slate-400">ファンを増やす</p>
                                 </div>
                             </div>
-                            <ul className="space-y-3 mb-6">
-                                <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                                    <span>クチコミへの返信をAIがアシスト</span>
+                            <ul className="space-y-2 mb-4 text-sm text-slate-300">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
+                                    <span>AIが返信文案を数秒で作成</span>
                                 </li>
-                                <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                                    <span>未返信のクチコミを一括チェック</span>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
+                                    <span>ポジティブ・ネガティブを自動分析</span>
                                 </li>
                             </ul>
-                        </div>
-                        <div className="px-8 py-4 bg-gray-50 border-t border-gray-100">
-                            <a href="/dashboard/reviews" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                クチコミを見る <span aria-hidden="true">&rarr;</span>
-                            </a>
                         </div>
                     </div>
 
                     {/* Insights */}
-                    <div className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                        <div className="p-8">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="p-3 bg-purple-100 rounded-xl text-purple-600 group-hover:scale-110 transition-transform">
-                                    <BarChart3 className="h-8 w-8" />
+                    <div className="group bg-slate-800/50 rounded-2xl border border-white/5 shadow-sm hover:border-purple-500/50 hover:bg-slate-800 transition-all duration-300 overflow-hidden">
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 bg-purple-500/20 rounded-xl text-purple-400">
+                                    <BarChart3 className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900">インサイト分析</h3>
-                                    <p className="text-sm text-gray-500">効果を測定する</p>
+                                    <h3 className="text-lg font-bold text-white">インサイト分析</h3>
+                                    <p className="text-xs text-slate-400">結果を可視化</p>
                                 </div>
                             </div>
-                            <ul className="space-y-3 mb-6">
-                                <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                                    <span>「どんな言葉で検索されたか」を分析</span>
+                            <ul className="space-y-2 mb-4 text-sm text-slate-300">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                                    <span>検索キーワードや閲覧数の推移をグラフ化</span>
                                 </li>
-                                <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                                    <span>電話やルート検索の数をグラフで可視化</span>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                                    <span>競合分析や改善提案（Coming Soon）</span>
                                 </li>
                             </ul>
                         </div>
-                        <div className="px-8 py-4 bg-gray-50 border-t border-gray-100">
-                            <a href="/dashboard/insights" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                分析結果を見る <span aria-hidden="true">&rarr;</span>
-                            </a>
-                        </div>
                     </div>
-                </div>
-
-                {/* Workflow Section */}
-                <div className="mb-12">
-                     <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-                        毎日のルーティン（推奨）
-                    </h2>
-                    <div className="relative">
-                        <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-100 -z-10 hidden md:block" />
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative group cursor-pointer hover:-translate-y-1 transition-transform">
-                                <div className="w-16 h-16 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
-                                    1
-                                </div>
-                                <h3 className="font-bold text-gray-900 mb-2">週に1回</h3>
-                                <p className="text-sm text-gray-600">
-                                    「AI投稿作成」で来週分の記事を<br/>まとめて予約投稿
-                                </p>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative group cursor-pointer hover:-translate-y-1 transition-transform">
-                                <div className="w-16 h-16 rounded-full bg-linear-to-br from-green-500 to-green-600 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
-                                    2
-                                </div>
-                                <h3 className="font-bold text-gray-900 mb-2">通知が来たら</h3>
-                                <p className="text-sm text-gray-600">
-                                    クチコミが入ったら<br/>AIを使ってすぐに返信
-                                </p>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative group cursor-pointer hover:-translate-y-1 transition-transform">
-                                <div className="w-16 h-16 rounded-full bg-linear-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
-                                    3
-                                </div>
-                                <h3 className="font-bold text-gray-900 mb-2">月末に</h3>
-                                <p className="text-sm text-gray-600">
-                                    「インサイト」で効果を確認し<br/>次のキーワードを決める
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-           </div>
+          </div>
         </section>
+
+        {/* ■ 3. 推奨ルーティン */}
 
         {/* ■ 5. 店舗情報管理 */}
         <section className="space-y-6">
