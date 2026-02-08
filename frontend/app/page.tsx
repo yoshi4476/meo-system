@@ -19,14 +19,14 @@ export default function Home() {
         </p>
       </div>
 
-        <div className="relative z-10 flex flex-col items-center gap-8 mt-20">
+        <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/google/login`} className="relative z-10 flex flex-col items-center gap-8 mt-20 hover:opacity-80 transition-opacity cursor-pointer decoration-none">
           <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-center bg-clip-text text-transparent bg-linear-to-r from-white via-cyan-200 to-purple-200 text-glow">
             ビジネスの成長を、<br/>加速させる。
           </h1>
           <p className="text-xl text-center text-slate-300 max-w-2xl">
             AIによる分析と自動最適化で、あなたの店舗をGoogleマップの検索上位へ。
           </p>
-        
+        </a>
       <div className="glass p-8 rounded-2xl w-full max-w-md mt-8 flex flex-col gap-6 items-center relative z-50">
           <h2 className="text-2xl font-semibold mb-2">ようこそ (v3 check)</h2>
           <a 
@@ -54,7 +54,7 @@ export default function Home() {
 
         </div>
 
-      </div>
+
     </main>
   );
 }
