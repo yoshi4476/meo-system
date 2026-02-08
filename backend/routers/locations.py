@@ -190,18 +190,22 @@ async def get_location_details(store_id: str, force_refresh: bool = False, db: S
         addr = final_data["postalAddress"]
         # Ensure addressLines exists and is populated
         if not addr.get("addressLines"):
-            # Try subLocality (Chome-Ban)
+            # STRICT FALLBACK CHAIN
             if addr.get("subLocality"):
                 addr["addressLines"] = [addr["subLocality"]]
                 data_changed = True
                 print("DEBUG: Read-Time Sanitizer: Injected subLocality into addressLines")
-            # Fallback to Locality if really desperate
             elif addr.get("locality"):
+                # Fallback to Locality if subLocality is missing
+                # This ensures we at least show the city/ward in the address line field
                 addr["addressLines"] = [addr["locality"]]
-                # Don't set data_changed here maybe? Or yes? 
-                # Let's be safe and only do subLocality for now to avoid duplication
-                pass
-        
+                data_changed = True
+                print("DEBUG: Read-Time Sanitizer: Injected locality into addressLines (Aggressive)")
+            elif addr.get("administrativeArea"):
+                 # Desperate fallback
+                 addr["addressLines"] = [addr["administrativeArea"]]
+                 data_changed = True
+                 
         final_data["postalAddress"] = addr
 
     # 2. Sanitize Attributes (Ensure it's a list)
