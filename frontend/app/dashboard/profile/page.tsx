@@ -175,11 +175,14 @@ export default function ProfilePage() {
             openingDate: (data as any).openInfo?.openingDate ? 
                 `${(data as any).openInfo.openingDate.year}-${String((data as any).openInfo.openingDate.month).padStart(2,'0')}-${String((data as any).openInfo.openingDate.day).padStart(2,'0')}` 
                 : '',
-            // Address mapping
+            // Address mapping with Frontend-Side Polyfill (Robustness Level 500)
             postalCode: data.postalAddress?.postalCode || '',
             administrativeArea: data.postalAddress?.administrativeArea || '',
             locality: data.postalAddress?.locality || '',
-            addressLine1: data.postalAddress?.addressLines?.[0] || '',
+            addressLine1: data.postalAddress?.addressLines?.[0] || 
+                          data.postalAddress?.subLocality || 
+                          data.postalAddress?.locality || 
+                          data.postalAddress?.administrativeArea || '',
             addressLine2: data.postalAddress?.addressLines?.[1] || '',
             // Labels (if available in type, add to type def if missing)
             labels: (data as any).labels ? (data as any).labels.join(', ') : '',

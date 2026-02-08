@@ -567,10 +567,10 @@ class GoogleSyncService:
                  # Return the final details object so caller has the latest
                  return {"status": "success", "message": "Location details updated", "data": details}
                  
-         except Exception as e:
-              import traceback
-              traceback.print_exc()
-              return {"status": "error", "message": f"Sync Location Error: {str(e)}"}
+        except Exception as e:
+             import traceback
+             traceback.print_exc()
+             return {"status": "error", "message": f"Sync Location Error: {str(e)}"}
 
 # Helper to instantiate service
 # Helper to instantiate service
