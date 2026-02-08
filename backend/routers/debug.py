@@ -262,6 +262,24 @@ def analyze_store_state(
                      report["live_api_fetch"] = f"Failed: {str(e)}"
             else:
                  report["has_token"] = False
+            
+            # 5. Check Auto-Reply Status
+            report["auto_reply_status"] = {
+                "enabled": store.auto_reply_enabled,
+                "prompt_length": len(store.auto_reply_prompt) if store.auto_reply_prompt else 0,
+                "start_date": str(store.auto_reply_start_date) if store.auto_reply_start_date else "None"
+            }
+            
+            # Check OpenAI Key (via connected user)
+            user_settings = db.query(models.UserSettings).filter(models.UserSettings.user_id == user.id).first() if user else None
+            report["auto_reply_status"]["has_openai_key"] = bool(user_settings and user_settings.openai_api_key)
+            
+            # Check Unreplied Reviews
+            unreplied_count = db.query(models.Review).filter(
+                models.Review.store_id == store.id,
+                models.Review.reply_comment == None
+            ).count()
+            report["auto_reply_status"]["unreplied_reviews_in_db"] = unreplied_count
 
     except Exception as e:
         report["critical_error"] = str(e)
