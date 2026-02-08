@@ -385,6 +385,61 @@ class GoogleSyncService:
         try:
              # Just update the store record with latest JSON
              details = self.gbp.get_location_details(location_id)
+             
+             # Fallback: If address or attributes are missing (likely due to mask issues in get_location_details),
+             # try to fetch them via list_locations which might have a working mask for this specific account.
+             # We need account_name for list_locations.
+             # We can try to extract it from store.google_location_id if it was stored in v4 format, 
+             # OR we can assume the caller might know it. 
+             # Ideally we should pass v4_location_name to this method. 
+             # But for now, let's try to find the account if we really need to.
+             
+             needs_fallback = False
+             if not details.get("postalAddress") or not details.get("attributes") or not details.get("regularHours"):
+                 needs_fallback = True
+                 
+             if needs_fallback:
+                 try:
+                     # 1. Try to find the account name
+                     account_name = None
+                     # If we are in sync_all, we could have passed it. 
+                     # But since we are here, let's just list accounts and find the one that has this location.
+                     # This is expensive but "Perfect Reflection" is the goal.
+                     accounts = self.gbp.list_accounts()
+                     for acc in accounts.get("accounts", []):
+                         # List locations for this account and check if our location is there
+                         # Optimization: We can filter list_locations by name if API supports it, but client wrapper doesn't yet.
+                         # Just listing all (usually small number) is safer.
+                         locs = self.gbp.list_locations(acc["name"])
+                         for loc in locs.get("locations", []):
+                             # Check ID match
+                             lid = loc["name"].split("/")[-1]
+                             target_lid = location_id.split("/")[-1]
+                             if lid == target_lid:
+                                 # FOUND IT! Merge data.
+                                 print(f"DEBUG: Found location in fallback list: {loc['name']}")
+                                 # We prioritize the data from list_locations for missing fields
+                                 if not details.get("postalAddress") and loc.get("postalAddress"):
+                                     details["postalAddress"] = loc["postalAddress"]
+                                     print("DEBUG: Recovered postalAddress from list_locations")
+                                 
+                                 if not details.get("attributes") and loc.get("attributes"):
+                                     details["attributes"] = loc["attributes"]
+                                     print("DEBUG: Recovered attributes from list_locations")
+                                     
+                                 if not details.get("regularHours") and loc.get("regularHours"):
+                                     details["regularHours"] = loc["regularHours"]
+                                     print("DEBUG: Recovered regularHours from list_locations")
+                                     
+                                 if not details.get("serviceArea") and loc.get("serviceArea"):
+                                     details["serviceArea"] = loc["serviceArea"]
+                                 
+                                 account_name = acc["name"]
+                                 break
+                         if account_name: break
+                 except Exception as fb_err:
+                     print(f"DEBUG: Fallback fetch failed: {fb_err}")
+
              store = db.query(models.Store).filter(models.Store.id == store_id).first()
              if store:
                  store.gbp_data = details
@@ -461,6 +516,15 @@ class GoogleSyncService:
                     
                     full_addr = f"〒{store.zip_code or ''} {store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
                     store.address = full_addr
+                 else:
+                     # If address is definitely missing (e.g. Service Area Business), clear it?
+                     # Or keep existing?
+                     # If we have basic info but no address, it might be an SAB.
+                     # Let's check serviceArea
+                     if details.get("serviceArea"):
+                         store.address = "出張型サービス/非店舗型" # "Service Area Business"
+                     # Only clear if we clearly got a response saying "no address"
+                     # For now, let's not aggressively clear unless sure.
 
                  # Regular Hours
                  if details.get("regularHours"):
