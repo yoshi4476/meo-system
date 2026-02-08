@@ -99,39 +99,77 @@ async def get_location_details(store_id: str, force_refresh: bool = False, db: S
     if result.get("status") == "error":
         raise HTTPException(status_code=400, detail=result.get("message"))
     
-    # --- EMERGENCY PARACHUTE ---
-    # Double-check if we actually got the address. If not, try one final "Desperate" fetch here.
+    # --- EMERGENCY PARACHUTE (ALL FIELDS) ---
+    # Double-check if we actually got the essential data. If not, try one final "Desperate" fetch for each missing piece.
     # This bypasses sync_service complexity to ensure we aren't losing data in the layers.
     db.refresh(store)
     current_data = store.gbp_data or {}
     
+    # 1. Rescue Address
     has_address = current_data.get("postalAddress") and current_data["postalAddress"].get("postalCode")
     if not has_address:
-        print(f"DEBUG: Emergency Parachute deployed for {store.name} - Address still missing after sync.")
+        print(f"DEBUG: Emergency Parachute deployed for ADDRESS - {store.name}")
         try:
-            # Direct minimal fetch
             emergency_data = client.get_location_details(store.google_location_id, read_mask="postalAddress")
             if emergency_data.get("postalAddress"):
                 print("DEBUG: Emergency Parachute SUCCESS. Address recovered.")
-                if not store.gbp_data: store.gbp_data = {}
-                # Update dict in place (need to reassign to trigger generic types sometimes, but dict is mutable)
-                # Safer to copy and reassign for SQLAlchemy change tracking
                 new_data = dict(store.gbp_data) if store.gbp_data else {}
                 new_data["postalAddress"] = emergency_data["postalAddress"]
                 store.gbp_data = new_data
                 
-                # Apply mapping logic for DB columns (copied minimal version)
+                # Apply mapping logic
                 addr = emergency_data["postalAddress"]
                 store.zip_code = addr.get("postalCode")
                 store.prefecture = addr.get("administrativeArea")
                 store.city = addr.get("locality", "")
                 store.address_line2 = "".join(addr.get("addressLines", []))
                 store.address = f"〒{store.zip_code} {store.prefecture}{store.city}{store.address_line2}"
-                
                 db.commit()
-                db.refresh(store)
         except Exception as e:
-            print(f"DEBUG: Emergency Parachute failed: {e}")
+            print(f"DEBUG: Emergency Parachute Address failed: {e}")
+
+    # 2. Rescue Attributes
+    if not current_data.get("attributes"):
+        print(f"DEBUG: Emergency Parachute deployed for ATTRIBUTES - {store.name}")
+        try:
+            emergency_data = client.get_location_details(store.google_location_id, read_mask="attributes")
+            if emergency_data.get("attributes"):
+                 print("DEBUG: Emergency Parachute SUCCESS. Attributes recovered.")
+                 new_data = dict(store.gbp_data) if store.gbp_data else {}
+                 new_data["attributes"] = emergency_data["attributes"]
+                 store.gbp_data = new_data
+                 store.attributes = emergency_data["attributes"]
+                 db.commit()
+        except Exception as e:
+             print(f"DEBUG: Emergency Parachute Attributes failed: {e}")
+
+    # 3. Rescue Regular Hours
+    if not current_data.get("regularHours"):
+        print(f"DEBUG: Emergency Parachute deployed for HOURS - {store.name}")
+        try:
+            emergency_data = client.get_location_details(store.google_location_id, read_mask="regularHours")
+            if emergency_data.get("regularHours"):
+                 print("DEBUG: Emergency Parachute SUCCESS. Hours recovered.")
+                 new_data = dict(store.gbp_data) if store.gbp_data else {}
+                 new_data["regularHours"] = emergency_data["regularHours"]
+                 store.gbp_data = new_data
+                 store.regular_hours = emergency_data["regularHours"]
+                 db.commit()
+        except Exception as e:
+             print(f"DEBUG: Emergency Parachute Hours failed: {e}")
+
+    # 4. Rescue Service Area
+    if not current_data.get("serviceArea"):
+        # Less critical, but user said "everything"
+        try:
+            emergency_data = client.get_location_details(store.google_location_id, read_mask="serviceArea")
+            if emergency_data.get("serviceArea"):
+                 new_data = dict(store.gbp_data) if store.gbp_data else {}
+                 new_data["serviceArea"] = emergency_data["serviceArea"]
+                 store.gbp_data = new_data
+                 db.commit()
+        except:
+             pass
 
     # Re-fetch one last time
     db.refresh(store)
