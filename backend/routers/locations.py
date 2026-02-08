@@ -94,13 +94,46 @@ async def get_location_details(store_id: str, force_refresh: bool = False, db: S
     
     # This executes the robust logic (get_location_details + fallback find_location_robust)
     # and updates the DB.
-    # FIX: Await the async method
     result = await sync_service.sync_location_details(db, store.id, store.google_location_id)
     
     if result.get("status") == "error":
         raise HTTPException(status_code=400, detail=result.get("message"))
-        
-    # Re-fetch from DB to get the updated data
+    
+    # --- EMERGENCY PARACHUTE ---
+    # Double-check if we actually got the address. If not, try one final "Desperate" fetch here.
+    # This bypasses sync_service complexity to ensure we aren't losing data in the layers.
+    db.refresh(store)
+    current_data = store.gbp_data or {}
+    
+    has_address = current_data.get("postalAddress") and current_data["postalAddress"].get("postalCode")
+    if not has_address:
+        print(f"DEBUG: Emergency Parachute deployed for {store.name} - Address still missing after sync.")
+        try:
+            # Direct minimal fetch
+            emergency_data = client.get_location_details(store.google_location_id, read_mask="postalAddress")
+            if emergency_data.get("postalAddress"):
+                print("DEBUG: Emergency Parachute SUCCESS. Address recovered.")
+                if not store.gbp_data: store.gbp_data = {}
+                # Update dict in place (need to reassign to trigger generic types sometimes, but dict is mutable)
+                # Safer to copy and reassign for SQLAlchemy change tracking
+                new_data = dict(store.gbp_data) if store.gbp_data else {}
+                new_data["postalAddress"] = emergency_data["postalAddress"]
+                store.gbp_data = new_data
+                
+                # Apply mapping logic for DB columns (copied minimal version)
+                addr = emergency_data["postalAddress"]
+                store.zip_code = addr.get("postalCode")
+                store.prefecture = addr.get("administrativeArea")
+                store.city = addr.get("locality", "")
+                store.address_line2 = "".join(addr.get("addressLines", []))
+                store.address = f"〒{store.zip_code} {store.prefecture}{store.city}{store.address_line2}"
+                
+                db.commit()
+                db.refresh(store)
+        except Exception as e:
+            print(f"DEBUG: Emergency Parachute failed: {e}")
+
+    # Re-fetch one last time
     db.refresh(store)
     return store.gbp_data
 
