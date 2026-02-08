@@ -220,8 +220,32 @@ def analyze_store_state(
                             "title": details.get("title"),
                             "phone": details.get("phoneNumbers"),
                             "hours_keys": list(details.get("regularHours", {}).keys()) if details.get("regularHours") else [],
-                            "raw": details, # Dump full response to debug missing fields
+                            "raw": details, 
                         }
+                        
+                        # --- MASK DIAGNOSTICS ---
+                        # Test which mask is actually working
+                        report["mask_diagnostics"] = []
+                        masks_to_test = [
+                            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,postalAddress,attributes",
+                            "name,title,storeCode,categories,profile,postalAddress,phoneNumbers,websiteUri",
+                            "name,title,storeCode"
+                        ]
+                        for m in masks_to_test:
+                             try:
+                                 # We need to call requests directly or add a method to client. 
+                                 # Calling private method or recreating request here for debug
+                                 import requests
+                                 diag_url = f"{client.base_url}/{store.google_location_id}"
+                                 diag_res = requests.get(diag_url, headers=client._get_headers(), params={"readMask": m})
+                                 report["mask_diagnostics"].append({
+                                     "mask": m[:30] + "...",
+                                     "status": diag_res.status_code,
+                                     "error": diag_res.text if not diag_res.ok else None
+                                 })
+                             except Exception as e:
+                                 report["mask_diagnostics"].append({"mask": m, "exception": str(e)})
+                        # ------------------------
                      else:
                         report["live_api_fetch"] = "Skipped (No ID in DB)"
 
