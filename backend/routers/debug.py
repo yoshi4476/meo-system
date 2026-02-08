@@ -220,6 +220,7 @@ def analyze_store_state(
                             "title": details.get("title"),
                             "phone": details.get("phoneNumbers"),
                             "hours_keys": list(details.get("regularHours", {}).keys()) if details.get("regularHours") else [],
+                            "raw": details, # Dump full response to debug missing fields
                         }
                      else:
                         report["live_api_fetch"] = "Skipped (No ID in DB)"

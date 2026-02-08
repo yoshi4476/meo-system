@@ -441,11 +441,7 @@ function PostsContent() {
                                     </div>
                                     <div className="flex-1 space-y-3">
                                         <div className="flex items-center gap-3">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                                                post.status === 'PUBLISHED' ? 'bg-green-500/20 text-green-400' : 
-                                                post.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400' :
-                                                'bg-slate-700 text-slate-300'
-                                            }`}>
+                                            <span className="px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-300">
                                                 {post.status === 'PUBLISHED' ? '公開済み' : post.status === 'SCHEDULED' ? '予約済み' : '下書き'}
                                             </span>
                                             <span className="text-xs text-slate-500">
