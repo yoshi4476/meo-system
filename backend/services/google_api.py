@@ -146,63 +146,65 @@ class GBPClient:
     def find_location_robust(self, account_name: str, location_id: str):
         """
         Try to find a specific location under an account with a FULL mask.
-        Used for fallback sync when direct get_location fails to return address/attributes.
         Strategy: List ALL locations in the account with full mask and find the match client-side.
-        This provides maximum safety against API filter quirks or 400 errors on specific endpoints.
-        
-        location_id: "locations/12345" or just "12345"
+        Robustness: Tries multiple mask levels (Full -> Address/Hours -> Basic) to handle API 400 errors.
         """
         url = f"{self.base_url}/{account_name}/locations"
-        
-        # Ensure ID format for comparison
         target_lid = location_id.split("/")[-1]
         
-        # Robust Mask
-        params = {
-            "readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,postalAddress,regularHours,attributes,openInfo,websiteUri",
-            "pageSize": 100 
-        }
+        # Define mask levels
+        masks = [
+            # Level 1: Full Data (Address, Hours, Attributes, ServiceArea)
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,postalAddress,regularHours,attributes,openInfo,websiteUri",
+            # Level 2: Core Business Data (Address, Hours) - No Attributes/ServiceArea
+            "name,title,storeCode,latlng,phoneNumbers,categories,profile,postalAddress,regularHours,websiteUri",
+            # Level 3: Address Only (Critical Fallback)
+            "name,title,storeCode,postalAddress"
+        ]
         
-        print(f"DEBUG: robust search (brute-force list) in {account_name} for {target_lid}...")
-        
-        next_page_token = None
-        
-        try:
-            while True:
-                current_params = params.copy()
-                if next_page_token:
-                    current_params["pageToken"] = next_page_token
+        for i, mask in enumerate(masks):
+            params = {
+                "readMask": mask,
+                "pageSize": 50 # Reduced page size to be safer with heavy masks
+            }
+            print(f"DEBUG: Robust Search Attempt {i+1} in {account_name} for {target_lid} with mask len {len(mask)}")
+            
+            next_page_token = None
+            found_location = None
+            
+            try:
+                while True:
+                    current_params = params.copy()
+                    if next_page_token:
+                        current_params["pageToken"] = next_page_token
+                        
+                    response = requests.get(url, headers=self._get_headers(), params=current_params, timeout=20)
                     
-                response = requests.get(url, headers=self._get_headers(), params=current_params, timeout=15)
-                
-                # If even listing fails with 400, try a simpler mask? 
-                # But we need attributes. If this fails, we really can't get them.
-                if response.status_code == 400:
-                    print(f"DEBUG: Robust list failed with 400. Trying without attributes as last resort.")
-                    current_params["readMask"] = "name,title,storeCode,postalAddress"
-                    response = requests.get(url, headers=self._get_headers(), params=current_params, timeout=15)
-                
-                if not response.ok:
-                    print(f"DEBUG: Robust search error: {response.status_code} {response.text}")
-                    return None
+                    if response.status_code == 400:
+                        print(f"DEBUG: Mask Level {i+1} failed with 400. Breaking to next mask.")
+                        break # Try next mask level
+                        
+                    if not response.ok:
+                        print(f"DEBUG: Robust list failed: {response.status_code}")
+                        break # Fatal error for this account? Or just this mask? Let's assume this mask.
                     
-                data = response.json()
-                locations = data.get("locations", [])
-                
-                # Search for our location
-                for loc in locations:
-                    lid = loc["name"].split("/")[-1]
-                    if lid == target_lid:
-                        print("DEBUG: Found target location in robust list!")
-                        return loc
-                
-                next_page_token = data.get("nextPageToken")
-                if not next_page_token:
-                    break
+                    data = response.json()
+                    locations = data.get("locations", [])
                     
-        except Exception as e:
-             print(f"DEBUG: Robust find failed: {e}")
-             
+                    for loc in locations:
+                        lid = loc["name"].split("/")[-1]
+                        if lid == target_lid:
+                            print(f"DEBUG: Found target location using Mask Level {i+1}")
+                            return loc # Success!
+                    
+                    next_page_token = data.get("nextPageToken")
+                    if not next_page_token:
+                        break # Finished account, not found with this mask
+            
+            except Exception as e:
+                print(f"DEBUG: Error in robust loop level {i+1}: {e}")
+                
+        print("DEBUG: Robust search exhausted all masks. Location not found or access denied.")
         return None
 
     def list_reviews(self, location_name: str):
