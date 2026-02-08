@@ -249,16 +249,31 @@ async def sync_store_data(location_id: str, db: Session = Depends(database.get_d
             connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
             db.commit()
     
-    # 3. Perform Sync (Mock implementation for demo as we don't have real location IDs accessible)
-    # in real life: 
-    # reviews = client.list_reviews(location_id)
-    # for review in reviews: upsert(review)
-    
-    # Simulate processing time
-    import time
-    time.sleep(1)
-    
-    return {"status": "success", "message": f"Successfully synced data for location {location_id}", "synced_items": {"reviews": 12, "posts": 5, "insights": "updated"}}
+    # 3. Perform Sync
+    try:
+        store = db.query(models.Store).filter(models.Store.id == location_id).first()
+        if not store:
+            # Try to see if location_id is actually a Google Location ID
+            store = db.query(models.Store).filter(models.Store.google_location_id == location_id).first()
+            
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+            
+        if not store.google_location_id:
+             raise HTTPException(status_code=400, detail="Store is not linked to Google Location")
+
+        from services.sync_service import GoogleSyncService
+        client = google_api.GBPClient(connection.access_token)
+        service = GoogleSyncService(client)
+        
+        # Sync everything
+        results = await service.sync_all(db, store.id, store.google_location_id)
+        
+        return {"status": "success", "message": f"Successfully synced data for location {store.name}", "synced_items": results}
+        
+    except Exception as e:
+        print(f"Error during sync: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 class LocationSelectRequest(BaseModel):
     locationId: str
@@ -266,7 +281,7 @@ class LocationSelectRequest(BaseModel):
     storeCode: str = None
 
 @router.post("/locations/select")
-def select_location(
+async def select_location(
     request: LocationSelectRequest, 
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user)
@@ -276,21 +291,93 @@ def select_location(
     1. Creates/Updates Store record with google_location_id
     2. Links User to this Store
     """
-    # Check if store exists
+    # DEBUG LOGGING TO FILE
+    import os
+    from datetime import datetime
+    log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "debug.log")
+    
+    def log_debug(msg):
+        # Print to stdout for Render/Cloud logs
+        print(f"[{datetime.now()}] {msg}")
+        # Also try to write to file if possible
+        try:
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(f"[{datetime.now()}] {msg}\n")
+        except:
+             pass
+
+    log_debug(f"DEBUG: select_location called for {request.locationId}, {request.displayName}")
+
+    # STRATEGY CHANGE: If user is already linked to a store, UPDATE that store.
+    # This fixes the issue where creation fails or we have a split-brain.
+    if current_user.store_id:
+        log_debug(f"DEBUG: User already has store {current_user.store_id}. Updating it.")
+        store = db.query(models.Store).filter(models.Store.id == current_user.store_id).first()
+        if store:
+            store.google_location_id = request.locationId
+            store.name = request.displayName
+            # Update attributes if needed? No, let sync handle that.
+            try:
+                db.commit()
+                log_debug("DEBUG: Existing store updated with Google ID.")
+                return {"status": "success", "message": f"Store linked to {request.displayName}", "store_id": store.id}
+            except Exception as e:
+                 log_debug(f"DEBUG: Update failed: {e}")
+                 db.rollback()
+                 # Fallthrough to standard logic if update fails? No, raise.
+                 raise
+
+    # Fallback to standard logic (Find by GoogleID or Create)
     store = db.query(models.Store).filter(models.Store.google_location_id == request.locationId).first()
     
     if not store:
+        log_debug("DEBUG: Store not found via GoogleID, creating new one")
         store = models.Store(
             google_location_id=request.locationId,
             name=request.displayName,
             company_id=current_user.company_id # Assign to same company if exists
         )
         db.add(store)
-        db.commit()
+        try:
+           db.commit()
+           log_debug("DEBUG: Store creation committed")
+        except Exception as e:
+           log_debug(f"DEBUG: Store creation commit failed: {e}")
+           db.rollback()
+           raise
         db.refresh(store)
+    else:
+        log_debug(f"DEBUG: Store found: {store.id}")
     
     # Assign user to this store
+    log_debug(f"DEBUG: Assigning user {current_user.id} to store {store.id}")
     current_user.store_id = store.id
-    db.commit()
+    try:
+        db.add(current_user) # Ensure user is in session
+        db.commit()
+        log_debug("DEBUG: User assignment committed")
+        
+        # --- TRIGGER AUTO-SYNC ---
+        # Now that we are linked, immediately fetch the details so the user sees them.
+        try:
+             log_debug("DEBUG: Triggering immediate auto-sync...")
+             from services.sync_service import GoogleSyncService
+             # We need a client. If current_user has connection, use it.
+             if current_user.google_connection and current_user.google_connection.access_token:
+                  client = google_api.GBPClient(current_user.google_connection.access_token)
+                  service = GoogleSyncService(client)
+                  # Sync Location Details (Description, Address, Hours, etc.)
+                  await service.sync_location_details(db, store.id, store.google_location_id)
+                  log_debug("DEBUG: Immediate auto-sync completed.")
+             else:
+                  log_debug("DEBUG: Skipping auto-sync (no google connection found on user object).")
+        except Exception as sync_e:
+             log_debug(f"DEBUG: Auto-sync failed (non-blocking): {sync_e}")
+        # -------------------------
+
+    except Exception as e:
+        log_debug(f"DEBUG: User assignment commit failed: {e}")
+        db.rollback()
+        raise
     
     return {"status": "success", "message": f"Store {request.displayName} selected", "store_id": store.id}

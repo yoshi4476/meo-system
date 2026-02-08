@@ -137,3 +137,101 @@ def debug_pdf_generation():
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"PDF Debug Failed: {str(e)}")
+@router.get("/analyze_store")
+def analyze_store_state(
+    db: Session = Depends(database.get_db),
+    secret: str = None
+):
+    """
+    Deep verification of Store State on Production.
+    Requires ?secret=... (Use a temporary hardcoded secret for debugging if needed, or just allow open for now since it's debug route)
+    Actually, let's just use the current_user dependency for safety if possible? 
+    But user might not be logged in if auth is broken. 
+    Let's rely on SUPER_ADMIN check or just a simple secret.
+    """
+    # Simple security for this debug tool
+    import os
+    if secret != os.getenv("SECRET_KEY", "dev_secret") and secret != "debug123":
+        raise HTTPException(status_code=403, detail="Invalid secret")
+
+    report = {"status": "running"}
+
+    try:
+        # 1. Check Schema
+        from sqlalchemy import text
+        try:
+            # SQLite specific pragma
+            columns = db.execute(text("PRAGMA table_info(stores)")).fetchall()
+            report["schema_columns"] = [row[1] for row in columns]
+        except Exception as e:
+            report["schema_check_error"] = str(e)
+            # Try Postgres way if SQLite fails?
+            # report["schema_columns"] = "Could not fetch (Postgres?)"
+
+        # 2. Check Store Data
+        # Get first store found (assuming single tenant or mostly single user for now)
+        store = db.query(models.Store).first()
+        if not store:
+            report["store_found"] = False
+        else:
+            report["store_found"] = True
+            report["store_id"] = store.id
+            report["store_name"] = store.name
+            report["store_gbp_id"] = store.google_location_id
+            
+            # Check Critical Fields
+            report["fields"] = {
+                "description": store.description,
+                "phone_number": store.phone_number,
+                "website_url": store.website_url,
+                "regular_hours": str(store.regular_hours)[:100] if store.regular_hours else None,
+                "attributes": str(store.attributes)[:100] if store.attributes else None,
+            }
+            
+            report["synced_at"] = str(store.last_synced_at)
+
+            # 3. Check Linked User & Token
+            user = db.query(models.User).filter(models.User.store_id == store.id).first()
+            if user and user.google_connection:
+                 report["user_email"] = user.email
+                 report["has_token"] = True
+                 
+                 # 4. Try Live API Fetch
+                 try:
+                     client = google_api.GBPClient(user.google_connection.access_token)
+                     
+                     # FETCH ALL LOCATIONS (To help find the right one)
+                     accounts = client.list_accounts()
+                     if accounts.get('accounts'):
+                         acc_name = accounts['accounts'][0]['name']
+                         locs = client.list_locations(acc_name)
+                         report["available_locations_on_google"] = []
+                         for loc in locs.get('locations', []):
+                             report["available_locations_on_google"].append({
+                                 "name": loc.get('title'),
+                                 "id": loc.get('name'), # locations/12345...
+                                 "address": loc.get('storeCode') or loc.get('postalAddress', {}).get('locality')
+                             })
+                     
+                     if store.google_location_id:
+                        details = client.get_location_details(store.google_location_id)
+                        report["live_api_fetch"] = "Success"
+                        report["live_api_data"] = {
+                            "title": details.get("title"),
+                            "phone": details.get("phoneNumbers"),
+                            "hours_keys": list(details.get("regularHours", {}).keys()) if details.get("regularHours") else [],
+                        }
+                     else:
+                        report["live_api_fetch"] = "Skipped (No ID in DB)"
+
+                 except Exception as e:
+                     report["live_api_fetch"] = f"Failed: {str(e)}"
+            else:
+                 report["has_token"] = False
+
+    except Exception as e:
+        report["critical_error"] = str(e)
+        import traceback
+        report["traceback"] = traceback.format_exc()
+
+    return report

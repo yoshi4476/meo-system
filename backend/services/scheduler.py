@@ -268,7 +268,8 @@ async def sync_all_locations():
 
                 # Sync
                 client = google_api.GBPClient(valid_connection.access_token)
-                service = google_api.GoogleSyncService(client)
+                from services.sync_service import GoogleSyncService
+                service = GoogleSyncService(client)
                 await service.sync_location_details(db, store.id, store.google_location_id)
                 logger.info(f"Synced location details for {store.name}")
                 

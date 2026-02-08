@@ -388,6 +388,7 @@ class GoogleSyncService:
              store = db.query(models.Store).filter(models.Store.id == store_id).first()
              if store:
                  store.gbp_data = details
+                 store.last_synced_at = datetime.utcnow()
                  
                  # Map top-level fields for system consistency (AI context, etc.)
                  if details.get("title"): 
@@ -401,13 +402,54 @@ class GoogleSyncService:
                  if details.get("categories") and details["categories"].get("primaryCategory"):
                      store.category = details["categories"]["primaryCategory"].get("displayName")
 
-                 # Address (Flatten to string)
+                 # --- Detailed Sync Implementation (Copied from locations.py) ---
+        
+                 # Phone Number
+                 if details.get("phoneNumbers") and details["phoneNumbers"].get("primaryPhone"):
+                    store.phone_number = details["phoneNumbers"]["primaryPhone"]
+            
+                 # Website
+                 if details.get("websiteUri"):
+                    store.website_url = details["websiteUri"]
+            
+                 # Address Components
                  if details.get("postalAddress"):
-                     addr = details["postalAddress"]
-                     addr_str = f"{addr.get('administrativeArea', '')}{addr.get('locality', '')}"
-                     if addr.get("addressLines"):
-                         addr_str += "".join(addr["addressLines"])
-                     store.address = addr_str
+                    addr = details["postalAddress"]
+                    store.zip_code = addr.get("postalCode")
+                    store.prefecture = addr.get("administrativeArea")
+            
+                    # City & Address Line 1 logic
+                    # Combine locality and first address line for "City/Block"
+                    city_val = addr.get("locality", "")
+                    address_lines = addr.get("addressLines", [])
+            
+                    if address_lines:
+                        if city_val:
+                            city_val += address_lines[0]
+                        else:
+                            city_val = address_lines[0]
+                
+                        # Address Line 2 (Building name etc)
+                        if len(address_lines) > 1:
+                            store.address_line2 = "\n".join(address_lines[1:])
+                        else:
+                            store.address_line2 = None
+                    else:
+                        store.address_line2 = None
+                
+                    store.city = city_val
+            
+                    # Update full address string as fallback/display
+                    full_addr = f"{store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
+                    store.address = full_addr
+
+                 # Regular Hours
+                 if details.get("regularHours"):
+                    store.regular_hours = details["regularHours"]
+            
+                 # Attributes
+                 if details.get("attributes"):
+                     store.attributes = details["attributes"]
 
                  db.commit()
              return {"status": "success", "message": "Location details updated"}

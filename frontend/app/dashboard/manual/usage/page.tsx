@@ -24,7 +24,7 @@ export default function UsageManualPage() {
   return (
     <div className="h-full flex flex-col p-8 overflow-y-auto w-full max-w-5xl mx-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
       <div className="mb-10 border-b border-white/10 pb-6">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-cyan-300 mb-3">システム操作マニュアル</h1>
+
         <p className="text-slate-400 text-lg">MEO Mastermind AIシステムの全機能を活用するための詳細ガイド</p>
       </div>
 

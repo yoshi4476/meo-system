@@ -67,15 +67,23 @@ def get_location_details(store_id: str, force_refresh: bool = False, db: Session
          raise HTTPException(status_code=400, detail="Google account not connected")
     
     # Caching Logic
-    # 1. Check if we have cached data and it is recent (< 1 hour)
+    # 1. Check if we need to fetch
     should_fetch = force_refresh
-    if not should_fetch and store.gbp_data and store.last_synced_at:
-        # Check if cache is fresh (e.g. 1 hour)
-        if datetime.utcnow() - store.last_synced_at < timedelta(hours=1):
-            should_fetch = False
+    
+    if not should_fetch:
+        # If no data or no timestamp, we must fetch
+        if not store.gbp_data or not store.last_synced_at:
+            should_fetch = True
+        else:
+            # Check if cache is expired (e.g. 1 hour)
+            if datetime.utcnow() - store.last_synced_at > timedelta(hours=1):
+                should_fetch = True
             
     if not should_fetch:
+        print(f"DEBUG: Returning cached GBP data for {store.name}")
         return store.gbp_data
+
+    print(f"DEBUG: Fetching fresh GBP data for {store.name} (Force={force_refresh})")
 
     # Hard Reset if forced: Clear existing data to prevent merge issues
     if force_refresh:
