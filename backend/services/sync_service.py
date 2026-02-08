@@ -400,43 +400,32 @@ class GoogleSyncService:
                  
              if needs_fallback:
                  try:
-                     # 1. Try to find the account name
+                     # 1. Iterate accounts to find the location using robust search
                      account_name = None
-                     # If we are in sync_all, we could have passed it. 
-                     # But since we are here, let's just list accounts and find the one that has this location.
-                     # This is expensive but "Perfect Reflection" is the goal.
                      accounts = self.gbp.list_accounts()
                      for acc in accounts.get("accounts", []):
-                         # List locations for this account and check if our location is there
-                         # Optimization: We can filter list_locations by name if API supports it, but client wrapper doesn't yet.
-                         # Just listing all (usually small number) is safer.
-                         locs = self.gbp.list_locations(acc["name"])
-                         for loc in locs.get("locations", []):
-                             # Check ID match
-                             lid = loc["name"].split("/")[-1]
-                             target_lid = location_id.split("/")[-1]
-                             if lid == target_lid:
-                                 # FOUND IT! Merge data.
-                                 print(f"DEBUG: Found location in fallback list: {loc['name']}")
-                                 # We prioritize the data from list_locations for missing fields
-                                 if not details.get("postalAddress") and loc.get("postalAddress"):
-                                     details["postalAddress"] = loc["postalAddress"]
-                                     print("DEBUG: Recovered postalAddress from list_locations")
+                         # Use robust find which filters server-side
+                         loc = self.gbp.find_location_robust(acc["name"], location_id)
+                         if loc:
+                             print(f"DEBUG: Found location via robust fallback: {loc['name']}")
+                             # Merge Data
+                             if not details.get("postalAddress") and loc.get("postalAddress"):
+                                 details["postalAddress"] = loc["postalAddress"]
+                                 print("DEBUG: Recovered postalAddress")
+                             
+                             if not details.get("attributes") and loc.get("attributes"):
+                                 details["attributes"] = loc["attributes"]
+                                 print("DEBUG: Recovered attributes")
                                  
-                                 if not details.get("attributes") and loc.get("attributes"):
-                                     details["attributes"] = loc["attributes"]
-                                     print("DEBUG: Recovered attributes from list_locations")
-                                     
-                                 if not details.get("regularHours") and loc.get("regularHours"):
-                                     details["regularHours"] = loc["regularHours"]
-                                     print("DEBUG: Recovered regularHours from list_locations")
-                                     
-                                 if not details.get("serviceArea") and loc.get("serviceArea"):
-                                     details["serviceArea"] = loc["serviceArea"]
+                             if not details.get("regularHours") and loc.get("regularHours"):
+                                 details["regularHours"] = loc["regularHours"]
+                                 print("DEBUG: Recovered regularHours")
                                  
-                                 account_name = acc["name"]
-                                 break
-                         if account_name: break
+                             if not details.get("serviceArea") and loc.get("serviceArea"):
+                                 details["serviceArea"] = loc["serviceArea"]
+                             
+                             break # Found and merged
+                             
                  except Exception as fb_err:
                      print(f"DEBUG: Fallback fetch failed: {fb_err}")
 

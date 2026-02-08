@@ -120,8 +120,8 @@ class GBPClient:
 
     def list_locations(self, account_name: str):
         url = f"{self.base_url}/{account_name}/locations"
-        # Expanded mask to include postalAddress, regularHours, and attributes which might work better here than in get_location_details
-        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,postalAddress,regularHours,attributes,openInfo,websiteUri"}
+        # Reverted to Safe Mask to ensure Settings page always loads
+        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea"}
         all_locations = []
         next_page_token = None
         
@@ -142,6 +142,49 @@ class GBPClient:
                 break
                 
         return {"locations": all_locations}
+
+    def find_location_robust(self, account_name: str, location_id: str):
+        """
+        Try to find a specific location under an account with a FULL mask.
+        Used for fallback sync when direct get_location fails to return address/attributes.
+        location_id: "locations/12345" or just "12345"
+        """
+        url = f"{self.base_url}/{account_name}/locations"
+        
+        # Ensure ID format
+        clean_id = location_id.split("/")[-1]
+        
+        # Filter by name. Note: API filter expects the full resource name relative to account? 
+        # Or just "storeCode=..."? 
+        # The API documentation says: "name=accounts/{accountId}/locations/{locationId}"
+        # We can try strict filtering.
+        target_name = f"{account_name}/locations/{clean_id}"
+        params = {
+            "filter": f"name={target_name}",
+            "readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,postalAddress,regularHours,attributes,openInfo,websiteUri"
+        }
+        
+        print(f"DEBUG: robust search in {account_name} for {clean_id}...")
+        
+        try:
+            response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+            if response.ok:
+                data = response.json()
+                if data.get("locations"):
+                    return data["locations"][0]
+            elif response.status_code == 400:
+                print("DEBUG: Full mask failed in robust search, trying safer mask...")
+                # Try without attributes/address just to confirm existence? 
+                # No, if that failed, we probably can't get the fields we want anyway.
+                # But let's try just Address
+                params["readMask"] = "name,postalAddress"
+                res2 = requests.get(url, headers=self._get_headers(), params=params)
+                if res2.ok and res2.json().get("locations"):
+                    return res2.json()["locations"][0]
+        except Exception as e:
+             print(f"DEBUG: Robust find failed: {e}")
+             
+        return None
 
     def list_reviews(self, location_name: str):
         """
