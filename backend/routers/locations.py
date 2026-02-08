@@ -50,7 +50,7 @@ def list_available_locations(db: Session = Depends(database.get_db), current_use
         return []
 
 @router.get("/{store_id}")
-def get_location_details(store_id: str, force_refresh: bool = False, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+async def get_location_details(store_id: str, force_refresh: bool = False, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
     Get location details directly from Google Business Profile.
     """
@@ -87,11 +87,15 @@ def get_location_details(store_id: str, force_refresh: bool = False, db: Session
 
     # Use Sync Service for robust fetching
     from services.sync_service import GoogleSyncService
-    sync_service = GoogleSyncService(db)
+    
+    # FIX: Initialize with Client, not DB
+    client = google_api.GBPClient(current_user.google_connection.access_token)
+    sync_service = GoogleSyncService(client)
     
     # This executes the robust logic (get_location_details + fallback find_location_robust)
     # and updates the DB.
-    result = sync_service.sync_location_details(store.id)
+    # FIX: Await the async method
+    result = await sync_service.sync_location_details(db, store.id, store.google_location_id)
     
     if result.get("status") == "error":
         raise HTTPException(status_code=400, detail=result.get("message"))

@@ -395,7 +395,10 @@ class GoogleSyncService:
              # But for now, let's try to find the account if we really need to.
              
              needs_fallback = False
-             if not details.get("postalAddress") or not details.get("attributes") or not details.get("regularHours"):
+             # Robust check: If address is missing postalCode, treat as missing.
+             # If attributes is None or empty dict, treat as missing.
+             has_address = details.get("postalAddress") and details["postalAddress"].get("postalCode")
+             if not has_address or not details.get("attributes") or not details.get("regularHours"):
                  needs_fallback = True
                  
              if needs_fallback:
@@ -408,20 +411,23 @@ class GoogleSyncService:
                          loc = self.gbp.find_location_robust(acc["name"], location_id)
                          if loc:
                              print(f"DEBUG: Found location via robust fallback: {loc['name']}")
-                             # Merge Data
-                             if not details.get("postalAddress") and loc.get("postalAddress"):
-                                 details["postalAddress"] = loc["postalAddress"]
-                                 print("DEBUG: Recovered postalAddress")
                              
-                             if not details.get("attributes") and loc.get("attributes"):
+                             # Merge Data - Aggressive Overwrite
+                             # We assume the Robust Search (Full Mask) returns BETTER data than the partial fetch
+                             
+                             if loc.get("postalAddress"):
+                                 details["postalAddress"] = loc["postalAddress"]
+                                 print("DEBUG: Force-Recovered postalAddress")
+                             
+                             if loc.get("attributes"):
                                  details["attributes"] = loc["attributes"]
-                                 print("DEBUG: Recovered attributes")
+                                 print("DEBUG: Force-Recovered attributes")
                                  
-                             if not details.get("regularHours") and loc.get("regularHours"):
+                             if loc.get("regularHours"):
                                  details["regularHours"] = loc["regularHours"]
-                                 print("DEBUG: Recovered regularHours")
+                                 print("DEBUG: Force-Recovered regularHours")
                                  
-                             if not details.get("serviceArea") and loc.get("serviceArea"):
+                             if loc.get("serviceArea"):
                                  details["serviceArea"] = loc["serviceArea"]
                              
                              break # Found and merged
