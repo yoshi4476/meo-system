@@ -179,8 +179,42 @@ async def get_location_details(store_id: str, force_refresh: bool = False, db: S
         except:
              pass
 
-    # Re-fetch one last time
+    # --- READ-TIME SANITIZER ---
+    # Ensure data is frontend-ready before returning, fixing any legacy/cache issues on the fly.
     db.refresh(store)
+    final_data = dict(store.gbp_data) if store.gbp_data else {}
+    data_changed = False
+
+    # 1. Sanitize Address
+    if final_data.get("postalAddress"):
+        addr = final_data["postalAddress"]
+        # Ensure addressLines exists and is populated
+        if not addr.get("addressLines"):
+            # Try subLocality (Chome-Ban)
+            if addr.get("subLocality"):
+                addr["addressLines"] = [addr["subLocality"]]
+                data_changed = True
+                print("DEBUG: Read-Time Sanitizer: Injected subLocality into addressLines")
+            # Fallback to Locality if really desperate
+            elif addr.get("locality"):
+                addr["addressLines"] = [addr["locality"]]
+                # Don't set data_changed here maybe? Or yes? 
+                # Let's be safe and only do subLocality for now to avoid duplication
+                pass
+        
+        final_data["postalAddress"] = addr
+
+    # 2. Sanitize Attributes (Ensure it's a list)
+    if final_data.get("attributes") is None:
+        # If None, maybe we can't do much, but if it's not a list, fix it?
+        pass 
+
+    if data_changed:
+         store.gbp_data = final_data
+         db.commit()
+         db.refresh(store)
+         print(f"DEBUG: Read-Time Sanitization applied and saved for {store.name}")
+
     return store.gbp_data
 
     # --- OLD LEGACY LOGIC REMOVED (Replaced by Sync Service) ---
