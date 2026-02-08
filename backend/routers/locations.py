@@ -114,11 +114,19 @@ async def get_location_details(store_id: str, force_refresh: bool = False, db: S
             if emergency_data.get("postalAddress"):
                 print("DEBUG: Emergency Parachute SUCCESS. Address recovered.")
                 new_data = dict(store.gbp_data) if store.gbp_data else {}
-                new_data["postalAddress"] = emergency_data["postalAddress"]
+                
+                # --- ADDRESS POLYFILL ---
+                # Frontend expects addressLines[0]. If Google returns subLocality but no addressLines, fail.
+                # So we manually inject subLocality into addressLines if needed.
+                addr = emergency_data["postalAddress"]
+                if not addr.get("addressLines") and addr.get("subLocality"):
+                    addr["addressLines"] = [addr["subLocality"]]
+                    print("DEBUG: Polyfilled addressLines with subLocality")
+                
+                new_data["postalAddress"] = addr
                 store.gbp_data = new_data
                 
                 # Apply mapping logic
-                addr = emergency_data["postalAddress"]
                 store.zip_code = addr.get("postalCode")
                 store.prefecture = addr.get("administrativeArea")
                 store.city = addr.get("locality", "")

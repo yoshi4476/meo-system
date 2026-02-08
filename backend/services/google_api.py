@@ -67,7 +67,10 @@ class GBPClient:
         self.account_url = "https://mybusinessaccountmanagement.googleapis.com/v1"
 
     def _get_headers(self):
-        return {"Authorization": f"Bearer {self.access_token}"}
+        return {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept-Language": "ja-JP" # Force Japanese response for address formatting
+        }
 
     def _get_v4_location_path(self, location_name: str) -> str:
         """

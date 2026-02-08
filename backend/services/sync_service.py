@@ -444,8 +444,21 @@ class GoogleSyncService:
                  print("DEBUG: Attempting isolated rescue for postalAddress...")
                  rescue_data = self.gbp.get_location_details(location_id, read_mask="postalAddress")
                  if rescue_data.get("postalAddress"):
-                     details["postalAddress"] = rescue_data["postalAddress"]
+                     addr = rescue_data["postalAddress"]
+                     # --- ADDRESS POLYFILL ---
+                     if not addr.get("addressLines") and addr.get("subLocality"):
+                         addr["addressLines"] = [addr["subLocality"]]
+                         print("DEBUG: Polyfilled addressLines with subLocality (Sync Service)")
+                     
+                     details["postalAddress"] = addr
                      print("DEBUG: Isolated rescue for postalAddress SUCCESS")
+             elif details.get("postalAddress"):
+                 # Polyfill for standard fetch too
+                 addr = details["postalAddress"]
+                 if not addr.get("addressLines") and addr.get("subLocality"):
+                      addr["addressLines"] = [addr["subLocality"]]
+                      details["postalAddress"] = addr
+                      print("DEBUG: Polyfilled addressLines with subLocality (Standard Path)")
 
              # Rescue Attributes
              if not details.get("attributes"):
