@@ -85,108 +85,24 @@ def get_location_details(store_id: str, force_refresh: bool = False, db: Session
 
     print(f"DEBUG: Fetching fresh GBP data for {store.name} (Force={force_refresh})")
 
-    # Hard Reset if forced: Clear existing data to prevent merge issues
-    if force_refresh:
-        store.gbp_data = None
-        db.commit()
-
-    client = google_api.GBPClient(current_user.google_connection.access_token)
+    # Use Sync Service for robust fetching
+    from services.sync_service import GoogleSyncService
+    sync_service = GoogleSyncService(db)
     
-    try:
-        # Fetch detailed location info
-        details = client.get_location_details(store.google_location_id)
+    # This executes the robust logic (get_location_details + fallback find_location_robust)
+    # and updates the DB.
+    result = sync_service.sync_location_details(store.id)
+    
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
         
-        # Save to DB for caching/display
-        # Save to DB for caching/display
-        store.gbp_data = details
-        store.last_synced_at = datetime.utcnow()
+    # Re-fetch from DB to get the updated data
+    db.refresh(store)
+    return store.gbp_data
 
-        # Update core fields from GBP data to ensure consistency
-        if details.get("title"):
-             store.name = details.get("title")
-        
-        # Address
-        if details.get("postalAddress"):
-             addr = details["postalAddress"]
-             addr_str = f"{addr.get('administrativeArea', '')}{addr.get('locality', '')}"
-             if addr.get("addressLines"):
-                 addr_str += "".join(addr["addressLines"])
-             store.address = addr_str
-        
-        # Category
-        if details.get("categories") and details["categories"].get("primaryCategory"):
-             store.category = details["categories"]["primaryCategory"].get("displayName")
-        
-        # Description
-        if details.get("profile") and details["profile"].get("description"):
-             store.description = details["profile"]["description"]
-
-        # --- Detailed Sync Implementation ---
-        
-        # Phone Number
-        if details.get("phoneNumbers") and details["phoneNumbers"].get("primaryPhone"):
-            store.phone_number = details["phoneNumbers"]["primaryPhone"]
-            
-        # Website
-        if details.get("websiteUri"):
-            store.website_url = details["websiteUri"]
-            
-        # Address Components
-        if details.get("postalAddress"):
-            addr = details["postalAddress"]
-            store.zip_code = addr.get("postalCode")
-            store.prefecture = addr.get("administrativeArea")
-            
-            # City & Address Line 1 logic
-            # Combine locality and first address line for "City/Block"
-            city_val = addr.get("locality", "")
-            address_lines = addr.get("addressLines", [])
-            
-            if address_lines:
-                if city_val:
-                    city_val += address_lines[0]
-                else:
-                    city_val = address_lines[0]
-                
-                # Address Line 2 (Building name etc)
-                if len(address_lines) > 1:
-                    store.address_line2 = "\n".join(address_lines[1:])
-                else:
-                    store.address_line2 = None
-            else:
-                store.address_line2 = None
-                
-            store.city = city_val
-            
-            # Update full address string as fallback/display
-            full_addr = f"{store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
-            store.address = full_addr
-
-        # Regular Hours
-        if details.get("regularHours"):
-            store.regular_hours = details["regularHours"]
-            
-        # Attributes
-        # Note: 'attributes' are not always in the default readMask. 
-        # get_location_details in google_api.py attempts to fetch 'attributes' via metadata or specific mask?
-        # Check google_api.py masks. It includes 'attributes' in the list_locations mask but maybe not get_location_details masks.
-        # But 'categories' is there. 'attributes' usually requires a specific field mask like "attributes" or "serviceArea".
-        # Let's assume it's in details if fetched.
-        if details.get("attributes"):
-             store.attributes = details["attributes"]
-        if details.get("serviceArea"):
-             # Sometimes serviceArea is useful too
-             pass
-
-        db.commit()
-        
-        return details
-    except Exception as e:
-        print(f"Error fetching GBP details: {e}")
-        # Fallback to cached data if available
-        if store.gbp_data:
-            return store.gbp_data
-        raise HTTPException(status_code=400, detail=str(e))
+    # --- OLD LEGACY LOGIC REMOVED (Replaced by Sync Service) ---
+    # Logic handled by sync_service
+    pass
 
 @router.patch("/{store_id}")
 def update_location_details(store_id: str, update_data: LocationUpdate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
