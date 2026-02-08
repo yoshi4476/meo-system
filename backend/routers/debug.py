@@ -225,26 +225,35 @@ def analyze_store_state(
                         
                         # --- MASK DIAGNOSTICS ---
                         # Test which mask is actually working
+                        # --- MASK DIAGNOSTICS (INDIVIDUAL FIELDS) ---
                         report["mask_diagnostics"] = []
-                        masks_to_test = [
-                            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,postalAddress,attributes",
-                            "name,title,storeCode,categories,profile,postalAddress,phoneNumbers,websiteUri",
-                            "name,title,storeCode"
+                        fields_to_test = [
+                            "name", "title", "storeCode", "latlng", "phoneNumbers", 
+                            "categories", "metadata", "profile", "serviceArea", 
+                            "regularHours", "websiteUri", "openInfo", "postalAddress", 
+                            "attributes", "address", "phone_numbers"
                         ]
-                        for m in masks_to_test:
+                        
+                        import requests
+                        base_diag_url = f"{client.base_url}/{store.google_location_id}"
+                        
+                        for field in fields_to_test:
                              try:
-                                 # We need to call requests directly or add a method to client. 
-                                 # Calling private method or recreating request here for debug
-                                 import requests
-                                 diag_url = f"{client.base_url}/{store.google_location_id}"
-                                 diag_res = requests.get(diag_url, headers=client._get_headers(), params={"readMask": m})
+                                 diag_res = requests.get(base_diag_url, headers=client._get_headers(), params={"readMask": field})
+                                 status_code = diag_res.status_code
+                                 
+                                 # If 200, it's supported. If 400, it's invalid.
+                                 result = "OK" if status_code == 200 else "INVALID"
+                                 if status_code not in [200, 400]:
+                                     result = f"Error {status_code}"
+                                     
                                  report["mask_diagnostics"].append({
-                                     "mask": m[:30] + "...",
-                                     "status": diag_res.status_code,
-                                     "error": diag_res.text if not diag_res.ok else None
+                                     "field": field,
+                                     "result": result,
+                                     "response": diag_res.json() if status_code == 200 else diag_res.text[:100]
                                  })
                              except Exception as e:
-                                 report["mask_diagnostics"].append({"mask": m, "exception": str(e)})
+                                 report["mask_diagnostics"].append({"field": field, "result": "EXCEPTION", "details": str(e)})
                         # ------------------------
                      else:
                         report["live_api_fetch"] = "Skipped (No ID in DB)"
