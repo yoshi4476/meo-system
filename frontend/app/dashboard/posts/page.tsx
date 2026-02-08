@@ -453,7 +453,21 @@ function PostsContent() {
                                             </span>
                                             {post.scheduled_at && (
                                                 <span className="text-xs text-blue-400 flex items-center gap-1">
-                                                    📅 予約: {format(new Date(post.scheduled_at), 'yyyy/MM/dd HH:mm', { locale: ja })}
+                                                    📅 予約: {(() => {
+                                                        if (!post.scheduled_at) return '';
+                                                        try {
+                                                            // Force treat as UTC if no timezone indicator is present
+                                                            let dateStr = post.scheduled_at.replace(/ /g, 'T');
+                                                            if (!/Z|[\+\-]\d{2}:?\d{2}$/.test(dateStr)) {
+                                                                dateStr += 'Z';
+                                                            }
+                                                            // Check if it's already Z (UTC)
+                                                            const date = new Date(dateStr);
+                                                            return format(date, 'yyyy/MM/dd HH:mm', { locale: ja });
+                                                        } catch (e) {
+                                                            return post.scheduled_at;
+                                                        }
+                                                    })()}
                                                 </span>
                                             )}
                                         </div>

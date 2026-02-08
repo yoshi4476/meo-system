@@ -417,14 +417,17 @@ class GBPClient:
         # Minimal: Just identity
         
         masks = [
-            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,postalAddress",
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,postalAddress,attributes",
             "name,title,storeCode,categories,profile,postalAddress,phoneNumbers,websiteUri", # Safe
             "name,title,storeCode" # Minimal
         ]
         
         last_error = None
+        print(f"DEBUG: Starting Robust Location Fetch for {location_name}")
+        
         for i, mask in enumerate(masks):
             params = {"readMask": mask}
+            print(f"DEBUG: Attempt {i+1} with mask: {mask[:20]}...")
             response = requests.get(url, headers=self._get_headers(), params=params)
             
             if response.ok:
@@ -439,10 +442,13 @@ class GBPClient:
             # Only retry on 400 (Bad Request). 403/404 should probably fail immediately (but 403 might be field permission?)
             # Let's retry on 400 and 403 (Permission Denied often means field denied)
             if response.status_code not in [400, 403]:
+                print("DEBUG: Non-400 error, aborting retry.")
                 break
         
         # If we get here, all retries failed
+        print(f"DEBUG: All retry attempts failed for {location_name}")
         if last_error:
+            # Inspecting the error might help debugging
             last_error.raise_for_status()
         
         # Should not happen

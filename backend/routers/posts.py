@@ -114,41 +114,44 @@ def delete_post(post_id: str, db: Session = Depends(database.get_db), current_us
     # Try to delete from Google if it was published
     if post.status == 'PUBLISHED' and post.google_post_id:
         try:
-             # We need user connection
-             if current_user.google_connection and current_user.google_connection.access_token:
-                 client = google_api.GBPClient(current_user.google_connection.access_token)
+             # Check and Refresh Token
+             connection = current_user.google_connection
+             if connection:
+                 if connection.expiry and connection.expiry < datetime.utcnow() and connection.refresh_token:
+                     try:
+                         new_tokens = google_api.refresh_access_token(connection.refresh_token)
+                         connection.access_token = new_tokens.get("access_token")
+                         connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
+                         db.commit()
+                     except Exception as e:
+                         print(f"Failed to refresh token during delete: {e}")
+                         # Continue, maybe current token is still valid or we just fail to delete from Google
                  
-                 # Store has location ID?
-                 store = db.query(models.Store).filter(models.Store.id == post.store_id).first()
-                 location_id = store.google_location_id if store else None
-                 
-                 try:
-                     # 1. Delete
-                     client.delete_local_post(post.google_post_id, location_name=location_id)
-                     print(f"DEBUG: Delete request sent for {post.google_post_id}")
+                 if connection.access_token:
+                     client = google_api.GBPClient(connection.access_token)
                      
-                     # 2. Verify Deletion (Google API might have delay, but 404 is immediate usually)
-                     # We can't easily "get" a post by ID without knowing if we have the method.
-                     # But we can assume if delete returned 200, it's scheduled for deletion.
+                     # Get Location ID for context
+                     store = db.query(models.Store).filter(models.Store.id == post.store_id).first()
+                     location_id = store.google_location_id if store else None
                      
-                 except requests.exceptions.HTTPError as e:
-                     if e.response.status_code == 404:
-                         print(f"DEBUG: Post {post.google_post_id} already deleted from Google (404)")
-                     else:
-                         print(f"Error deleting post from Google: {e}")
-                         # raise e # Don't raise, we want to clear local DB
-                 except Exception as e:
-                     print(f"Unexpected error deleting from Google: {e}")
-                 
+                     try:
+                         client.delete_local_post(post.google_post_id, location_name=location_id)
+                         print(f"DEBUG: Successfully deleted post {post.google_post_id} from Google")
+                     except requests.exceptions.HTTPError as e:
+                         if e.response.status_code == 404:
+                             print(f"DEBUG: Post {post.google_post_id} already deleted from Google (404)")
+                         else:
+                             print(f"Error deleting post from Google: {e}")
+                             # We proceed to delete locally ensuring data consistency
+                     except Exception as e:
+                         print(f"Unexpected error deleting from Google: {e}")
+             else:
+                 print("DEBUG: No Google connection found for user, skipping Google post deletion")
+
         except Exception as e:
-             print(f"Warning: Failed to delete post from Google: {e}")
-             # If it's a critical logic error, we want to know. 
-             # But we proceed to delete locally to at least clean up.
-        except Exception as e:
-             print(f"Warning: Failed to delete post from Google: {e}")
-             # If it's a critical logic error, we want to know. 
-             # But we proceed to delete locally to at least clean up.
-             
+             print(f"Warning: General failure in Google delete logic: {e}")
+
+    # Always delete from local DB
     db.delete(post)
     db.commit()
     return {"message": "Post deleted"}

@@ -38,6 +38,18 @@ class Store(StoreBase):
     id: str
     company_id: Optional[str] = None
     posts: List[Post] = []
+    
+    # Detailed Info
+    phone_number: Optional[str] = None
+    website_url: Optional[str] = None
+    zip_code: Optional[str] = None
+    prefecture: Optional[str] = None
+    city: Optional[str] = None
+    address_line2: Optional[str] = None
+    regular_hours: Optional[dict] = None
+    attributes: Optional[List[dict]] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
 
     class Config:
         from_attributes = True

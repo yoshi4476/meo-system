@@ -113,6 +113,63 @@ def get_location_details(store_id: str, force_refresh: bool = False, db: Session
         if details.get("profile") and details["profile"].get("description"):
              store.description = details["profile"]["description"]
 
+        # --- Detailed Sync Implementation ---
+        
+        # Phone Number
+        if details.get("phoneNumbers") and details["phoneNumbers"].get("primaryPhone"):
+            store.phone_number = details["phoneNumbers"]["primaryPhone"]
+            
+        # Website
+        if details.get("websiteUri"):
+            store.website_url = details["websiteUri"]
+            
+        # Address Components
+        if details.get("postalAddress"):
+            addr = details["postalAddress"]
+            store.zip_code = addr.get("postalCode")
+            store.prefecture = addr.get("administrativeArea")
+            
+            # City & Address Line 1 logic
+            # Combine locality and first address line for "City/Block"
+            city_val = addr.get("locality", "")
+            address_lines = addr.get("addressLines", [])
+            
+            if address_lines:
+                if city_val:
+                    city_val += address_lines[0]
+                else:
+                    city_val = address_lines[0]
+                
+                # Address Line 2 (Building name etc)
+                if len(address_lines) > 1:
+                    store.address_line2 = "\n".join(address_lines[1:])
+                else:
+                    store.address_line2 = None
+            else:
+                store.address_line2 = None
+                
+            store.city = city_val
+            
+            # Update full address string as fallback/display
+            full_addr = f"{store.prefecture or ''}{store.city or ''}{store.address_line2 or ''}"
+            store.address = full_addr
+
+        # Regular Hours
+        if details.get("regularHours"):
+            store.regular_hours = details["regularHours"]
+            
+        # Attributes
+        # Note: 'attributes' are not always in the default readMask. 
+        # get_location_details in google_api.py attempts to fetch 'attributes' via metadata or specific mask?
+        # Check google_api.py masks. It includes 'attributes' in the list_locations mask but maybe not get_location_details masks.
+        # But 'categories' is there. 'attributes' usually requires a specific field mask like "attributes" or "serviceArea".
+        # Let's assume it's in details if fetched.
+        if details.get("attributes"):
+             store.attributes = details["attributes"]
+        if details.get("serviceArea"):
+             # Sometimes serviceArea is useful too
+             pass
+
         db.commit()
         
         return details

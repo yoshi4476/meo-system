@@ -54,6 +54,16 @@ class Store(Base):
     auto_reply_start_date = Column(DateTime, nullable=True) # To filter when auto-reply starts (or use old date for "all past")
     description = Column(String, nullable=True)  # Store description for context
     category = Column(String, nullable=True)  # Store category for context
+
+    # Detailed Info for Sync
+    phone_number = Column(String, nullable=True)
+    website_url = Column(String, nullable=True)
+    zip_code = Column(String, nullable=True)
+    prefecture = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    address_line2 = Column(String, nullable=True)
+    regular_hours = Column(JSON, nullable=True)
+    attributes = Column(JSON, nullable=True)
     
     company = relationship("Company", back_populates="stores")
     posts = relationship("Post", back_populates="store")

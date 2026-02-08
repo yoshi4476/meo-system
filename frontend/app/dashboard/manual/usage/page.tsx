@@ -1,6 +1,22 @@
 'use client';
 
 import { useDashboard } from '../../../../contexts/DashboardContext';
+import React from 'react';
+import { 
+    MapPin, 
+    Search, 
+    MessageSquare, 
+    BarChart2, 
+    Settings, 
+    HelpCircle, 
+    ExternalLink, 
+    ChevronRight,
+    LayoutDashboard as DashboardIcon, // Aliased to avoid conflict/cache issues
+    CheckCircle2,
+    PenTool,
+    MessageCircle,
+    BarChart3
+} from 'lucide-react';
 
 export default function UsageManualPage() {
   const { userInfo } = useDashboard();
@@ -8,7 +24,7 @@ export default function UsageManualPage() {
   return (
     <div className="h-full flex flex-col p-8 overflow-y-auto w-full max-w-5xl mx-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
       <div className="mb-10 border-b border-white/10 pb-6">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300 mb-3">システム操作マニュアル</h1>
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-cyan-300 mb-3">システム操作マニュアル</h1>
         <p className="text-slate-400 text-lg">MEO Mastermind AIシステムの全機能を活用するための詳細ガイド</p>
       </div>
 
@@ -17,9 +33,9 @@ export default function UsageManualPage() {
         {/* ■ 1. 初期設定（Google連携） */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-                <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 mb-8">
+                <div className="p-6 rounded-2xl bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-100 mb-8">
                     <h2 className="text-lg font-bold text-blue-900 mb-2 flex items-center gap-2">
-                        <LayoutDashboard className="h-5 w-5" />
+                        <DashboardIcon className="h-5 w-5" />
                         MEO Mastermind AI の基本的な使い方
                     </h2>
                     <p className="text-blue-800">
@@ -36,7 +52,7 @@ export default function UsageManualPage() {
                         <div className="p-8">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="p-3 bg-blue-100 rounded-xl text-blue-600 group-hover:scale-110 transition-transform">
-                                    <LayoutDashboard className="h-8 w-8" />
+                                    <DashboardIcon className="h-8 w-8" />
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-900">ダッシュボード</h3>
@@ -45,11 +61,11 @@ export default function UsageManualPage() {
                             </div>
                             <ul className="space-y-3 mb-6">
                                 <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                                     <span>店舗ごとのパフォーマンスを一目で確認</span>
                                 </li>
                                 <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                                     <span>検索数や閲覧数の推移をグラフ表示</span>
                                 </li>
                             </ul>
@@ -75,17 +91,17 @@ export default function UsageManualPage() {
                             </div>
                             <ul className="space-y-3 mb-6">
                                 <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                                     <span>キーワードを入れるだけで記事を自動生成</span>
                                 </li>
                                 <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                                     <span>Googleマップへの予約投稿・即時投稿</span>
                                 </li>
                             </ul>
                         </div>
                         <div className="px-8 py-4 bg-gray-50 border-t border-gray-100">
-                            <a href="/dashboard/post/create" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                            <a href="/dashboard/posts?new=true" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
                                 投稿を作ってみる <span aria-hidden="true">&rarr;</span>
                             </a>
                         </div>
@@ -105,11 +121,11 @@ export default function UsageManualPage() {
                             </div>
                             <ul className="space-y-3 mb-6">
                                 <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                                     <span>クチコミへの返信をAIがアシスト</span>
                                 </li>
                                 <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                                     <span>未返信のクチコミを一括チェック</span>
                                 </li>
                             </ul>
@@ -135,11 +151,11 @@ export default function UsageManualPage() {
                             </div>
                             <ul className="space-y-3 mb-6">
                                 <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                                     <span>「どんな言葉で検索されたか」を分析</span>
                                 </li>
                                 <li className="flex items-start gap-2 text-gray-600">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                                     <span>電話やルート検索の数をグラフで可視化</span>
                                 </li>
                             </ul>
@@ -161,7 +177,7 @@ export default function UsageManualPage() {
                         <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-100 -z-10 hidden md:block" />
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
                             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative group cursor-pointer hover:-translate-y-1 transition-transform">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
+                                <div className="w-16 h-16 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
                                     1
                                 </div>
                                 <h3 className="font-bold text-gray-900 mb-2">週に1回</h3>
@@ -170,7 +186,7 @@ export default function UsageManualPage() {
                                 </p>
                             </div>
                             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative group cursor-pointer hover:-translate-y-1 transition-transform">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
+                                <div className="w-16 h-16 rounded-full bg-linear-to-br from-green-500 to-green-600 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
                                     2
                                 </div>
                                 <h3 className="font-bold text-gray-900 mb-2">通知が来たら</h3>
@@ -179,7 +195,7 @@ export default function UsageManualPage() {
                                 </p>
                             </div>
                             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative group cursor-pointer hover:-translate-y-1 transition-transform">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
+                                <div className="w-16 h-16 rounded-full bg-linear-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 border-4 border-white shadow-lg">
                                     3
                                 </div>
                                 <h3 className="font-bold text-gray-900 mb-2">月末に</h3>

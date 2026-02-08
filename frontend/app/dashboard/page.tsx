@@ -68,11 +68,25 @@ function DashboardContent() {
           const totalDirections = getTotal('DRIVING_DIRECTIONS_CLICKS');
           const totalWebsite = getTotal('WEBSITE_CLICKS');
 
+          const getChange = (val: number) => {
+             if (val > 0) return `+${val.toFixed(1)}%`;
+             if (val < 0) return `${val.toFixed(1)}%`;
+             return '0%';
+          };
+          
+          const getTrend = (val: number) => {
+              if (val > 0) return 'up';
+              if (val < 0) return 'down';
+              return 'neutral';
+          };
+          
+          const comp = data.comparison || {};
+          
           setStats([
-            { ...demoStats[0], value: totalViews.toLocaleString(), change: 'N/A', trend: 'neutral' },
-            { ...demoStats[1], value: totalSearchImpressions.toLocaleString(), change: 'N/A', trend: 'neutral' },
-            { ...demoStats[2], value: totalDirections.toLocaleString(), change: 'N/A', trend: 'neutral' },
-            { ...demoStats[3], value: totalWebsite.toLocaleString(), change: 'N/A', trend: 'neutral' },
+            { ...demoStats[0], value: totalViews.toLocaleString(), change: getChange(comp.total_impressions_change), trend: getTrend(comp.total_impressions_change) },
+            { ...demoStats[1], value: totalSearchImpressions.toLocaleString(), change: getChange(comp.search_views_change), trend: getTrend(comp.search_views_change) },
+            { ...demoStats[2], value: totalDirections.toLocaleString(), change: getChange(comp.direction_requests_change), trend: getTrend(comp.direction_requests_change) },
+            { ...demoStats[3], value: totalWebsite.toLocaleString(), change: getChange(comp.website_clicks_change), trend: getTrend(comp.website_clicks_change) },
           ]);
         } else {
           setStats(zeroStats);

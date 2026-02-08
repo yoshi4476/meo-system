@@ -24,7 +24,7 @@ interface MetricCardProps {
             {change}
           </span>
         </div>
-        <p className="text-xs text-slate-500 mt-2">前週比</p>
+        <p className="text-xs text-slate-500 mt-2">前月比</p>
       </div>
     );
   }

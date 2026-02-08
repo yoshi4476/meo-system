@@ -4,30 +4,19 @@ import models
 
 def check_data():
     db = SessionLocal()
+    print("Checking DB...")
     try:
-        store = db.query(models.Store).first()
-        if not store:
-            print("No store found!")
-            return
-
-        print(f"Store: {store.name} (ID: {store.id})")
-        print(f"Last Synced: {store.last_synced_at}")
-        
-        posts_count = db.query(models.Post).count()
-        print(f"Posts: {posts_count}")
-        
-        reviews_count = db.query(models.Review).count()
-        print(f"Reviews: {reviews_count}")
-        
-        media_count = db.query(models.MediaItem).count()
-        print(f"Media: {media_count}")
-        
-        qa_count = db.query(models.Question).count()
-        print(f"Q&A: {qa_count}")
-        
-        insight_count = db.query(models.Insight).count()
-        print(f"Insights: {insight_count}")
-
+        posts = db.query(models.Post).order_by(models.Post.created_at.desc()).limit(5).all()
+        print(f"Found {len(posts)} posts")
+        for p in posts:
+            print(f"Post ID: {p.id}")
+            print(f"  Content: {p.content[:30]}...")
+            print(f"  Status: {p.status}")
+            print(f"  Created At: {p.created_at} (Type: {type(p.created_at)})")
+            print(f"  Scheduled At: {p.scheduled_at} (Type: {type(p.scheduled_at)})")
+            print("-" * 20)
+    except Exception as e:
+        print(f"Error: {e}")
     finally:
         db.close()
 

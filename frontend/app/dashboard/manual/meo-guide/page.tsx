@@ -4,7 +4,7 @@ export default function MeoGuidePage() {
   return (
     <div className="h-full flex flex-col p-8 overflow-y-auto w-full max-w-5xl mx-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
       <div className="mb-10 text-center">
-        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-4 tracking-tight">
+        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-cyan-400 mb-4 tracking-tight">
           MEO対策 パーフェクトガイド
         </h1>
         <p className="text-slate-400 max-w-2xl mx-auto">
@@ -35,16 +35,16 @@ export default function MeoGuidePage() {
 
         {/* 2. 最重要アクション：投稿頻度 */}
         <section className="relative">
-          <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-emerald-500 to-cyan-500 rounded-full"></div>
+          <div className="absolute -left-4 top-0 w-1 h-full bg-linear-to-b from-emerald-500 to-cyan-500 rounded-full"></div>
           <div className="flex items-center gap-3 mb-6">
               <span className="bg-emerald-500 text-black text-xs font-bold px-2 py-1 rounded uppercase">Must Do</span>
               <h2 className="text-3xl font-bold text-white">2. 投稿は「質」より「頻度」！</h2>
           </div>
           
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-2xl border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+          <div className="bg-linear-to-br from-slate-900 to-slate-800 p-8 rounded-2xl border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
             <div className="text-center mb-8">
                 <p className="text-xl font-bold text-slate-200 mb-2">Googleに「生きている店舗」と認識させる唯一の方法</p>
-                <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 my-4">
+                <div className="text-5xl font-black text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-cyan-400 my-4">
                     週2〜3回以上
                 </div>
                 <p className="text-slate-400">これを下回ると、効果は半減します。</p>
@@ -265,7 +265,7 @@ export default function MeoGuidePage() {
              <p className="text-slate-300">
                 どれだけ良いお店でも、ユーザーが検索する言葉（キーワード）とマッチしていなければ表示されません。
              </p>
-             <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-xl border border-white/5">
+             <div className="bg-linear-to-br from-slate-900 to-slate-800 p-6 rounded-xl border border-white/5">
                 <h4 className="font-bold text-white mb-4">正しいキーワードの方程式</h4>
                 <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
                     <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30 text-blue-300 font-bold">

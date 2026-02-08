@@ -143,6 +143,41 @@ def get_insights(
         "desktop_total": int(total_impressions * desktop_ratio),
     }
     
+    # --- Calculate Comparison (Previous Period) ---
+    # Current Period: start_date_dt to end_date_dt (approx 30 days)
+    # Previous Period: start_date_dt - (end_date_dt - start_date_dt) to start_date_dt
+    
+    period_days = (end_date_dt - start_date_dt).days
+    prev_end_date = start_date_dt - timedelta(days=1)
+    prev_start_date = prev_end_date - timedelta(days=period_days)
+    
+    prev_query = db.query(models.Insight).filter(
+        models.Insight.store_id == store_id,
+        models.Insight.date >= prev_start_date.date(),
+        models.Insight.date <= prev_end_date.date()
+    )
+    prev_insights = prev_query.all()
+    
+    prev_total_maps = sum(i.views_maps or 0 for i in prev_insights)
+    prev_total_search = sum(i.views_search or 0 for i in prev_insights)
+    prev_total_website = sum(i.actions_website or 0 for i in prev_insights)
+    prev_total_phone = sum(i.actions_phone or 0 for i in prev_insights)
+    prev_total_directions = sum(i.actions_driving_directions or 0 for i in prev_insights)
+    
+    def calc_change(current, previous):
+        if previous == 0:
+            return 0 if current == 0 else 100
+        return ((current - previous) / previous) * 100
+
+    comparison = {
+        "map_views_change": calc_change(total_maps, prev_total_maps),
+        "search_views_change": calc_change(total_search, prev_total_search),
+        "website_clicks_change": calc_change(total_website, prev_total_website),
+        "phone_calls_change": calc_change(total_phone, prev_total_phone),
+        "direction_requests_change": calc_change(total_directions, prev_total_directions),
+        "total_impressions_change": calc_change(total_impressions, (prev_total_maps + prev_total_search)),
+    }
+
     return {
         "period": f"{start_date_dt.strftime('%Y/%m/%d')} - {end_date_dt.strftime('%Y/%m/%d')}",
         "days_count": len(insights),
@@ -155,6 +190,7 @@ def get_insights(
             "direction_requests": total_directions,
             "total_actions": total_actions,
         },
+        "comparison": comparison,
         "predictions": {
             "estimated_visits": total_estimated_visits,
             "visits_from_maps": estimated_visits_from_maps,

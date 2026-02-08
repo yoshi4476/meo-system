@@ -238,14 +238,14 @@ function ActionItem({ suggestion }: { suggestion: Suggestion }) {
 
     return (
         <div className={`flex items-center gap-4 p-4 rounded-lg border-l-4 ${typeStyles[type]}`}>
-            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${done ? 'border-green-500 bg-green-500/20 text-green-500' : 'border-slate-500'}`}>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${done ? 'border-green-500 bg-green-500/20 text-green-500' : 'border-slate-500'}`}>
                 {done && '✓'}
             </div>
             <div className="flex-1 min-w-0">
                 <div className={`font-bold ${done ? 'text-slate-400 line-through' : 'text-white'}`}>{title}</div>
                 <div className="text-xs text-slate-400 mt-0.5">{description}</div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
                 {!done && points > 0 && (
                     <span className="text-aurora-cyan text-sm font-bold">+{points}pt</span>
                 )}
