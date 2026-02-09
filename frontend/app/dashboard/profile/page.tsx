@@ -645,7 +645,7 @@ export default function ProfilePage() {
                                         <span className="text-sm font-bold text-white">{attr.displayName || attr.attributeId}</span>
                                         <span className="text-xs text-aurora-cyan mt-1">
                                             {attr.valueType === 'BOOL' 
-                                                ? (attr.values?.includes(true) ? '✅ あり' : 'Unknown') 
+                                                ? (attr.values?.includes(true) ? '✅ あり' : '❌ なし') 
                                                 : (attr.values?.join(', ') || '設定あり')}
                                         </span>
                                     </div>
