@@ -333,7 +333,6 @@ export default function ProfilePage() {
         { id: 'basic', label: '基本情報' },
         { id: 'contact', label: '連絡先・場所' },
         { id: 'hours', label: '営業時間' },
-        { id: 'attributes', label: '属性・その他' },
     ];
 
     return (
@@ -632,48 +631,7 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* ATTRIBUTES TAB */}
-                {activeTab === 'attributes' && (
-                    <div className="space-y-6 animate-fadeIn">
-                         <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-slate-300">属性 (Attributes)</h3>
-                             
-                            {/* Attribute List */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {(details as any).attributes?.map((attr: any, i: number) => (
-                                    <div key={i} className="p-3 bg-slate-800/50 rounded border border-white/5 flex flex-col">
-                                        <span className="text-sm font-bold text-white">{attr.displayName || attr.attributeId}</span>
-                                        <span className="text-xs text-aurora-cyan mt-1">
-                                            {attr.valueType === 'BOOL' 
-                                                ? (attr.values?.includes(true) ? '✅ あり' : '❌ なし') 
-                                                : (attr.values?.join(', ') || '設定あり')}
-                                        </span>
-                                    </div>
-                                ))}
-                                {!(details as any).attributes && (
-                                    <div className="col-span-2 text-slate-500 text-sm text-center py-4">
-                                        属性情報が取得できていません（または設定されていません）
-                                    </div>
-                                )}
-                            </div>
 
-                             <div className="p-4 bg-slate-900/30 rounded border border-white/5 text-center text-slate-500 text-sm mt-4">
-                                属性情報（支払い方法、バリアフリー設備など）の編集は、より複雑な設定が必要なため、現在はGoogleビジネスプロフィールの管理画面から直接行うことを推奨しています。
-                            </div>
-                            
-                            <div className="space-y-2 mt-6 pt-6 border-t border-white/5">
-                                <label className="text-sm text-slate-400">ラベル (Labels)</label>
-                                <input 
-                                    value={formData.labels}
-                                    onChange={(e) => setFormData({...formData, labels: e.target.value})}
-                                    className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
-                                    placeholder="例: 本店, 24時間, WiFiあり (カンマ区切り)"
-                                />
-                                <p className="text-xs text-slate-500">店舗管理用のラベルです。カンマ(,)で区切って複数入力できます。</p>
-                            </div>
-                         </div>
-                    </div>
-                )}
 
                 <div className="border-t border-white/5 pt-6 mt-6 flex justify-end">
                     <button 
