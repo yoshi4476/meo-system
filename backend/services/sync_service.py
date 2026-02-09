@@ -383,61 +383,89 @@ class GoogleSyncService:
     async def sync_location_details(self, db: Session, store_id: str, location_id: str):
         """Sync basic location info (Hours, Attributes)"""
         try:
-            # Just update the store record with latest JSON
-            details = self.gbp.get_location_details(location_id)
+            # --- AGGRESSIVE DISCOVERY: Always validate/find ID first ---
+            # We don't trust the stored location_id. We verify it against the live account list.
+            print(f"DEBUG: Starting Aggressive Discovery for Store {store_id} (Current ID: {location_id})")
+            
+            store = db.query(models.Store).filter(models.Store.id == store_id).first()
+            if not store:
+                return {"status": "error", "message": "Store not found in DB"}
+
+            fresh_location_id = None
+            fresh_details = None
+            
+            try:
+                accounts = self.gbp.list_accounts()
+                target_suffix = location_id.split("/")[-1] if location_id else ""
+                
+                # We also look for title match if ID fails
+                target_title = store.name
+                
+                candidate_by_title = None
+                total_locations_count = 0
+                single_candidate = None
+
+                for account in accounts.get("accounts", []):
+                    locs = self.gbp.list_locations(account["name"])
+                    if not locs.get("locations"):
+                        continue
+                        
+                    for loc in locs.get("locations", []):
+                        total_locations_count += 1
+                        single_candidate = loc
+                        
+                        # 1. Exact ID Match (best)
+                        current_suffix = loc["name"].split("/")[-1]
+                        if current_suffix == target_suffix:
+                             print(f"DEBUG: Discovery - Exact ID match found: {loc['name']}")
+                             fresh_location_id = loc["name"]
+                             fresh_details = loc
+                             break
+                        
+                        # 2. Title Match (fallback)
+                        if target_title and loc.get("title") == target_title:
+                             candidate_by_title = loc
+                    
+                    if fresh_location_id: break
+                
+                # Fallbacks if exact ID match failed
+                if not fresh_location_id:
+                     if candidate_by_title:
+                         print(f"DEBUG: Discovery - Title match found (ID changed?): {candidate_by_title['name']}")
+                         fresh_location_id = candidate_by_title["name"]
+                         fresh_details = candidate_by_title
+                     elif total_locations_count == 1 and single_candidate:
+                         print(f"DEBUG: Discovery - Single location fallback: {single_candidate['name']}")
+                         fresh_location_id = single_candidate["name"]
+                         fresh_details = single_candidate
+            
+            except Exception as discovery_err:
+                print(f"DEBUG: Discovery failed: {discovery_err}")
+                # If discovery crashes (e.g. API error), we proceed with stored ID as Hail Mary
+            
+            # Update DB if we found a better ID
+            final_location_id = fresh_location_id if fresh_location_id else location_id
+            
+            if fresh_location_id and fresh_location_id != location_id:
+                 print(f"DEBUG: Updating Rotten ID {location_id} -> {fresh_location_id}")
+                 store.google_location_id = fresh_location_id
+                 db.commit() # Commit ID change immediately
+                 final_location_id = fresh_location_id
+
+            # --- FETCH DETAILS ---
+            # If we already have details from discovery (full mask), use them.
+            # Otherwise fetch fresh.
+            if fresh_details:
+                details = fresh_details
+            else:
+                details = self.gbp.get_location_details(final_location_id)
 
             if not details or not details.get("name"):
-                print(f"DEBUG: Initial fetch failed/empty for ID {location_id}. Initiating SELF-HEALING...")
-                
-                # --- SELF HEALING: Find the correct Location ID ---
-                try:
-                    # 1. Get Accounts
-                    accounts = self.gbp.list_accounts()
-                    found_new_id = None
-                    
-                    for account in accounts.get("accounts", []):
-                        # 2. List Locations for each account
-                        locs = self.gbp.list_locations(account["name"])
-                        if not locs.get("locations"):
-                            continue
-                            
-                        # Try to match by stored ID (suffix) or just take the first one if user only has one?
-                        # Let's try to match by ID suffix first
-                        target_suffix = location_id.split("/")[-1]
-                        
-                        for loc in locs.get("locations", []):
-                            current_suffix = loc["name"].split("/")[-1]
-                            if current_suffix == target_suffix:
-                                found_new_id = loc["name"]
-                                print(f"DEBUG: Healing - Found exact match with fresh ID: {found_new_id}")
-                                break
-                        
-                        if found_new_id: break
-                        
-                        # If no exact match, maybe the ID changed entirely?
-                        # If the user only has ONE location, assume it's that one.
-                        if len(locs.get("locations", [])) == 1:
-                            found_new_id = locs["locations"][0]["name"]
-                            print(f"DEBUG: Healing - Only one location found, assuming correct: {found_new_id}")
-                            break
-                    
-                    if found_new_id:
-                        # Update DB with new ID
-                        store = db.query(models.Store).filter(models.Store.id == store_id).first()
-                        if store:
-                            print(f"DEBUG: Healing - Updating DB with new Google Location ID: {found_new_id}")
-                            store.google_location_id = found_new_id
-                            db.commit()
-                            location_id = found_new_id # Update local var for subsequent calls
-                        
-                        # Retry Fetch
-                        details = self.gbp.get_location_details(location_id)
-                        print(f"DEBUG: Healing - Retry fetch result: {bool(details)}")
-                    else:
-                        print("DEBUG: Healing - Could not find location in account.")
-                        
-                except Exception as e:
-                    print(f"DEBUG: Healing failed: {e}")
+                 # If still empty, we really can't do anything.
+                 # But we can try the Splinter Strategy below as a final resort.
+                 print("DEBUG: Fetch still empty after Discovery. Attempting Splinter Strategy...")
+                 
+                 # ... Splinter Strategy continues below ...
         
         # Original fallback logic continues below, now using potentially healed ID
         # Fallback: If address or attributes are missing (likely due to mask issues)...
