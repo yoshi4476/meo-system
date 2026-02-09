@@ -441,43 +441,43 @@ class GoogleSyncService:
         
         # Original fallback logic continues below, now using potentially healed ID
         # Fallback: If address or attributes are missing (likely due to mask issues)...
-        has_address = details.get("postalAddress") and details["postalAddress"].get("postalCode")
-        if not has_address or not details.get("attributes") or not details.get("regularHours"):
-            needs_fallback = True
-            
-        if needs_fallback:
-            try:
-                # 1. Iterate accounts to find the location using robust search
-                account_name = None
-                accounts = self.gbp.list_accounts()
-                for acc in accounts.get("accounts", []):
-                    # Use robust find which filters server-side
-                    loc = self.gbp.find_location_robust(acc["name"], location_id)
-                    if loc:
-                        print(f"DEBUG: Found location via robust fallback: {loc['name']}")
-                        
-                        # Merge Data - Aggressive Overwrite
-                        # We assume the Robust Search (Full Mask) returns BETTER data than the partial fetch
-                        
-                        # Address
-                        if loc.get("postalAddress"):
-                             details["postalAddress"] = loc["postalAddress"]
-                        
-                        # Attributes
-                        if loc.get("attributes"):
-                             details["attributes"] = loc["attributes"]
-                             
-                        # Hours
-                        if loc.get("regularHours"):
-                             details["regularHours"] = loc["regularHours"]
-
-                        # Service Area
-                        if loc.get("serviceArea"):
-                             details["serviceArea"] = loc["serviceArea"]
-                        
-                        break # Stop searching accounts if found
-            except Exception as fb_err:
-                print(f"DEBUG: Fallback fetch failed: {fb_err}")
+            has_address = details.get("postalAddress") and details["postalAddress"].get("postalCode")
+            if not has_address or not details.get("attributes") or not details.get("regularHours"):
+                needs_fallback = True
+                
+            if needs_fallback:
+                try:
+                    # 1. Iterate accounts to find the location using robust search
+                    account_name = None
+                    accounts = self.gbp.list_accounts()
+                    for acc in accounts.get("accounts", []):
+                        # Use robust find which filters server-side
+                        loc = self.gbp.find_location_robust(acc["name"], location_id)
+                        if loc:
+                            print(f"DEBUG: Found location via robust fallback: {loc['name']}")
+                            
+                            # Merge Data - Aggressive Overwrite
+                            # We assume the Robust Search (Full Mask) returns BETTER data than the partial fetch
+                            
+                            # Address
+                            if loc.get("postalAddress"):
+                                 details["postalAddress"] = loc["postalAddress"]
+                            
+                            # Attributes
+                            if loc.get("attributes"):
+                                 details["attributes"] = loc["attributes"]
+                                 
+                            # Hours
+                            if loc.get("regularHours"):
+                                 details["regularHours"] = loc["regularHours"]
+    
+                            # Service Area
+                            if loc.get("serviceArea"):
+                                 details["serviceArea"] = loc["serviceArea"]
+                            
+                            break # Stop searching accounts if found
+                except Exception as fb_err:
+                    print(f"DEBUG: Fallback fetch failed: {fb_err}")
             # --- Splinter Strategy: "Divide and Conquer" Rescue (Integrated Parachute) ---
             # Even if robust search failed, we try to fetch specific fields individually.
             # This now acts as the "Emergency Parachute" within the service layer.
