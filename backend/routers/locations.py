@@ -62,26 +62,33 @@ async def get_location_details(store_id: str, force_refresh: bool = False, db: S
     if current_user.role == "STORE_USER" and current_user.store_id != store.id:
         raise HTTPException(status_code=403, detail="Not authorized for this store")
     
-    # Use user's Google Connection (or system connection if implemented later)
-    if not current_user.google_connection:
-         raise HTTPException(status_code=400, detail="Google account not connected")
+    # Check connection
+    has_connection = current_user.google_connection is not None
     
     # Caching Logic
     # 1. Check if we need to fetch
     should_fetch = force_refresh
     
     if not should_fetch:
-        # If no data or no timestamp, we must fetch
+        # If no data or no timestamp, we must fetch... BUT only if connected
         if not store.gbp_data or not store.last_synced_at:
-            should_fetch = True
+             if has_connection: should_fetch = True
         else:
             # Check if cache is expired (e.g. 1 hour)
             if datetime.utcnow() - store.last_synced_at > timedelta(hours=1):
-                should_fetch = True
+                 if has_connection: should_fetch = True
             
     if not should_fetch:
         print(f"DEBUG: Returning cached GBP data for {store.name}")
         return store.gbp_data
+
+    # If we are here, we MUST fetch. Now check connection.
+    if not has_connection:
+         # Fallback: if we have stale data, return it instead of erroring
+         if store.gbp_data:
+             print("DEBUG: Connection missing, returning stale cached data")
+             return store.gbp_data
+         raise HTTPException(status_code=400, detail="Google account not connected")
 
     print(f"DEBUG: Fetching fresh GBP data for {store.name} (Force={force_refresh})")
 
