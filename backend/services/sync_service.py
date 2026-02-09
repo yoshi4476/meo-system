@@ -460,6 +460,23 @@ class GoogleSyncService:
             else:
                 details = self.gbp.get_location_details(final_location_id)
 
+            # --- NORMALIZATION & ENRICHMENT ---
+            # 1. Address: Map storeAddress -> postalAddress (v1 -> v4/DB compatibility)
+            if details.get("storeAddress"):
+                details["postalAddress"] = details["storeAddress"]
+            
+            # 2. Attributes: Fetch Separately (Attributes are separate resource in v1)
+            if not details.get("attributes"): 
+                 try:
+                     attrs_resp = self.gbp.list_attributes(final_location_id)
+                     if attrs_resp.get("attributes"):
+                         details["attributes"] = attrs_resp["attributes"]
+                         print(f"DEBUG: Fetched {len(details['attributes'])} attributes separately")
+                 except Exception as e:
+                     print(f"DEBUG: Attribute fetch failed: {e}")
+
+
+
             if not details or not details.get("name"):
                  # If still empty, we really can't do anything.
                  # But we can try the Splinter Strategy below as a final resort.
@@ -488,7 +505,9 @@ class GoogleSyncService:
                             # We assume the Robust Search (Full Mask) returns BETTER data than the partial fetch
                             
                             # Address
-                            if loc.get("postalAddress"):
+                            if loc.get("storeAddress"):
+                                 details["postalAddress"] = loc["storeAddress"]
+                            elif loc.get("postalAddress"):
                                  details["postalAddress"] = loc["postalAddress"]
                             
                             # Attributes
@@ -506,25 +525,26 @@ class GoogleSyncService:
                             break # Stop searching accounts if found
                 except Exception as fb_err:
                     print(f"DEBUG: Fallback fetch failed: {fb_err}")
+            
             # --- Splinter Strategy: "Divide and Conquer" Rescue (Integrated Parachute) ---
-            # Even if robust search failed, we try to fetch specific fields individually.
-            # This now acts as the "Emergency Parachute" within the service layer.
             
             # Rescue Address
             if not details.get("postalAddress") or not details.get("postalAddress", {}).get("postalCode"):
-                print("DEBUG: Attempting isolated rescue for postalAddress...")
-                rescue_data = self.gbp.get_location_details(location_id, read_mask="postalAddress")
-                if rescue_data.get("postalAddress"):
-                    details["postalAddress"] = rescue_data["postalAddress"]
-                    print("DEBUG: Isolated rescue for postalAddress SUCCESS")
+                print("DEBUG: Attempting isolated rescue for storeAddress...")
+                rescue_data = self.gbp.get_location_details(final_location_id, read_mask="storeAddress")
+                if rescue_data.get("storeAddress"):
+                    details["postalAddress"] = rescue_data["storeAddress"]
+                    print("DEBUG: Isolated rescue for storeAddress SUCCESS")
 
             # Rescue Attributes
             if not details.get("attributes"):
                 print("DEBUG: Attempting isolated rescue for attributes...")
-                rescue_data = self.gbp.get_location_details(location_id, read_mask="attributes")
-                if rescue_data.get("attributes"):
-                    details["attributes"] = rescue_data["attributes"]
-                    print("DEBUG: Isolated rescue for attributes SUCCESS")
+                try:
+                    attrs_resp = self.gbp.list_attributes(final_location_id)
+                    if attrs_resp.get("attributes"):
+                        details["attributes"] = attrs_resp["attributes"]
+                        print("DEBUG: Isolated rescue for attributes SUCCESS")
+                except: pass
                     
             # Rescue Hours
             if not details.get("regularHours"):

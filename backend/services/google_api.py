@@ -191,12 +191,12 @@ class GBPClient:
         
         # Define mask levels
         masks = [
-            # Level 1: Full Data (Address, Hours, Attributes, ServiceArea)
-            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,postalAddress,regularHours,attributes,openInfo,websiteUri",
-            # Level 2: Core Business Data (Address, Hours) - No Attributes/ServiceArea
-            "name,title,storeCode,latlng,phoneNumbers,categories,profile,postalAddress,regularHours,websiteUri",
+            # Level 1: Full Data (Address, Hours, ServiceArea) - attributes must be fetched separately
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,storeAddress,regularHours,openInfo,websiteUri",
+            # Level 2: Core Business Data (Address, Hours)
+            "name,title,storeCode,latlng,phoneNumbers,categories,profile,storeAddress,regularHours,websiteUri",
             # Level 3: Address Only (Critical Fallback)
-            "name,title,storeCode,postalAddress"
+            "name,title,storeCode,storeAddress"
         ]
         
         for i, mask in enumerate(masks):
@@ -531,10 +531,10 @@ class GBPClient:
         # Minimal: Just identity
         
         masks = [
-            # Safe Full Mask (Fields known to work based on diagnostics)
-            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo",
-            # Fallback Safe
-            "name,title,storeCode,categories,profile,phoneNumbers,websiteUri", 
+            # Safe Full Mask (Added storeAddress)
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,storeAddress",
+            # Fallback Safe (Added storeAddress)
+            "name,title,storeCode,categories,profile,phoneNumbers,websiteUri,storeAddress", 
             # Minimal
             "name,title,storeCode"
         ]
@@ -568,6 +568,21 @@ class GBPClient:
             pass # We return empty dict so at least we don't crash the sync flow
         
         return {}
+
+    def list_attributes(self, location_name: str):
+        """
+        Fetch attributes for a location (v1 separate resource).
+        location_name: "locations/{locationId}"
+        """
+        url = f"https://mybusinessbusinessinformation.googleapis.com/v1/{location_name}/attributes"
+        response = requests.get(url, headers=self._get_headers())
+        
+        # 404 means no attributes defined or not found
+        if response.status_code == 404:
+            return {"attributes": []}
+            
+        response.raise_for_status()
+        return response.json()
 
     def update_location(self, location_name: str, data: dict, update_mask: str):
         """
