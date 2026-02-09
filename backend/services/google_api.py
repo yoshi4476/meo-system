@@ -466,18 +466,13 @@ class GBPClient:
     def update_local_post(self, post_name: str, post_data: dict, update_mask: str = "summary,callToAction,media"):
         """
         Update a local post.
-        post_name: "accounts/{accountId}/locations/{locationId}/localPosts/{localPostId}"
+        post_name: "accounts/{accountId}/locations/{localPostId}"
         """
         url = f"https://mybusiness.googleapis.com/v4/{post_name}"
         params = {"updateMask": update_mask}
         response = requests.patch(url, headers=self._get_headers(), params=params, json=post_data)
         response.raise_for_status()
         return response.json()
-        print(f"DEBUG: Deleting post {url}")
-        response = requests.delete(url, headers=self._get_headers())
-        response.raise_for_status()
-        return response.json()
-        
         if response.status_code == 404:
              return {"questions": []}
              
@@ -623,24 +618,29 @@ class GBPClient:
         location_name: "locations/{locationId}"
         """
         url = f"https://mybusinessbusinessinformation.googleapis.com/v1/{location_name}/attributes"
-        response = requests.get(url, headers=self._get_headers())
         
-        # 404 means no attributes defined or not found
-        if response.status_code == 404:
-            return {"attributes": []}
+        try:
+            response = requests.get(url, headers=self._get_headers())
             
-        response.raise_for_status()
-        return response.json()
+            # 404 means no attributes defined or not found
+            if response.status_code == 404:
+                return {} 
+                
+            response.raise_for_status()
+            return response.json()
 
-    def update_location(self, location_name: str, data: dict, update_mask: str):
-        """
-        Update location data.
-        """
-        url = f"{self.base_url}/{location_name}"
-        params = {"updateMask": update_mask}
-        response = requests.patch(url, headers=self._get_headers(), params=params, json=data)
-        response.raise_for_status()
-        return response.json()
+        except requests.exceptions.HTTPError as e:
+            # Capture detailed Google Error
+            error_detail = "Unknown Google Error"
+            try:
+                err_json = e.response.json()
+                error_detail = err_json.get("error", {}).get("message", str(e))
+                print(f"DEBUG: Google API Error Details: {err_json}")
+            except:
+                error_detail = e.response.text
+            
+            print(f"Warning: List Attributes Failed: {error_detail}")
+            return {}
 
     def fetch_performance_metrics(self, location_name: str, start_date: dict, end_date: dict, daily_metric: str = "BUSINESS_IMPRESSIONS_DESKTOP_MAPS"):
         """
