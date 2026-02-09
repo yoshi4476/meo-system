@@ -466,16 +466,36 @@ class GoogleSyncService:
                 details["postalAddress"] = details["storeAddress"]
             
             # 2. Attributes: Fetch Separately (Attributes are separate resource in v1)
-            if not details.get("attributes"): 
+            # STRATEGY: Even if we have them from search, we might miss display names.
+            # So let's always try to fetch metadata if we have attributes.
+            if not details.get("attributes") or True: # Force check to get Display Names
                  try:
-                     attrs_resp = self.gbp.list_attributes(final_location_id)
-                     if attrs_resp.get("attributes"):
-                         details["attributes"] = attrs_resp["attributes"]
-                         print(f"DEBUG: Fetched {len(details['attributes'])} attributes separately")
+                     # 2a. Fetch Location Attributes (Values)
+                     current_attrs = details.get("attributes", [])
+                     if not current_attrs:
+                         attrs_resp = self.gbp.list_attributes(final_location_id)
+                         current_attrs = attrs_resp.get("attributes", [])
+                     
+                     if current_attrs:
+                         print(f"DEBUG: Found {len(current_attrs)} attributes. Fetching metadata for display names...")
+                         # 2b. Fetch Metadata (Display Names)
+                         # TODO: Cache this? For now, fetch every time (it's fast enough for single location syncs)
+                         meta_resp = self.gbp.get_attribute_metadata(language_code="ja", country_code="JP")
+                         meta_map = { a["attributeId"]: a.get("displayName") for a in meta_resp.get("attributes", []) }
+                         
+                         # 2c. Merge Display Names
+                         enriched_attrs = []
+                         for attr in current_attrs:
+                             aid = attr.get("attributeId")
+                             if aid in meta_map:
+                                 attr["displayName"] = meta_map[aid]
+                             enriched_attrs.append(attr)
+                         
+                         details["attributes"] = enriched_attrs
+                         print(f"DEBUG: Enriched {len(enriched_attrs)} attributes with Japanese display names.")
+                         
                  except Exception as e:
-                     print(f"DEBUG: Attribute fetch failed: {e}")
-
-
+                     print(f"DEBUG: Attribute fetch/enrichment failed: {e}")
 
             if not details or not details.get("name"):
                  # If still empty, we really can't do anything.

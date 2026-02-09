@@ -569,6 +569,38 @@ class GBPClient:
         
         return {}
 
+    def get_attribute_metadata(self, language_code="ja", country_code="JP"):
+        """
+        Fetch attribute metadata (display names) for the specified language/country.
+        Docs: https://developers.google.com/my-business/reference/businessinformation/rest/v1/attributes/list
+        """
+        url = "https://mybusinessbusinessinformation.googleapis.com/v1/attributes"
+        params = {
+            "languageCode": language_code,
+            "regionCode": country_code,
+            "pageSize": 500
+        }
+        
+        all_attributes = []
+        next_page_token = None
+        
+        while True:
+            if next_page_token:
+                params["pageToken"] = next_page_token
+                
+            response = requests.get(url, headers=self._get_headers(), params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            if "attributes" in data:
+                all_attributes.extend(data["attributes"])
+            
+            next_page_token = data.get("nextPageToken")
+            if not next_page_token:
+                break
+                
+        return {"attributes": all_attributes}
+
     def list_attributes(self, location_name: str):
         """
         Fetch attributes for a location (v1 separate resource).
