@@ -109,6 +109,67 @@ def debug_google_connection(
 
     return report
 
+@router.get("/diagnose")
+async def diagnose_connection_state(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Full diagnostic of Google Connectivity for the current user.
+    Run this to see WHY sync is failing.
+    """
+    report = {
+        "user_email": current_user.email,
+        "db_connection_status": "Missing",
+        "accounts_found": [],
+        "locations_found": [],
+        "errors": []
+    }
+    
+    conn = current_user.google_connection
+    if not conn:
+        report["errors"].append("User has no Google Connection in DB.")
+        return report
+        
+    report["db_connection_status"] = "Connected"
+    report["token_partial"] = conn.access_token[:10] + "..." if conn.access_token else "None"
+    
+    try:
+        client = google_api.GBPClient(conn.access_token)
+        
+        # 1. Accounts
+        acc_res = client.list_accounts()
+        accounts = acc_res.get("accounts", [])
+        report["accounts_found"] = [{"name": a["name"], "accountName": a.get("accountName")} for a in accounts]
+        
+        if not accounts:
+            report["errors"].append("Google API returned NO accounts.")
+            
+        # 2. Locations (Iterate all accounts)
+        for acc in accounts:
+            try:
+                # Use the ROBUST list_locations we just patched
+                loc_res = client.list_locations(acc["name"])
+                locations = loc_res.get("locations", [])
+                
+                for loc in locations:
+                    report["locations_found"].append({
+                        "name": loc.get("name"), # locations/12345...
+                        "title": loc.get("title"),
+                        "storeCode": loc.get("storeCode"),
+                        "postalAddress": loc.get("postalAddress"), # Check if address exists
+                        "regularHours": "Present" if loc.get("regularHours") else "Missing",
+                        "attributes": "Present" if loc.get("attributes") else "Missing"
+                    })
+            except Exception as e:
+                 report["errors"].append(f"Failed to list locations for {acc['name']}: {str(e)}")
+                 
+    except Exception as e:
+        report["errors"].append(f"API Error: {str(e)}")
+        
+    return report
+
+
 @router.get("/pdf_test")
 def debug_pdf_generation():
     """
