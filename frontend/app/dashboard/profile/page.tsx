@@ -360,22 +360,38 @@ export default function ProfilePage() {
                     </div>
                 </div>
                 <div className="text-right">
-                    <span className="inline-block px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20 mb-2">
-                        Google連携中
-                    </span>
-                    <button
-                        onClick={() => {
-                            if (userInfo?.store_id) {
-                                if (confirm('Googleから最新の情報を再取得しますか？\n(ローカルの未保存の変更は破棄されます)')) {
-                                    fetchDetails(userInfo.store_id, true);
-                                }
-                            }
-                        }}
-                        disabled={loading}
-                        className="block w-full text-xs text-aurora-cyan hover:underline"
-                    >
-                        🔄 最新情報を同期
-                    </button>
+                    {userInfo?.is_google_connected ? (
+                        <>
+                            <span className="inline-block px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20 mb-2">
+                                Google連携中
+                            </span>
+                            <button
+                                onClick={() => {
+                                    if (userInfo?.store_id) {
+                                        if (confirm('Googleから最新の情報を再取得しますか？\n(ローカルの未保存の変更は破棄されます)')) {
+                                            fetchDetails(userInfo.store_id, true);
+                                        }
+                                    }
+                                }}
+                                disabled={loading}
+                                className="block w-full text-xs text-aurora-cyan hover:underline"
+                            >
+                                🔄 最新情報を同期
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <span className="inline-block px-3 py-1 rounded-full bg-slate-700 text-slate-400 text-xs font-bold border border-slate-600 mb-2">
+                                未連携
+                            </span>
+                            <button
+                                onClick={() => window.location.href = '/dashboard/settings'}
+                                className="block w-full text-xs text-aurora-cyan hover:underline"
+                            >
+                                ⚙️ 連携設定へ
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
