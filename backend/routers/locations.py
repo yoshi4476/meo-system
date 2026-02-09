@@ -122,7 +122,6 @@ async def update_location_details(store_id: str, update_data: LocationUpdate, db
          raise HTTPException(status_code=400, detail="Google account not connected")
 
     # 2. TOKEN REFRESH (Pre-emptive)
-    # Refresh if expiring within 10 minutes (safety buffer)
     if connection.expiry and connection.expiry < datetime.utcnow() + timedelta(minutes=10) and connection.refresh_token:
         try:
              new_tokens = google_api.refresh_access_token(connection.refresh_token)
@@ -131,14 +130,12 @@ async def update_location_details(store_id: str, update_data: LocationUpdate, db
              db.commit()
              print("DEBUG: Token refreshed pre-emptively for update.")
         except Exception:
-             # If refresh fails, we can't proceed with write
              raise HTTPException(status_code=401, detail="Google認証の更新に失敗しました。再ログインしてください。")
     
     client = google_api.GBPClient(connection.access_token)
     
     # 3. ID VERIFICATION (Handshake)
     try:
-        # Just a quick check to ensure ID is valid
         client.get_location_details(store.google_location_id)
     except Exception:
         raise HTTPException(status_code=404, detail="Google上の店舗IDが無効です。設定画面で店舗を再選択してください。")
@@ -159,11 +156,34 @@ async def update_location_details(store_id: str, update_data: LocationUpdate, db
     if update_data.phoneNumbers:
         mask_parts.append("phoneNumbers")
         data["phoneNumbers"] = update_data.phoneNumbers
+        
+    # --- TIME PARSING FIX ---
     if update_data.regularHours:
         mask_parts.append("regularHours")
-        # Logic to convert input dict to Google format if needed
-        # Assuming frontend sends correct structure: { "periods": [...] }
-        data["regularHours"] = update_data.regularHours
+        # specific transformation for periods if they are strings
+        rh = update_data.regularHours
+        if "periods" in rh and isinstance(rh["periods"], list):
+            new_periods = []
+            for p in rh["periods"]:
+                # p is expected to be {openDay, openTime, closeDay, closeTime}
+                # Check if openTime/closeTime are strings "HH:MM"
+                new_p = p.copy()
+                
+                def to_time_of_day(t_val):
+                    if isinstance(t_val, str) and ":" in t_val:
+                        try:
+                            h, m = map(int, t_val.split(":"))
+                            return {"hours": h, "minutes": m, "seconds": 0, "nanos": 0}
+                        except:
+                            return t_val # Fallback
+                    return t_val
+
+                if "openTime" in new_p: new_p["openTime"] = to_time_of_day(new_p["openTime"])
+                if "closeTime" in new_p: new_p["closeTime"] = to_time_of_day(new_p["closeTime"])
+                new_periods.append(new_p)
+            rh["periods"] = new_periods
+            
+        data["regularHours"] = rh
         
     if update_data.categories:
         mask_parts.append("categories")
@@ -188,17 +208,19 @@ async def update_location_details(store_id: str, update_data: LocationUpdate, db
     
     try:
         # 5. Execute Update
-        print(f"DEBUG: Sending Update: mask={update_mask}")
+        print(f"DEBUG: Sending Update: mask={update_mask} data={data}")
         client.update_location(store.google_location_id, data, update_mask)
         
         # 6. Read-After-Write Verification
-        # Force refresh immediately to confirm data is consistent
         print("DEBUG: Verifying update by fetching fresh data...")
         refreshed_details = await get_location_details(store_id, force_refresh=True, db=db, current_user=current_user)
             
         return refreshed_details
     except Exception as e:
         print(f"Update failed: {e}")
-        
-    # Return success message - Frontend can trigger re-fetch
-    return {"status": "success", "message": "Updated successfully"}
+        # IMPORTANT: Raise error so frontend knows it failed!
+        error_detail = str(e)
+        if hasattr(e, 'response') and e.response is not None:
+             try: error_detail = f"{error_detail} | Google API: {e.response.text}"
+             except: pass
+        raise HTTPException(status_code=400, detail=f"Update failed: {error_detail}")
