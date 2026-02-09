@@ -123,28 +123,62 @@ class GBPClient:
 
     def list_locations(self, account_name: str):
         url = f"{self.base_url}/{account_name}/locations"
-        # Reverted to Safe Mask to ensure Settings page always loads
-        params = {"readMask": "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea"}
-        all_locations = []
-        next_page_token = None
         
-        while True:
-            current_params = params.copy()
-            if next_page_token:
-                current_params["pageToken"] = next_page_token
-                
-            response = requests.get(url, headers=self._get_headers(), params=current_params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+        # Strategy: Try Rich Mask first, if 400 (Bad Request), fallback to Minimal Mask.
+        # This ensures we at least get the ID and Name for "Aggressive Discovery" to work.
+        masks = [
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea", # Rich
+            "name,title,storeCode" # Minimal
+        ]
+        
+        last_exception = None
+        
+        for i, mask in enumerate(masks):
+            all_locations = []
+            next_page_token = None
+            params = {"readMask": mask}
             
-            if "locations" in data:
-                all_locations.extend(data["locations"])
+            try:
+                while True:
+                    current_params = params.copy()
+                    if next_page_token:
+                        current_params["pageToken"] = next_page_token
+                    
+                    response = requests.get(url, headers=self._get_headers(), params=current_params, timeout=10)
+                    
+                    # Special handling for 400 (Bad Request) likely due to mask
+                    if response.status_code == 400:
+                        print(f"DEBUG: list_locations failed with mask level {i} (400 Bad Request). Retrying...")
+                        raise ValueError("Mask Error") # Verify next mask
+
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    if "locations" in data:
+                        all_locations.extend(data["locations"])
+                        
+                    next_page_token = data.get("nextPageToken")
+                    if not next_page_token:
+                        # Success - return immediately
+                        return {"locations": all_locations}
+                        
+            except ValueError:
+                continue # Try next mask in outer loop
+            except Exception as e:
+                last_exception = e
+                # For non-400 errors (auth, server error), we probably shouldn't retry with different mask as it won't help.
+                # But let's be safe: if 403/404, stop.
+                if hasattr(e, 'response') and e.response is not None:
+                     if e.response.status_code in [401, 403, 404]:
+                         raise e
+                # For network errors etc, we could retry, but let's just loop.
+                print(f"DEBUG: list_locations error: {e}")
                 
-            next_page_token = data.get("nextPageToken")
-            if not next_page_token:
-                break
-                
-        return {"locations": all_locations}
+        # If we exhausted masks
+        if last_exception:
+            raise last_exception
+            
+        return {"locations": []}
 
     def find_location_robust(self, account_name: str, location_id: str):
         """
