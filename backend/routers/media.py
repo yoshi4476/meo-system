@@ -171,26 +171,32 @@ def delete_media(media_id: str, db: Session = Depends(database.get_db), current_
         raise HTTPException(status_code=400, detail="Store not linked to Google")
         
     connection = current_user.google_connection
-    if connection:        
-        # Refresh token if needed
-        if connection.expiry and connection.expiry < datetime.utcnow():
-            if connection.refresh_token:
-                new_tokens = google_api.refresh_access_token(connection.refresh_token)
-                connection.access_token = new_tokens.get("access_token")
-                connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
-                db.commit()
-
-        client = google_api.GBPClient(connection.access_token)
+    # STRICT CHECK
+    if not connection:
+        raise HTTPException(status_code=400, detail="Google連携が切断されているため、写真を削除できません。設定画面から再接続してください。")
+        
+    # Refresh token if needed
+    if connection.expiry and connection.expiry < datetime.utcnow() and connection.refresh_token:
         try:
-            # item.google_media_id is just the ID "FOO-BAR", but API needs "accounts/.../media/FOO-BAR"
-            # Wait, API expects "accounts/.../locations/.../media/{id}"
-            media_name = f"{store.google_location_id}/media/{item.google_media_id}"
-            client.delete_media(media_name)
-        except Exception as e:
-            print(f"Warning: Failed to delete from Google: {e}")
-            # We continue to delete locally? No, if sync is goal, we should error or warn.
-            # But maybe it was already deleted on Google.
-            pass
+            new_tokens = google_api.refresh_access_token(connection.refresh_token)
+            connection.access_token = new_tokens.get("access_token")
+            connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
+            db.commit()
+        except Exception:
+            raise HTTPException(status_code=401, detail="Google認証の更新に失敗しました。再ログインしてください。")
+
+    client = google_api.GBPClient(connection.access_token)
+    try:
+        # Pass location_name to help resolve v4 path
+        client.delete_media(item.google_media_id, location_name=store.google_location_id)
+        print(f"DEBUG: Successfully deleted media {item.google_media_id} from Google")
+    except Exception as e:
+        # Handle 404
+        if hasattr(e, 'response') and e.response is not None and e.response.status_code == 404:
+            print(f"DEBUG: Media already deleted on Google (404). Proceeding with local delete.")
+        else:
+            print(f"Error deleting media from Google: {e}")
+            raise HTTPException(status_code=500, detail="Google側での削除に失敗しました。時間をおいて再試行するか、Googleマップで直接削除してください。")
             
     db.delete(item)
     db.commit()

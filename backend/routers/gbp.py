@@ -115,37 +115,51 @@ def login_google(state: str = "default"):
 
 @router.get("/callback")
 def callback_google(code: str, state: str, db: Session = Depends(database.get_db)):
+    # --- LOGGING SETUP ---
+    import os
+    from datetime import datetime
+    log_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "debug_auth.log")
+    
+    def auth_log(msg):
+        print(f"[AUTH] {msg}")
+        try:
+             with open(log_file, "a", encoding="utf-8") as f:
+                 f.write(f"[{datetime.now()}] {msg}\n")
+        except: pass
+    # ---------------------
+
+    auth_log(f"Callback received. Code: {code[:10]}... State: {state}")
+
     try:
         user = None
-        # State *usually* matches user_id for connection flow, but "default" means login flow
         if state != "default":
              user = db.query(models.User).filter(models.User.id == state).first()
+             auth_log(f"User found from state: {user.email if user else 'None'}")
         
         # 1. Get Tokens
-        tokens = google_api.get_tokens(code)
+        auth_log("Exchanging code for tokens...")
+        try:
+            tokens = google_api.get_tokens(code)
+            auth_log("Token exchange successful.")
+        except Exception as token_err:
+            auth_log(f"Token exchange FAILED: {token_err}")
+            raise HTTPException(status_code=400, detail=f"Google Login Failed: {str(token_err)}")
         
-        # 2. If User not known from state (Login Flow), fetch from Google
+        # 2. If User not known...
         if not user:
-            # Instantiate Client with access token to fetch user info
+            auth_log("Fetching Google User Info (Login Flow)...")
             access_token = tokens.get("access_token")
             client = google_api.GBPClient(access_token)
             user_info = client.get_user_info()
-            
             email = user_info.get("email")
-            if not email:
-                raise HTTPException(status_code=400, detail="Google account has no email")
             
-            # Find existing user by email
             user = db.query(models.User).filter(models.User.email == email).first()
-            
-            # If still no user, Auto-Register (Create User)
             if not user:
-                # Create a random password since they use Google Login
-                # Create a random password since they use Google Login (using uuid for safety/length)
+                auth_log(f"Creating new user for {email}")
+                # Auto-Register
                 import uuid
-                random_password = uuid.uuid4().hex # 32 chars, well within 72 byte limit
+                random_password = uuid.uuid4().hex
                 hashed_password = auth.get_password_hash(random_password)
-                
                 user = models.User(
                     email=email,
                     hashed_password=hashed_password,
@@ -155,41 +169,42 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
                 db.add(user)
                 db.commit()
                 db.refresh(user)
+                auth_log("New user created.")
 
-        # 3. Save/Update Google Connection
+        # 3. Save Connection
+        auth_log(f"Saving connection for user {user.id} ({user.email})")
         connection = user.google_connection
         if not connection:
             connection = models.GoogleConnection(user_id=user.id)
             db.add(connection)
-            print(f"DEBUG: Created new GoogleConnection for user {user.id}")
+            auth_log("New GoogleConnection object added.")
         else:
-             print(f"DEBUG: Updated existing GoogleConnection for user {user.id}")
+            auth_log("Updating existing GoogleConnection.")
         
         connection.access_token = tokens.get("access_token")
         connection.refresh_token = tokens.get("refresh_token")
-        connection.scopes = tokens.get("scope")
+        connection.scopes = tokens.get("scope") # Added scopes
         connection.expiry = datetime.utcnow() + timedelta(seconds=tokens.get("expires_in", 3600))
         
         db.commit()
-        print("DEBUG: Connection committed to DB")
+        auth_log("Connection saved successfully.")
         
-        # 4. Generate App Token (JWT) for the Frontend
+        # 4. Generate App Token
         access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = auth.create_access_token(
             data={"sub": user.email}, expires_delta=access_token_expires
         )
         
-        # 5. Redirect to Frontend Dashboard with Token
+        # 5. Redirect
         import os
         from fastapi.responses import RedirectResponse
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        auth_log(f"Redirecting user to {frontend_url}/dashboard")
         
-        # Redirect to /dashboard with token query param
-        # Frontend should grab this token and save it
-        response = RedirectResponse(url=f"{frontend_url}/dashboard?token={access_token}&status=success")
-        return response
+        return RedirectResponse(url=f"{frontend_url}/dashboard?token={access_token}&status=success")
 
     except Exception as e:
+        auth_log(f"Callback FATAL Error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/locations")

@@ -462,7 +462,8 @@ class GoogleSyncService:
 
             # --- NORMALIZATION & ENRICHMENT ---
             # 1. Address: Map storeAddress -> postalAddress (v1 -> v4/DB compatibility)
-            if details.get("storeAddress"):
+            # PRIORITY: postalAddress (Writable) > storeAddress (ReadOnly/Legacy)
+            if not details.get("postalAddress") and details.get("storeAddress"):
                 details["postalAddress"] = details["storeAddress"]
             
             # 2. Attributes: Fetch Separately (Attributes are separate resource in v1)
@@ -525,10 +526,10 @@ class GoogleSyncService:
                             # We assume the Robust Search (Full Mask) returns BETTER data than the partial fetch
                             
                             # Address
-                            if loc.get("storeAddress"):
-                                 details["postalAddress"] = loc["storeAddress"]
-                            elif loc.get("postalAddress"):
+                            if loc.get("postalAddress"):
                                  details["postalAddress"] = loc["postalAddress"]
+                            elif loc.get("storeAddress"):
+                                 details["postalAddress"] = loc["storeAddress"]
                             
                             # Attributes
                             if loc.get("attributes"):
@@ -550,11 +551,11 @@ class GoogleSyncService:
             
             # Rescue Address
             if not details.get("postalAddress") or not details.get("postalAddress", {}).get("postalCode"):
-                print("DEBUG: Attempting isolated rescue for storeAddress...")
-                rescue_data = self.gbp.get_location_details(final_location_id, read_mask="storeAddress")
-                if rescue_data.get("storeAddress"):
-                    details["postalAddress"] = rescue_data["storeAddress"]
-                    print("DEBUG: Isolated rescue for storeAddress SUCCESS")
+                print("DEBUG: Attempting isolated rescue for postalAddress...")
+                rescue_data = self.gbp.get_location_details(final_location_id, read_mask="postalAddress")
+                if rescue_data.get("postalAddress"):
+                    details["postalAddress"] = rescue_data["postalAddress"]
+                    print("DEBUG: Isolated rescue for postalAddress SUCCESS")
 
             # Rescue Attributes
             if not details.get("attributes"):

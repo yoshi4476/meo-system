@@ -112,44 +112,41 @@ def delete_post(post_id: str, db: Session = Depends(database.get_db), current_us
         raise HTTPException(status_code=404, detail="Post not found")
     
     # Try to delete from Google if it was published
+    # Try to delete from Google if it was published
     if post.status == 'PUBLISHED' and post.google_post_id:
-        try:
-             # Check and Refresh Token
-             connection = current_user.google_connection
-             if connection:
-                 if connection.expiry and connection.expiry < datetime.utcnow() and connection.refresh_token:
-                     try:
-                         new_tokens = google_api.refresh_access_token(connection.refresh_token)
-                         connection.access_token = new_tokens.get("access_token")
-                         connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
-                         db.commit()
-                     except Exception as e:
-                         print(f"Failed to refresh token during delete: {e}")
-                         # Continue, maybe current token is still valid or we just fail to delete from Google
-                 
-                 if connection.access_token:
-                     client = google_api.GBPClient(connection.access_token)
-                     
-                     # Get Location ID for context
-                     store = db.query(models.Store).filter(models.Store.id == post.store_id).first()
-                     location_id = store.google_location_id if store else None
-                     
-                     try:
-                         client.delete_local_post(post.google_post_id, location_name=location_id)
-                         print(f"DEBUG: Successfully deleted post {post.google_post_id} from Google")
-                     except requests.exceptions.HTTPError as e:
-                         if e.response.status_code == 404:
-                             print(f"DEBUG: Post {post.google_post_id} already deleted from Google (404)")
-                         else:
-                             print(f"Error deleting post from Google: {e}")
-                             # We proceed to delete locally ensuring data consistency
-                     except Exception as e:
-                         print(f"Unexpected error deleting from Google: {e}")
-             else:
-                 print("DEBUG: No Google connection found for user, skipping Google post deletion")
+        # STRICT CHECK: Connection required
+        if not current_user.google_connection:
+             raise HTTPException(status_code=400, detail="Google連携が切断されているため、投稿を削除できません。設定画面から再接続してください。")
 
+        connection = current_user.google_connection
+        # Refresh Token Logic
+        if connection.expiry and connection.expiry < datetime.utcnow() and connection.refresh_token:
+             try:
+                 new_tokens = google_api.refresh_access_token(connection.refresh_token)
+                 connection.access_token = new_tokens.get("access_token")
+                 connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
+                 db.commit()
+             except Exception as e:
+                 print(f"Failed to refresh token: {e}")
+                 raise HTTPException(status_code=401, detail="Google認証の更新に失敗しました。再ログインしてください。")
+
+        client = google_api.GBPClient(connection.access_token)
+        
+        # Get Location ID
+        store = db.query(models.Store).filter(models.Store.id == post.store_id).first()
+        location_id = store.google_location_id if store else None
+
+        try:
+             client.delete_local_post(post.google_post_id, location_name=location_id)
+             print(f"DEBUG: Successfully deleted post {post.google_post_id} from Google")
         except Exception as e:
-             print(f"Warning: General failure in Google delete logic: {e}")
+             # Handle 404 (Already deleted on Google) -> Allow local delete
+             if hasattr(e, 'response') and e.response is not None and e.response.status_code == 404:
+                 print(f"DEBUG: Post already deleted on Google (404). Proceeding with local delete.")
+             else:
+                 # Any other error -> BLOCK local delete
+                 print(f"Error deleting from Google: {e}")
+                 raise HTTPException(status_code=500, detail="Google側での削除に失敗しました。時間をおいて再試行するか、Googleマップで直接削除してください。")
 
     # Always delete from local DB
     db.delete(post)

@@ -192,11 +192,11 @@ class GBPClient:
         # Define mask levels
         masks = [
             # Level 1: Full Data (Address, Hours, ServiceArea) - attributes must be fetched separately
-            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,storeAddress,regularHours,openInfo,websiteUri",
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,storeAddress,postalAddress,regularHours,openInfo,websiteUri",
             # Level 2: Core Business Data (Address, Hours)
-            "name,title,storeCode,latlng,phoneNumbers,categories,profile,storeAddress,regularHours,websiteUri",
+            "name,title,storeCode,latlng,phoneNumbers,categories,profile,storeAddress,postalAddress,regularHours,websiteUri",
             # Level 3: Address Only (Critical Fallback)
-            "name,title,storeCode,storeAddress"
+            "name,title,storeCode,storeAddress,postalAddress"
         ]
         
         for i, mask in enumerate(masks):
@@ -367,12 +367,28 @@ class GBPClient:
         response.raise_for_status()
         return response.json()
 
-    def delete_media(self, media_name: str):
+    def delete_media(self, media_name: str, location_name: str = None):
         """
         Delete media.
-        media_name: Format "accounts/{accountId}/locations/{locationId}/media/{mediaId}"
+        media_name: Format "accounts/{accountId}/locations/{locationId}/media/{mediaId}" 
+                    OR just "{mediaId}" (if location_name provided)
+        location_name: "locations/{locationId}" (Optional, to help resolve v4 path)
         """
-        url = f"https://mybusiness.googleapis.com/v4/{media_name}"
+        full_name = media_name
+        
+        # Resolve v4 path if needed
+        if not media_name.startswith("accounts/"):
+             if location_name:
+                 # Resolve parent location v4 path
+                 v4_location = self._get_v4_location_path(location_name)
+                 media_id = media_name.split("/")[-1]
+                 full_name = f"{v4_location}/media/{media_id}"
+             else:
+                 # Warning: This might fail if media_name is not full path
+                 print("Warning: delete_media called with partial path and no location_name. This might fail.")
+        
+        url = f"https://mybusiness.googleapis.com/v4/{full_name}"
+        print(f"DEBUG: Deleting Media via URL: {url}")
         response = requests.delete(url, headers=self._get_headers())
         response.raise_for_status()
         return response.json()
@@ -531,10 +547,10 @@ class GBPClient:
         # Minimal: Just identity
         
         masks = [
-            # Safe Full Mask (Added storeAddress)
-            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,storeAddress",
-            # Fallback Safe (Added storeAddress)
-            "name,title,storeCode,categories,profile,phoneNumbers,websiteUri,storeAddress", 
+            # Safe Full Mask (Added storeAddress AND postalAddress)
+            "name,title,storeCode,latlng,phoneNumbers,categories,metadata,profile,serviceArea,regularHours,websiteUri,openInfo,storeAddress,postalAddress",
+            # Fallback Safe (Added storeAddress AND postalAddress)
+            "name,title,storeCode,categories,profile,phoneNumbers,websiteUri,storeAddress,postalAddress", 
             # Minimal
             "name,title,storeCode"
         ]
