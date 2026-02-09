@@ -31,17 +31,26 @@ def sync_qa_from_google(store_id: str, db: Session = Depends(database.get_db), c
     if not connection or not connection.access_token:
         raise HTTPException(status_code=400, detail="Google account not connected")
     
-    if connection.expiry and connection.expiry < datetime.utcnow():
-        if connection.refresh_token:
+    # 1. Pre-emptive Refresh
+    if connection.expiry and connection.expiry < datetime.utcnow() + timedelta(minutes=10) and connection.refresh_token:
+        try:
             new_tokens = google_api.refresh_access_token(connection.refresh_token)
             connection.access_token = new_tokens.get("access_token")
             connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
             db.commit()
+        except:
+             raise HTTPException(status_code=401, detail="Google認証の更新に失敗しました。再ログインしてください。")
     
     client = google_api.GBPClient(connection.access_token)
+
+    # 2. Handshake
     try:
-        # Use the helper method that is now available in GBPClient
-        # list_questions will internally call _get_v4_location_path
+         client.get_location_details(store.google_location_id)
+    except Exception:
+         raise HTTPException(status_code=404, detail="Google上の店舗IDが無効です。設定画面で店舗を再選択してください。")
+
+    try:
+        # Use simple list (v1 or v4 handled in params)
         questions_resp = client.list_questions(store.google_location_id)
         synced_q_count = 0
         
@@ -49,7 +58,6 @@ def sync_qa_from_google(store_id: str, db: Session = Depends(database.get_db), c
             q_google_id = q_data.get("name", "").split("/")[-1]
             existing_q = db.query(models.Question).filter(models.Question.google_question_id == q_google_id).first()
             
-            # Helper to parse time
             def parse_time(t_str):
                 if not t_str: return datetime.utcnow()
                 try: return datetime.fromisoformat(t_str.replace("Z", "+00:00"))
@@ -77,8 +85,7 @@ def sync_qa_from_google(store_id: str, db: Session = Depends(database.get_db), c
             db.commit() # Commit to get ID for answers
             db.refresh(existing_q) 
             
-            # 2. Sync Answers for this Question
-            # Note: This might be slow if many questions. Good for MVP.
+            # Sync Answers
             try:
                 answers_resp = client.list_answers(q_data.get("name"))
                 for a_data in answers_resp.get("answers", []):
@@ -100,12 +107,13 @@ def sync_qa_from_google(store_id: str, db: Session = Depends(database.get_db), c
                             update_time=a_update_time
                         )
                         db.add(new_a)
-            except:
-                pass # Ignore answer sync errors for individual questions
+            except Exception as e_ans:
+                print(f"Answer sync warning: {e_ans}")
                 
         db.commit()
         return {"message": f"Synced {synced_q_count} new questions"}
     except Exception as e:
+        print(f"Sync QA Failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/{question_id}/answer")
@@ -127,19 +135,29 @@ def create_answer(
     if not connection or not connection.access_token:
         raise HTTPException(status_code=400, detail="Google account not connected")
 
-    if connection.expiry and connection.expiry < datetime.utcnow():
-        if connection.refresh_token:
-            new_tokens = google_api.refresh_access_token(connection.refresh_token)
-            connection.access_token = new_tokens.get("access_token")
-            connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
-            db.commit()
+    # 1. Pre-emptive Refresh
+    if connection.expiry and connection.expiry < datetime.utcnow() + timedelta(minutes=10) and connection.refresh_token:
+        try:
+             new_tokens = google_api.refresh_access_token(connection.refresh_token)
+             connection.access_token = new_tokens.get("access_token")
+             connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
+             db.commit()
+        except:
+             raise HTTPException(status_code=401, detail="Google認証の更新に失敗しました。再ログインしてください。")
 
     client = google_api.GBPClient(connection.access_token)
+    
+    # 2. Handshake
     try:
-        # Use the helper method to get v4 location path
-        v4_location_name = client._get_v4_location_path(store.google_location_id)
+         client.get_location_details(store.google_location_id)
+    except Exception:
+         raise HTTPException(status_code=404, detail="Google上の店舗IDが無効です。設定画面で店舗を再選択してください。")
 
-        # Question name: {v4_location_name}/questions/{question.google_question_id}
+    try:
+        v4_location_name = client._get_v4_location_path(store.google_location_id)
+        if not v4_location_name:
+             raise Exception("Failed to resolve V4 Location Path")
+
         question_name = f"{v4_location_name}/questions/{question.google_question_id}"
         
         result = client.create_answer(question_name, answer.text)
@@ -158,4 +176,5 @@ def create_answer(
         db.commit()
         return new_answer
     except Exception as e:
+        print(f"Answer Create Failed: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to post answer: {str(e)}")

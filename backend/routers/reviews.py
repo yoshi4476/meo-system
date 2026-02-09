@@ -38,16 +38,26 @@ def sync_reviews_from_google(store_id: str, db: Session = Depends(database.get_d
     if not connection or not connection.access_token:
         raise HTTPException(status_code=400, detail="Google account not connected")
     
-    # Refresh token if needed
-    if connection.expiry and connection.expiry < datetime.utcnow():
-        if connection.refresh_token:
+    # 1. Pre-emptive Token Refresh
+    if connection.expiry and connection.expiry < datetime.utcnow() + timedelta(minutes=10) and connection.refresh_token:
+        try:
             new_tokens = google_api.refresh_access_token(connection.refresh_token)
             connection.access_token = new_tokens.get("access_token")
             connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
             db.commit()
+        except:
+            raise HTTPException(status_code=401, detail="Google認証の更新に失敗しました。再ログインしてください。")
     
     client = google_api.GBPClient(connection.access_token)
+    
+    # 2. Handshake / ID Verification
     try:
+         client.get_location_details(store.google_location_id)
+    except Exception:
+         raise HTTPException(status_code=404, detail="Google上の店舗IDが無効です。設定画面で店舗を再選択してください。")
+
+    try:
+        # 3. Execute List
         google_reviews = client.list_reviews(store.google_location_id)
         
         synced_count = 0
@@ -55,6 +65,15 @@ def sync_reviews_from_google(store_id: str, db: Session = Depends(database.get_d
             review_id = review_data.get("reviewId") or review_data.get("name", "").split("/")[-1]
             existing = db.query(models.Review).filter(models.Review.google_review_id == review_id).first()
             
+            # Helper to parse time safely
+            def parse_time(t_str):
+                if not t_str: return datetime.utcnow()
+                try: return datetime.fromisoformat(t_str.replace("Z", "+00:00"))
+                except: return datetime.utcnow()
+
+            create_time = parse_time(review_data.get("createTime"))
+            update_time = parse_time(review_data.get("updateTime"))
+
             if not existing:
                 new_review = models.Review(
                     store_id=store_id,
@@ -63,15 +82,22 @@ def sync_reviews_from_google(store_id: str, db: Session = Depends(database.get_d
                     comment=review_data.get("comment"),
                     star_rating=review_data.get("starRating"),
                     reply_comment=review_data.get("reviewReply", {}).get("comment"),
-                    create_time=datetime.fromisoformat(review_data.get("createTime", datetime.utcnow().isoformat()).replace("Z", "+00:00")),
-                    update_time=datetime.fromisoformat(review_data.get("updateTime", datetime.utcnow().isoformat()).replace("Z", "+00:00")),
+                    create_time=create_time,
+                    update_time=update_time,
                 )
                 db.add(new_review)
                 synced_count += 1
+            else:
+                # Update existing review data
+                existing.comment = review_data.get("comment")
+                existing.star_rating = review_data.get("starRating")
+                existing.reply_comment = review_data.get("reviewReply", {}).get("comment")
+                existing.update_time = update_time
         
         db.commit()
         return {"message": f"Synced {synced_count} new reviews", "total_from_google": len(google_reviews.get("reviews", []))}
     except Exception as e:
+        print(f"Sync Reviews Failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/{review_id}/reply")
@@ -91,15 +117,24 @@ def reply_to_review(review_id: str, reply: ReviewReply, db: Session = Depends(da
     if not connection or not connection.access_token:
         raise HTTPException(status_code=400, detail="Google account not connected")
     
-    # Refresh token if needed
-    if connection.expiry and connection.expiry < datetime.utcnow():
-        if connection.refresh_token:
+    # 1. Pre-emptive Token Refresh
+    if connection.expiry and connection.expiry < datetime.utcnow() + timedelta(minutes=10) and connection.refresh_token:
+        try:
             new_tokens = google_api.refresh_access_token(connection.refresh_token)
             connection.access_token = new_tokens.get("access_token")
             connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
             db.commit()
+        except:
+            raise HTTPException(status_code=401, detail="Google認証の更新に失敗しました。再ログインしてください。")
     
     client = google_api.GBPClient(connection.access_token)
+    
+    # 2. Handshake
+    try:
+         client.get_location_details(store.google_location_id)
+    except Exception:
+         raise HTTPException(status_code=404, detail="Google上の店舗IDが無効です。設定画面で店舗を再選択してください。")
+
     try:
         review_name = f"{store.google_location_id}/reviews/{review.google_review_id}"
         result = client.reply_to_review(review_name, reply.reply_text)
@@ -111,4 +146,5 @@ def reply_to_review(review_id: str, reply: ReviewReply, db: Session = Depends(da
         
         return {"message": "Reply posted successfully", "reply": result}
     except Exception as e:
+        print(f"Reply Failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
