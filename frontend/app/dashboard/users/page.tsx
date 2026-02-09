@@ -83,6 +83,27 @@ export default function AdminUsersPage() {
       });
   };
 
+  const handleEditRole = (user: User) => {
+      const newRole = prompt("新しい権限ロールを入力してください (SUPER_ADMIN / COMPANY_ADMIN / STORE_USER):", user.role);
+      if (!newRole || newRole === user.role) return;
+
+      const token = localStorage.getItem('meo_auth_token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+
+      fetch(`${apiUrl}/admin/users/${user.id}/role?role=${newRole}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}` }
+      }).then(async res => {
+          if (res.ok) {
+              alert("権限を更新しました");
+              window.location.reload();
+          } else {
+              const err = await res.json();
+              alert("更新失敗: " + (err.detail || "Unknown error"));
+          }
+      }).catch(e => alert("Error: " + e));
+  };
+
   if (isLoading) return <div className="p-8 text-slate-400">読み込み中...</div>;
 
   if (error) {
@@ -159,7 +180,9 @@ export default function AdminUsersPage() {
                              }
                         </td>
                         <td className="p-4">
-                            <button className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded transition-colors">
+                            <button 
+                                onClick={() => handleEditRole(user)}
+                                className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded transition-colors">
                                 編集
                             </button>
                         </td>
