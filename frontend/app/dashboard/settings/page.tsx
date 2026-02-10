@@ -600,6 +600,8 @@ export default function SettingsPage() {
                 <span>⚠️</span> APIキーが設定されていない場合、環境変数またはモックモードで動作します。
               </p>
             )}
+          </div>
+
           {/* Instagram API */}
           <div className="bg-slate-800/50 rounded-xl p-5 border border-white/5">
             <div className="flex justify-between items-start mb-4">
