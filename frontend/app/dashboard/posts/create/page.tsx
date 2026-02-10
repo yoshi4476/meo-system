@@ -466,7 +466,18 @@ export default function CreatePostPage() {
   );
 }
 
-function PlatformCheckbox({ id, label, icon, color, checked, onChange, disabled, connected }: any) {
+interface PlatformCheckboxProps {
+    id: string;
+    label: string;
+    icon: string;
+    color: string;
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    disabled: boolean;
+    connected: boolean;
+}
+
+function PlatformCheckbox({ id, label, icon, color, checked, onChange, disabled, connected }: PlatformCheckboxProps) {
     return (
         <div 
             onClick={() => !disabled && onChange(!checked)}
