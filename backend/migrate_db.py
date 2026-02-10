@@ -1,5 +1,9 @@
 from sqlalchemy import text
 from database import engine
+import os
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 def add_column_safe(conn, table, column, col_type):
     try:
@@ -45,6 +49,36 @@ def migrate():
             add_column_safe(conn, "posts", "cta_url", "VARCHAR")
             add_column_safe(conn, "posts", "event_start", "TIMESTAMP")
             add_column_safe(conn, "posts", "event_end", "TIMESTAMP")
+
+            # Phase 3: SNS Integration
+            add_column_safe(conn, "posts", "media_type", "VARCHAR DEFAULT 'PHOTO'")
+            add_column_safe(conn, "posts", "target_platforms", "JSON")
+            add_column_safe(conn, "posts", "social_post_ids", "JSON")
+
+            # Social Connections Table (New)
+            try:
+                conn.execute(text("SELECT id FROM social_connections LIMIT 1"))
+            except Exception:
+                print("Creating table 'social_connections'...")
+                conn.execute(text("""
+                    CREATE TABLE social_connections (
+                        id VARCHAR PRIMARY KEY,
+                        user_id VARCHAR,
+                        platform VARCHAR,
+                        access_token VARCHAR,
+                        refresh_token VARCHAR,
+                        expires_at TIMESTAMP,
+                        provider_account_id VARCHAR,
+                        provider_username VARCHAR,
+                        client_id VARCHAR,
+                        client_secret VARCHAR,
+                        created_at TIMESTAMP,
+                        updated_at TIMESTAMP,
+                        FOREIGN KEY(user_id) REFERENCES users(id)
+                    )
+                """))
+                conn.commit()
+                print("Created table: social_connections")
 
             print("DB Schema Migration Completed.")
     except Exception as e:

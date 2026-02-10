@@ -66,6 +66,16 @@ export default function UsageManualPage() {
                             これを行わないと、ダッシュボードにデータが表示されません。
                         </p>
                     </div>
+
+                    <div className="bg-pink-900/20 border border-pink-500/30 rounded-xl p-4 mt-4">
+                        <h4 className="font-bold text-pink-300 mb-2 flex items-center gap-2">
+                             SNS連携（Instagram / X / YouTube）
+                        </h4>
+                        <p className="text-sm text-slate-300">
+                            「設定」ページでは、Google以外のSNSアカウントも連携できます。<br/>
+                            「AI投稿スタジオ」で一括投稿するために、事前に各プラットフォームの「連携する」ボタンから接続を行ってください。
+                        </p>
+                    </div>
                 </div>
             </div>
           </div>
@@ -181,12 +191,50 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 3. 推奨ルーティン */}
-
-        {/* ■ 5. 店舗情報管理 */}
+        {/* ■ 3. AI投稿スタジオ */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">5</div>
+                <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">3</div>
+                <h2 className="text-2xl font-bold text-white">AI投稿スタジオ（マルチプラットフォーム投稿）</h2>
+          </div>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
+            <p className="text-slate-300">
+                Googleビジネスプロフィールだけでなく、Instagram、X (旧Twitter)、YouTube Shortsへも一括で投稿できます。<br/>
+                AIが魅力的な文章を自動生成し、X向けの要約も自動で行います。
+            </p>
+            
+            <div className="space-y-4">
+                <h3 className="font-bold text-white text-lg">投稿の手順</h3>
+                <ol className="list-decimal list-inside text-slate-300 space-y-4 ml-2">
+                    <li className="pl-2">
+                        <strong className="text-white block mb-1">投稿先の選択</strong>
+                        投稿したいプラットフォームにチェックを入れます。<br/>
+                        <span className="text-xs text-slate-400">※ Instagramなどを利用するには、事前に「設定」画面で連携が必要です。</span>
+                    </li>
+                    <li className="pl-2">
+                        <strong className="text-white block mb-1">AIコンテンツ生成</strong>
+                        キーワード（例：「春のランチ」）とトーン（例：「親しみやすく」）を選択し、「AIで文章を自動生成」ボタンを押します。<br/>
+                        数秒で各プラットフォームに最適な文章が生成されます。
+                    </li>
+                    <li className="pl-2">
+                        <strong className="text-white block mb-1">メディアのアップロード</strong>
+                        写真や動画をアップロードします。<br/>
+                        <span className="text-xs text-yellow-400">※ YouTube Shortsには動画ファイルが必須です。</span>
+                    </li>
+                    <li className="pl-2">
+                        <strong className="text-white block mb-1">投稿または予約</strong>
+                        「今すぐ投稿」ですぐに公開するか、「予約投稿する」にチェックを入れて日時を指定します。<br/>
+                        指定した日時に全プラットフォームへ一斉に投稿されます。
+                    </li>
+                </ol>
+            </div>
+          </div>
+        </section>
+
+        {/* ■ 4. 店舗情報管理 */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">4</div>
                <h2 className="text-2xl font-bold text-white">店舗情報の編集・同期</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
@@ -209,10 +257,10 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 6. 複数店舗管理 */}
+        {/* ■ 5. 複数店舗管理 */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">6</div>
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">5</div>
                <h2 className="text-2xl font-bold text-white">複数店舗の管理</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
@@ -240,10 +288,10 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 7. ユーザー・店舗設定 */}
+        {/* ■ 6. ユーザー・店舗設定 */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">7</div>
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">6</div>
                <h2 className="text-2xl font-bold text-white">ユーザー・店舗管理（管理者向け）</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">

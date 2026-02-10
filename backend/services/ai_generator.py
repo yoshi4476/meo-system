@@ -169,9 +169,16 @@ JSON以外の余計なテキストは含めないでください。
             return json.loads(res)
         except Exception as e:
             print(f"Analysis error: {e}")
-            return {
-                "summary": "分析中にエラーが発生しました", 
-                "sentiment_score": 50, 
-                "positive_points": [], 
-                "negative_points": []
-            }
+    def summarize_text(self, text: str, max_chars: int = 140):
+        if not text: return ""
+        
+        system_prompt = f"""
+あなたはテキスト要約のプロフェッショナルです。
+以下のテキストを、意味を損なわずに**{max_chars}文字以内**に要約してください。
+ハッシュタグは削除し、文体は「です・ます」調または「だ・である」調を元のテキストに合わせて統一してください。
+"""
+        user_prompt = f"""
+以下のテキストを要約してください:
+{text}
+"""
+        return self.generate_text(system_prompt, user_prompt)

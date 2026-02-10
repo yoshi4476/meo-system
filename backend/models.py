@@ -74,12 +74,17 @@ class Post(Base):
 
     id = Column(String, primary_key=True, default=generate_uuid)
     store_id = Column(String, ForeignKey("stores.id"))
-    google_post_id = Column(String, nullable=True) # Resource name "locations/.../localPosts/..."
+    google_post_id = Column(String, nullable=True) # Resource name
     content = Column(String)
     media_url = Column(String, nullable=True)
-    status = Column(String, default='DRAFT') # DRAFT, SCHEDULED, PUBLISHED
+    media_type = Column(String, default="PHOTO") # PHOTO, VIDEO
+    status = Column(String, default='DRAFT') # DRAFT, SCHEDULED, PUBLISHED, FAILED, PARTIAL
     scheduled_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # JSON columns for multi-platform
+    target_platforms = Column(JSON, default=["google"]) # ["google", "instagram", "twitter"]
+    social_post_ids = Column(JSON, nullable=True) # {"google": "...", "twitter": "..."}
 
     store = relationship("Store", back_populates="posts")
 
@@ -99,6 +104,29 @@ class GoogleConnection(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="google_connection")
+
+class SocialConnection(Base):
+    __tablename__ = "social_connections"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"))
+    platform = Column(String) # instagram, twitter, youtube
+    
+    access_token = Column(String)
+    refresh_token = Column(String, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    
+    provider_account_id = Column(String, nullable=True) # ID on the platform
+    provider_username = Column(String, nullable=True) # Handle/Name
+    
+    # Multi-App Support (Per-client API Keys)
+    client_id = Column(String, nullable=True) 
+    client_secret = Column(String, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="social_connections")
 
 class Insight(Base):
     __tablename__ = "insights"
@@ -233,3 +261,4 @@ class UserSettings(Base):
     user = relationship("User", back_populates="settings")
 
 User.settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
+User.social_connections = relationship("SocialConnection", back_populates="user", cascade="all, delete-orphan")

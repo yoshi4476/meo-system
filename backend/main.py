@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+# Load .env explicitly before importing other modules that use env vars
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
@@ -160,9 +166,10 @@ app.include_router(reports.router)
 app.include_router(sync.router)
 app.include_router(optimization.router)
 app.include_router(messages.router)
-from routers import users, debug
+from routers import users, debug, social_auth
 app.include_router(users.router)
 app.include_router(debug.router)
+app.include_router(social_auth.router)
 
 @app.on_event("startup")
 async def startup_event():

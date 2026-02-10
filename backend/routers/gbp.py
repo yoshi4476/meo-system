@@ -125,8 +125,9 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
         try:
              with open(log_file, "a", encoding="utf-8") as f:
                  f.write(f"[{datetime.now()}] {msg}\n")
-        except: pass
-    # ---------------------
+                 f.flush()
+        except Exception as log_err:
+             print(f"[AUTH LOG ERROR] Could not write to {log_file}: {log_err}")
 
     auth_log(f"Callback received. Code: {code[:10]}... State: {state}")
 
@@ -140,7 +141,7 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
         auth_log("Exchanging code for tokens...")
         try:
             tokens = google_api.get_tokens(code)
-            auth_log("Token exchange successful.")
+            auth_log(f"Token exchange successful. Scopes: {tokens.get('scope')}")
         except Exception as token_err:
             auth_log(f"Token exchange FAILED: {token_err}")
             raise HTTPException(status_code=400, detail=f"Google Login Failed: {str(token_err)}")

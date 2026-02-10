@@ -15,14 +15,18 @@ class PostCreate(BaseModel):
     store_id: str
     content: str
     media_url: Optional[str] = None
+    media_type: str = "PHOTO" # PHOTO, VIDEO
     status: str = "DRAFT" # DRAFT, SCHEDULED, PUBLISHED
     scheduled_at: Optional[datetime] = None
+    target_platforms: List[str] = ["google"] # google, instagram, twitter, youtube
 
 class PostUpdate(BaseModel):
     content: Optional[str] = None
     media_url: Optional[str] = None
+    media_type: Optional[str] = None
     status: Optional[str] = None
     scheduled_at: Optional[datetime] = None
+    target_platforms: Optional[List[str]] = None
 
 @router.get("/")
 def list_posts(store_id: Optional[str] = None, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
@@ -32,7 +36,7 @@ def list_posts(store_id: Optional[str] = None, db: Session = Depends(database.ge
     return query.order_by(models.Post.created_at.desc()).all()
 
 @router.post("/")
-def create_post(post: PostCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+async def create_post(post: PostCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     # Verify store access (simplified)
     store = db.query(models.Store).filter(models.Store.id == post.store_id).first()
     if not store:
@@ -42,12 +46,25 @@ def create_post(post: PostCreate, db: Session = Depends(database.get_db), curren
         store_id=post.store_id,
         content=post.content,
         media_url=post.media_url,
+        media_type=post.media_type,
         status=post.status,
-        scheduled_at=post.scheduled_at
+        scheduled_at=post.scheduled_at,
+        target_platforms=post.target_platforms
     )
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
+
+    # If status is PUBLISHED (Immediate Post), trigger publish
+    if db_post.status == 'PUBLISHED':
+        from services.sns_service import SNSService
+        service = SNSService(db, current_user)
+        try:
+            await service.publish_post(db_post.id)
+            db.refresh(db_post)
+        except Exception as e:
+            print(f"Publish Error: {e}")
+
     return db_post
 
 @router.get("/{post_id}")
@@ -154,50 +171,26 @@ def delete_post(post_id: str, db: Session = Depends(database.get_db), current_us
     return {"message": "Post deleted"}
 
 @router.post("/{post_id}/publish")
-def publish_post(post_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+async def publish_post(post_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
-    Publish a post to Google Business Profile.
-    Requires Google connection.
+    Publish a post to all target platforms (Google, SNS).
     """
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
+    # Store check
     store = db.query(models.Store).filter(models.Store.id == post.store_id).first()
-    if not store or not store.google_location_id:
-        raise HTTPException(status_code=400, detail="Store not linked to Google Business Profile")
+    if not store:
+         raise HTTPException(status_code=404, detail="Store not found")
+         
+    # Use SNS Service
+    from services.sns_service import SNSService
+    service = SNSService(db, current_user)
     
-    connection = current_user.google_connection
-    if not connection or not connection.access_token:
-        raise HTTPException(status_code=400, detail="Google account not connected")
-    
-    # Refresh token if needed
-    if connection.expiry and connection.expiry < datetime.utcnow():
-        if connection.refresh_token:
-            new_tokens = google_api.refresh_access_token(connection.refresh_token)
-            connection.access_token = new_tokens.get("access_token")
-            connection.expiry = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
-            db.commit()
-    
-    client = google_api.GBPClient(connection.access_token)
     try:
-        post_data = {
-            "summary": post.content,
-            "topicType": "STANDARD",
-        }
-        if post.media_url:
-            post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": post.media_url}]
-        
-        result = client.create_local_post(store.google_location_id, post_data)
-        
-        # Update post status
-        post.status = "PUBLISHED"
-        if result.get("name"):
-            post.google_post_id = result.get("name")
-            
-        db.commit()
-        
-        return {"message": "Post published successfully", "google_post_id": result.get("name")}
+        final_status = await service.publish_post(post_id)
+        return {"message": f"Post publish process completed. Status: {final_status}", "status": final_status}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

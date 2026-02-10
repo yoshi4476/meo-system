@@ -15,12 +15,12 @@ scheduler = AsyncIOScheduler()
 async def check_and_publish_scheduled_posts():
     """
     Check for posts that are scheduled and due for publishing.
+    Delegates to SNSService for multi-platform support.
     """
     logger.info("Scheduler: Checking for scheduled posts...")
     db: Session = SessionLocal()
     try:
         now = datetime.utcnow()
-        # Find posts that are SCHEDULED and scheduled_at <= now
         due_posts = db.query(models.Post).filter(
             models.Post.status == 'SCHEDULED',
             models.Post.scheduled_at <= now
@@ -31,63 +31,37 @@ async def check_and_publish_scheduled_posts():
         for post in due_posts:
             try:
                 store = db.query(models.Store).filter(models.Store.id == post.store_id).first()
-                if not store or not store.google_location_id:
-                    logger.warning(f"Store not linked or found for post {post.id}")
+                if not store:
+                    logger.warning(f"Store not found for post {post.id}")
                     post.status = "FAILED"
                     continue
 
-                # We need a user to get the connection. 
-                # Since multiple users can be in a store, any user with a valid connection could work.
-                # However, the connection is tied to a user. Best effort: try to find a user in this store with a valid connection.
+                # Find valid user connection (Similar logic to before, or use the user who created it if we had that)
+                # Since we don't have created_by, we try to find ANY valid user.
+                # SNSService requires a user object.
                 
-                # Logic: Find a user associated with this store (or company) who has a valid google_connection
-                valid_connection = None
+                target_user = None
                 
-                # Check store users first
+                # Try store users
                 for user in store.users:
-                    if user.google_connection and user.google_connection.access_token:
-                        valid_connection = user.google_connection
+                    if user.google_connection: # Simplified check, SNSService checks specific connect
+                        target_user = user
                         break
                 
-                # If not found, check company admins? (Not implemented for simplicity, assuming direct store user or creator)
-                # Ideally, we should store `created_by_user_id` in Post model, but we don't have it.
-                # Fallback: Check if there's any user in the company who has access?
-                # For now, relying on store.users relationship.
+                if not target_user and store.company and store.company.users:
+                     target_user = store.company.users[0] # Fallback
                 
-                if not valid_connection:
-                    logger.error(f"No valid Google connection found for store {store.name}")
-                    post.status = "FAILED" # Or keep SCHEDULED to retry?
-                    continue
+                if not target_user:
+                     logger.error(f"No valid user found to execute post {post.id}")
+                     post.status = "FAILED"
+                     continue
 
-                connection = valid_connection
-
-                # Refresh token if needed
-                if connection.expiry and connection.expiry < datetime.utcnow():
-                    if connection.refresh_token:
-                        logger.info(f"Refreshing token for user {connection.user_id}")
-                        new_tokens = google_api.refresh_access_token(connection.refresh_token)
-                        connection.access_token = new_tokens.get("access_token")
-                        expires_in = new_tokens.get("expires_in", 3600)
-                        connection.expiry = datetime.utcnow() + timedelta(seconds=expires_in)
-                        db.commit() # Save token update immediately
-
-                client = google_api.GBPClient(connection.access_token)
+                from services.sns_service import SNSService
+                service = SNSService(db, target_user)
                 
-                post_data = {
-                    "summary": post.content,
-                    "topicType": "STANDARD",
-                }
-                if post.media_url:
-                    post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": post.media_url}]
-
-                logger.info(f"Publishing post {post.id} to {store.name}...")
-                result = client.create_local_post(store.google_location_id, post_data)
-                
-                post.status = "PUBLISHED"
-                if result.get("name"):
-                    post.google_post_id = result.get("name")
-                    
-                logger.info(f"Post {post.id} published successfully.")
+                logger.info(f"Publishing post {post.id} via SNSService...")
+                await service.publish_post(post.id)
+                logger.info(f"Post {post.id} processed.")
 
             except Exception as e:
                 logger.error(f"Failed to publish post {post.id}: {e}")
