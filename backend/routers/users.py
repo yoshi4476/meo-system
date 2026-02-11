@@ -42,6 +42,13 @@ def update_user_settings(settings: schemas.UserSettingsUpdate, db: Session = Dep
     if settings.openai_api_key is not None:
         user_settings.openai_api_key = settings.openai_api_key
         
+    if settings.instagram_client_id is not None: user_settings.instagram_client_id = settings.instagram_client_id
+    if settings.instagram_client_secret is not None: user_settings.instagram_client_secret = settings.instagram_client_secret
+    if settings.twitter_client_id is not None: user_settings.twitter_client_id = settings.twitter_client_id
+    if settings.twitter_client_secret is not None: user_settings.twitter_client_secret = settings.twitter_client_secret
+    if settings.youtube_client_id is not None: user_settings.youtube_client_id = settings.youtube_client_id
+    if settings.youtube_client_secret is not None: user_settings.youtube_client_secret = settings.youtube_client_secret
+        
     db.commit()
     db.refresh(user_settings)
     # Return user to reflect changes if needed, or just success

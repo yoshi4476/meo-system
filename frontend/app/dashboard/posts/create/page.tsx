@@ -39,6 +39,14 @@ export default function CreatePostPage() {
   // AI Params
   const [keywords, setKeywords] = useState('');
   const [tone, setTone] = useState('friendly');
+  const [keyArea, setKeyArea] = useState('');
+  const [charCount, setCharCount] = useState<string>('auto'); // 'auto', 'short', 'medium', 'long'
+
+  // Media Library State
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [mediaTab, setMediaTab] = useState<'photos' | 'history'>('photos');
+  const [mediaList, setMediaList] = useState<{id: string, url: string, type: 'PHOTO'|'VIDEO'}[]>([]);
+  const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
   // Initial Check
   useEffect(() => {
@@ -101,13 +109,70 @@ export default function CreatePostPage() {
       reader.readAsDataURL(file);
     }
   };
+  const fetchMediaLibrary = async (type: 'photos' | 'history') => {
+      setIsLoadingMedia(true);
+      setMediaTab(type);
+      try {
+        const token = localStorage.getItem('meo_auth_token');
+        let endpoint = type === 'photos' 
+            ? `${process.env.NEXT_PUBLIC_API_URL}/media/?store_id=${userInfo?.store_id}` 
+            : `${process.env.NEXT_PUBLIC_API_URL}/posts/?store_id=${userInfo?.store_id}`; // Simplified, ideally a separate endpoint for used media
+        
+        const res = await fetch(endpoint, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            let items: any[] = [];
+            
+            if (type === 'photos') {
+                items = data.map((d: any) => ({
+                    id: d.id,
+                    url: d.thumbnail_url || d.google_url,
+                    type: d.media_format === 'VIDEO' ? 'VIDEO' : 'PHOTO'
+                }));
+            } else {
+                // Post history logic
+                 items = data
+                    .filter((p: any) => p.media_url)
+                    .map((p: any) => ({
+                        id: p.id,
+                        url: p.media_url,
+                        type: p.media_type
+                    }));
+            }
+            // Dedup by URL
+            const unique = Array.from(new Map(items.map(item => [item.url, item])).values());
+            setMediaList(unique as any);
+        }
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsLoadingMedia(false);
+      }
+  };
+
+  const handleSelectLibraryMedia = (url: string, type: 'PHOTO' | 'VIDEO') => {
+      setMediaPreview(url);
+      setMediaType(type);
+      setMediaFile(null); // Clear file input since we are using URL
+      setIsMediaModalOpen(false);
+  };
+    
+  useEffect(() => {
+     if(isMediaModalOpen) {
+         fetchMediaLibrary(mediaTab);
+     }
+  }, [mediaTab]);
+
 
   const handleGenerateAI = async () => {
     if (!keywords) return;
     setIsGenerating(true);
     try {
         const token = localStorage.getItem('meo_auth_token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate/post`, { // Updated endpoint
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -116,6 +181,8 @@ export default function CreatePostPage() {
             body: JSON.stringify({
                 keywords,
                 tone,
+                keywords_region: keyArea, // New
+                length_option: charCount === 'auto' ? 'MEDIUM' : charCount.toUpperCase(), // New mapping
                 store_id: userInfo?.store_id
             })
         });
@@ -324,6 +391,28 @@ export default function CreatePostPage() {
                         <option value="excited">エネルギッシュ</option>
                     </select>
                 </div>
+                
+                {/* Advanced AI Options */}
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                    <input 
+                        type="text" 
+                        placeholder="地域・エリア (例: 新宿, 大阪梅田)" 
+                        value={keyArea}
+                        onChange={(e) => setKeyArea(e.target.value)}
+                        className="bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm"
+                    />
+                    <select 
+                        value={charCount}
+                        onChange={(e) => setCharCount(e.target.value)}
+                        className="bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none text-sm"
+                    >
+                        <option value="auto">文字数：自動最適化</option>
+                        <option value="short">短め (〜100文字)</option>
+                        <option value="medium">普通 (〜300文字)</option>
+                        <option value="long">長め (ブログ風)</option>
+                    </select>
+                </div>
+
                 <button 
                     onClick={handleGenerateAI}
                     disabled={isGenerating || !keywords}
@@ -351,6 +440,20 @@ export default function CreatePostPage() {
                 <span className="bg-aurora-cyan/20 text-aurora-cyan w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
                 メディア (写真/動画)
              </h3>
+             
+             <div className="flex justify-end mb-2">
+                 <button 
+                    onClick={() => {
+                        setIsMediaModalOpen(true);
+                        fetchMediaLibrary('photos');
+                    }}
+                    className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+                 >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    ライブラリから選択
+                 </button>
+             </div>
+
              <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-aurora-cyan transition-colors relative bg-slate-800/30">
                 <input 
                     type="file" 

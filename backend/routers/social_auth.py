@@ -63,28 +63,26 @@ def social_auth_start(platform: str, db: Session = Depends(database.get_db), cur
     
     auth_url = ""
     
+    # Fetch User Settings for Custom Keys
+    user_settings = db.query(models.UserSettings).filter(models.UserSettings.user_id == current_user.id).first()
+    
     if platform == "instagram":
-        client_id = get_env_var("INSTAGRAM_CLIENT_ID")
+        client_id = (user_settings.instagram_client_id if user_settings else None) or get_env_var("INSTAGRAM_CLIENT_ID")
         if not client_id: return _mock_auth(platform, state, frontend_url)
         
         # Instagram Basic Display or Graph API (Business)
-        # We need "Business" permission for publishing: `instagram_basic`, `instagram_content_publish`
-        # This usually requires "Facebook Login for Business".
-        # URL: https://www.facebook.com/v19.0/dialog/oauth
         base_url = "https://www.facebook.com/v19.0/dialog/oauth"
         params = {
             "client_id": client_id,
             "redirect_uri": redirect_uri,
-            "state": f"{platform}_{state}", # Embedding platform in state for frontend to know? Backend needs it.
-            # Frontend uses `state` query param to match? 
-            # Actually, frontend `page.tsx` receives `code` and `state`.
+            "state": f"{platform}_{state}",
             "scope": "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
             "response_type": "code"
         }
         auth_url = f"{base_url}?{urllib.parse.urlencode(params)}"
         
     elif platform == "twitter":
-        client_id = get_env_var("TWITTER_CLIENT_ID")
+        client_id = (user_settings.twitter_client_id if user_settings else None) or get_env_var("TWITTER_CLIENT_ID")
         if not client_id: return _mock_auth(platform, state, frontend_url)
         
         # PKCE S256 Challenge
@@ -103,7 +101,7 @@ def social_auth_start(platform: str, db: Session = Depends(database.get_db), cur
         auth_url = f"{base_url}?{urllib.parse.urlencode(params)}"
         
     elif platform == "youtube":
-        client_id = get_env_var("GOOGLE_CLIENT_ID") or get_env_var("YOUTUBE_CLIENT_ID")
+        client_id = (user_settings.youtube_client_id if user_settings else None) or get_env_var("GOOGLE_CLIENT_ID") or get_env_var("YOUTUBE_CLIENT_ID")
         if not client_id: return _mock_auth(platform, state, frontend_url)
         
         base_url = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -159,10 +157,13 @@ def social_auth_callback(platform: str, code: str, state: str = None, db: Sessio
     original_state = state.replace(f"{platform}_", "") if state else ""
     # In a robust system, we verify state exists in `oauth_states`
     
+    # Fetch User Settings for Custom Keys
+    user_settings = db.query(models.UserSettings).filter(models.UserSettings.user_id == current_user.id).first()
+
     try:
         if platform == "instagram":
-            client_id = get_env_var("INSTAGRAM_CLIENT_ID")
-            client_secret = get_env_var("INSTAGRAM_CLIENT_SECRET")
+            client_id = (user_settings.instagram_client_id if user_settings else None) or get_env_var("INSTAGRAM_CLIENT_ID")
+            client_secret = (user_settings.instagram_client_secret if user_settings else None) or get_env_var("INSTAGRAM_CLIENT_SECRET")
             
             # 1. Exchange for User Access Token
             url = "https://graph.facebook.com/v19.0/oauth/access_token"
@@ -217,8 +218,8 @@ def social_auth_callback(platform: str, code: str, state: str = None, db: Sessio
                  provider_username = "Instagram User"
 
         elif platform == "twitter":
-            client_id = get_env_var("TWITTER_CLIENT_ID")
-            client_secret = get_env_var("TWITTER_CLIENT_SECRET")
+            client_id = (user_settings.twitter_client_id if user_settings else None) or get_env_var("TWITTER_CLIENT_ID")
+            client_secret = (user_settings.twitter_client_secret if user_settings else None) or get_env_var("TWITTER_CLIENT_SECRET")
             
             verifier = oauth_states.get(original_state, {}).get("verifier")
             
@@ -251,8 +252,8 @@ def social_auth_callback(platform: str, code: str, state: str = None, db: Sessio
             provider_username = me_data.get("username")
 
         elif platform == "youtube":
-            client_id = get_env_var("GOOGLE_CLIENT_ID") or get_env_var("YOUTUBE_CLIENT_ID")
-            client_secret = get_env_var("GOOGLE_CLIENT_SECRET") or get_env_var("YOUTUBE_CLIENT_SECRET")
+            client_id = (user_settings.youtube_client_id if user_settings else None) or get_env_var("GOOGLE_CLIENT_ID") or get_env_var("YOUTUBE_CLIENT_ID")
+            client_secret = (user_settings.youtube_client_secret if user_settings else None) or get_env_var("GOOGLE_CLIENT_SECRET") or get_env_var("YOUTUBE_CLIENT_SECRET")
             
             url = "https://oauth2.googleapis.com/token"
             data = {

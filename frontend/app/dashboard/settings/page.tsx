@@ -30,7 +30,19 @@ export default function SettingsPage() {
     competitors: false
   });
 
-  const [apiKeys, setApiKeys] = useState<{google: string, openai: string}>({
+  const [apiKeys, setApiKeys] = useState<{
+    google: string, 
+    openai: string, 
+    instagramId?: string, 
+    instagramSecret?: string,
+    showInstagram?: boolean,
+    twitterId?: string, 
+    twitterSecret?: string,
+    showTwitter?: boolean,
+    youtubeId?: string, 
+    youtubeSecret?: string,
+    showYoutube?: boolean
+  }>({
     google: '',
     openai: ''
   });
@@ -265,6 +277,39 @@ export default function SettingsPage() {
         console.error(e);
         alert('エラー: サーバーへの保存に失敗しました');
     }
+  };
+
+  const handleSaveCustomKeys = async (platform: string) => {
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          let updates: any = {};
+          
+          if (platform === 'instagram') {
+              updates = { instagram_client_id: apiKeys.instagramId, instagram_client_secret: apiKeys.instagramSecret };
+          } else if (platform === 'twitter') {
+              updates = { twitter_client_id: apiKeys.twitterId, twitter_client_secret: apiKeys.twitterSecret };
+          } else if (platform === 'youtube') {
+             updates = { youtube_client_id: apiKeys.youtubeId, youtube_client_secret: apiKeys.youtubeSecret };
+          }
+
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/users/me/settings`, { 
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(updates)
+          });
+
+          if (res.ok) {
+              alert(`${platform} のAPI設定を保存しました`);
+          } else {
+              alert(`保存に失敗しました: ${await res.text()}`);
+          }
+      } catch (e) {
+          console.error(e);
+          alert('エラー: 保存失敗');
+      }
   };
 
   const getStatusBadge = (status: string) => {
@@ -760,15 +805,53 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-bold text-white">Instagram Integration</h3>
                   <p className="text-xs text-slate-400">画像投稿をフィードに自動共有します</p>
-                  {connectionStatus.instagram === 'connected' && localConnections.instagram?.username && (
-                      <p className="text-xs text-aurora-cyan mt-1 font-mono">
-                          Connected as: @{localConnections.instagram.username}
-                      </p>
-                  )}
                 </div>
               </div>
               {getStatusBadge(connectionStatus.instagram)}
             </div>
+
+            {/* Custom Credentials Toggle */}
+            <div className="mb-4 text-xs">
+                <button 
+                    onClick={() => setApiKeys(prev => ({...prev, showInstagram: !prev.showInstagram}))}
+                    className="text-slate-400 hover:text-white underline flex items-center gap-1"
+                >
+                    {apiKeys.showInstagram ? '▲ 標準設定を使用' : '▼ 独自のClient IDを使用する (高度な設定)'}
+                </button>
+            </div>
+
+            {apiKeys.showInstagram && (
+                <div className="space-y-3 mb-4 p-3 bg-slate-900/50 rounded-lg border border-white/5">
+                    <div>
+                        <label className="block text-xs text-slate-400 mb-1">App ID</label>
+                        <input type="text" 
+                            value={apiKeys.instagramId || ''}
+                            onChange={e => setApiKeys(prev => ({...prev, instagramId: e.target.value}))}
+                            placeholder="App ID"
+                            className="w-full bg-slate-950 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-slate-400 mb-1">App Secret</label>
+                        <input type="password" 
+                            value={apiKeys.instagramSecret || ''}
+                            onChange={e => setApiKeys(prev => ({...prev, instagramSecret: e.target.value}))}
+                            placeholder="App Secret"
+                            className="w-full bg-slate-950 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                        />
+                    </div>
+                    <button 
+                        onClick={() => handleSaveCustomKeys('instagram')}
+                        className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded"
+                    >
+                        設定を保存
+                    </button>
+                    <p className="text-[10px] text-slate-500">
+                        ※ Callback URL: {window.location.origin}/dashboard/settings?platform=instagram
+                    </p>
+                </div>
+            )}
+
             {connectionStatus.instagram !== 'connected' ? (
                 <div className="flex justify-end">
                     <button onClick={() => handleConnect('instagram')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
@@ -790,15 +873,53 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-bold text-white">X (Twitter) Integration</h3>
                   <p className="text-xs text-slate-400">140文字制限をAIが自動調整して投稿します</p>
-                  {connectionStatus.twitter === 'connected' && localConnections.twitter?.username && (
-                      <p className="text-xs text-aurora-cyan mt-1 font-mono">
-                          Connected as: @{localConnections.twitter.username}
-                      </p>
-                  )}
                 </div>
               </div>
               {getStatusBadge(connectionStatus.twitter)}
             </div>
+
+            {/* Custom Credentials Toggle */}
+            <div className="mb-4 text-xs">
+                <button 
+                    onClick={() => setApiKeys(prev => ({...prev, showTwitter: !prev.showTwitter}))}
+                    className="text-slate-400 hover:text-white underline flex items-center gap-1"
+                >
+                    {apiKeys.showTwitter ? '▲ 標準設定を使用' : '▼ 独自のClient IDを使用する (高度な設定)'}
+                </button>
+            </div>
+
+            {apiKeys.showTwitter && (
+                <div className="space-y-3 mb-4 p-3 bg-slate-900/50 rounded-lg border border-white/5">
+                    <div>
+                        <label className="block text-xs text-slate-400 mb-1">Client ID</label>
+                        <input type="text" 
+                            value={apiKeys.twitterId || ''}
+                            onChange={e => setApiKeys(prev => ({...prev, twitterId: e.target.value}))}
+                            placeholder="Client ID"
+                            className="w-full bg-slate-950 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-slate-400 mb-1">Client Secret</label>
+                        <input type="password" 
+                            value={apiKeys.twitterSecret || ''}
+                            onChange={e => setApiKeys(prev => ({...prev, twitterSecret: e.target.value}))}
+                            placeholder="Client Secret"
+                            className="w-full bg-slate-950 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                        />
+                    </div>
+                    <button 
+                        onClick={() => handleSaveCustomKeys('twitter')}
+                        className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded"
+                    >
+                        設定を保存
+                    </button>
+                    <p className="text-[10px] text-slate-500">
+                        ※ Callback URL: {window.location.origin}/dashboard/settings?platform=twitter
+                    </p>
+                </div>
+            )}
+
             {connectionStatus.twitter !== 'connected' ? (
                 <div className="flex justify-end">
                     <button onClick={() => handleConnect('twitter')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
@@ -806,6 +927,74 @@ export default function SettingsPage() {
             ) : (
                 <div className="flex justify-end">
                     <button onClick={() => handleSocialDisconnect('twitter')} className="text-xs bg-red-900/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded hover:bg-red-900/50">連携解除</button>
+                </div>
+            )}
+          </div>
+
+          {/* YouTube API */}
+          <div className="bg-slate-800/50 rounded-xl p-5 border border-white/5">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">YouTube Integration</h3>
+                  <p className="text-xs text-slate-400">Shorts動画としてアップロードします</p>
+                </div>
+              </div>
+              {getStatusBadge(connectionStatus.youtube)}
+            </div>
+
+            {/* Custom Credentials Toggle */}
+            <div className="mb-4 text-xs">
+                <button 
+                    onClick={() => setApiKeys(prev => ({...prev, showYoutube: !prev.showYoutube}))}
+                    className="text-slate-400 hover:text-white underline flex items-center gap-1"
+                >
+                    {apiKeys.showYoutube ? '▲ 標準設定を使用' : '▼ 独自のClient IDを使用する (高度な設定)'}
+                </button>
+            </div>
+
+            {apiKeys.showYoutube && (
+                <div className="space-y-3 mb-4 p-3 bg-slate-900/50 rounded-lg border border-white/5">
+                    <div>
+                        <label className="block text-xs text-slate-400 mb-1">Client ID</label>
+                        <input type="text" 
+                            value={apiKeys.youtubeId || ''}
+                            onChange={e => setApiKeys(prev => ({...prev, youtubeId: e.target.value}))}
+                            placeholder="Client ID"
+                            className="w-full bg-slate-950 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-slate-400 mb-1">Client Secret</label>
+                        <input type="password" 
+                            value={apiKeys.youtubeSecret || ''}
+                            onChange={e => setApiKeys(prev => ({...prev, youtubeSecret: e.target.value}))}
+                            placeholder="Client Secret"
+                            className="w-full bg-slate-950 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                        />
+                    </div>
+                    <button 
+                        onClick={() => handleSaveCustomKeys('youtube')}
+                        className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded"
+                    >
+                        設定を保存
+                    </button>
+                    <p className="text-[10px] text-slate-500">
+                        ※ Callback URL: {window.location.origin}/dashboard/settings?platform=youtube
+                    </p>
+                </div>
+            )}
+
+            {connectionStatus.youtube !== 'connected' ? (
+                <div className="flex justify-end">
+                    <button onClick={() => handleConnect('youtube')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+                </div>
+            ) : (
+                <div className="flex justify-end">
+                    <button onClick={() => handleSocialDisconnect('youtube')} className="text-xs bg-red-900/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded hover:bg-red-900/50">連携解除</button>
                 </div>
             )}
           </div>

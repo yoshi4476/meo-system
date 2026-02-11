@@ -96,3 +96,9 @@ class UserUpdate(BaseModel):
 
 class UserSettingsUpdate(BaseModel):
     openai_api_key: Optional[str] = None
+    instagram_client_id: Optional[str] = None
+    instagram_client_secret: Optional[str] = None
+    twitter_client_id: Optional[str] = None
+    twitter_client_secret: Optional[str] = None
+    youtube_client_id: Optional[str] = None
+    youtube_client_secret: Optional[str] = None

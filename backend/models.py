@@ -256,6 +256,14 @@ class UserSettings(Base):
     user_id = Column(String, ForeignKey("users.id"), unique=True)
     openai_api_key = Column(String, nullable=True)
     
+    # Custom Social Credentials
+    instagram_client_id = Column(String, nullable=True)
+    instagram_client_secret = Column(String, nullable=True)
+    twitter_client_id = Column(String, nullable=True)
+    twitter_client_secret = Column(String, nullable=True)
+    youtube_client_id = Column(String, nullable=True)
+    youtube_client_secret = Column(String, nullable=True)
+    
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     user = relationship("User", back_populates="settings")
