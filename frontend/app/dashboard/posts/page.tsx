@@ -415,7 +415,7 @@ function PostsContent() {
                         </div>
                         <button 
                             onClick={() => {
-                                setIsCreating(true);
+                                router.push('/dashboard/posts/create');
                             }}
                             className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
                         >
