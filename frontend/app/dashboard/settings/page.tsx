@@ -70,6 +70,28 @@ export default function SettingsPage() {
       }
   };
 
+  const handleSocialDisconnect = async (platform: string) => {
+      if (!confirm(`${platform} との連携を解除しますか？`)) return;
+
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/social/disconnect/${platform}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (res.ok) {
+              alert(`${platform} との連携を解除しました`);
+              fetchSocialStatus();
+          } else {
+              alert(`解除に失敗しました: ${await res.text()}`);
+          }
+      } catch (e: any) {
+          console.error(e);
+          alert(`エラー: ${e.message}`);
+      }
+  };
+
   // Fetch Connection Status on Mount
   useEffect(() => {
       if (userInfo) {
@@ -733,18 +755,27 @@ export default function SettingsPage() {
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-linear-to-br from-pink-500 to-orange-400 rounded-lg flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                 </div>
                 <div>
                   <h3 className="font-bold text-white">Instagram Integration</h3>
                   <p className="text-xs text-slate-400">画像投稿をフィードに自動共有します</p>
+                  {connectionStatus.instagram === 'connected' && localConnections.instagram?.username && (
+                      <p className="text-xs text-aurora-cyan mt-1 font-mono">
+                          Connected as: @{localConnections.instagram.username}
+                      </p>
+                  )}
                 </div>
               </div>
               {getStatusBadge(connectionStatus.instagram)}
             </div>
-            {connectionStatus.instagram !== 'connected' && (
+            {connectionStatus.instagram !== 'connected' ? (
                 <div className="flex justify-end">
                     <button onClick={() => handleConnect('instagram')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+                </div>
+            ) : (
+                <div className="flex justify-end">
+                    <button onClick={() => handleSocialDisconnect('instagram')} className="text-xs bg-red-900/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded hover:bg-red-900/50">連携解除</button>
                 </div>
             )}
           </div>
@@ -759,13 +790,22 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-bold text-white">X (Twitter) Integration</h3>
                   <p className="text-xs text-slate-400">140文字制限をAIが自動調整して投稿します</p>
+                  {connectionStatus.twitter === 'connected' && localConnections.twitter?.username && (
+                      <p className="text-xs text-aurora-cyan mt-1 font-mono">
+                          Connected as: @{localConnections.twitter.username}
+                      </p>
+                  )}
                 </div>
               </div>
               {getStatusBadge(connectionStatus.twitter)}
             </div>
-            {connectionStatus.twitter !== 'connected' && (
+            {connectionStatus.twitter !== 'connected' ? (
                 <div className="flex justify-end">
                     <button onClick={() => handleConnect('twitter')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+                </div>
+            ) : (
+                <div className="flex justify-end">
+                    <button onClick={() => handleSocialDisconnect('twitter')} className="text-xs bg-red-900/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded hover:bg-red-900/50">連携解除</button>
                 </div>
             )}
           </div>
@@ -780,13 +820,22 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-bold text-white">YouTube Shorts Integration</h3>
                   <p className="text-xs text-slate-400">動画投稿をショート動画として自動共有します</p>
+                  {connectionStatus.youtube === 'connected' && localConnections.youtube?.username && (
+                      <p className="text-xs text-aurora-cyan mt-1 font-mono">
+                          Connected as: {localConnections.youtube.username}
+                      </p>
+                  )}
                 </div>
               </div>
               {getStatusBadge(connectionStatus.youtube)}
             </div>
-            {connectionStatus.youtube !== 'connected' && (
+            {connectionStatus.youtube !== 'connected' ? (
                 <div className="flex justify-end">
                     <button onClick={() => handleConnect('youtube')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+                </div>
+            ) : (
+                <div className="flex justify-end">
+                    <button onClick={() => handleSocialDisconnect('youtube')} className="text-xs bg-red-900/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded hover:bg-red-900/50">連携解除</button>
                 </div>
             )}
           </div>

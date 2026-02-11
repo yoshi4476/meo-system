@@ -1,4 +1,3 @@
-```javascript
 import Link from 'next/link';
 import { useDashboard } from '../../contexts/DashboardContext';
 
@@ -6,7 +5,7 @@ import { useDashboard } from '../../contexts/DashboardContext';
 const ALLOWED_ADMIN_EMAILS = [
   '7senses.gran.toukou@gmail.com',
   'y.wakata.linkdesign@gmail.com',
-  // 'demo@example.com' // Uncomment for testing if needed, or rely on demo mode logic inside component
+  // 'demo@example.com' // Uncomment for testing if needed
 ];
 
 const menuItems = [
@@ -113,6 +112,26 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                 </button>
              </div>
         </div>
+
+        {/* System Admin Menu (Restricted) */}
+        {isSystemAdmin && (
+          <nav className="p-4 border-b border-white/10 space-y-1">
+            <p className="text-xs text-red-400 uppercase tracking-wider mb-2 px-4 font-bold">管理者用</p>
+            {systemAdminItems.map((item) => (
+              <Link 
+                key={item.name} 
+                href={item.href}
+                onClick={onClose}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
+              >
+                <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-red-400 transition-colors" viewBox="0 0 24 24">
+                  <path d={item.icon} />
+                </svg>
+                <span className="font-medium text-sm">{item.name}</span>
+              </Link>
+            ))}
+          </nav>
+        )}
       
         {/* 設定 */}
         <nav className="p-4 pt-0 space-y-1">
