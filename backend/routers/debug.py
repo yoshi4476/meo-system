@@ -512,3 +512,20 @@ async def trigger_debug_sync(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/promote_admin")
+def promote_current_user_to_admin(
+    secret: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Emergency endpoint to promote current user to SUPER_ADMIN.
+    Requires secret key 'super_secret_promote_123'.
+    """
+    if secret != "super_secret_promote_123":
+        raise HTTPException(status_code=403, detail="Invalid secret")
+        
+    current_user.role = "SUPER_ADMIN"
+    db.commit()
+    return {"status": "success", "message": f"User {current_user.email} is now SUPER_ADMIN"}

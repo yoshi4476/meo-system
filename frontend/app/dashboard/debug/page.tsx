@@ -123,6 +123,38 @@ export default function DebugPage() {
                                         {JSON.stringify(systemInfo.env_vars, null, 2)}
                                     </pre>
                                 </div>
+                                
+                                <div className="bg-red-500/10 border border-red-500/30 p-4 rounded mt-6">
+                                    <h3 className="text-red-400 font-bold mb-2">🚨 緊急管理者修復 (Emergency Admin Fix)</h3>
+                                    <p className="text-xs text-red-300 mb-4">
+                                        現在のアカウントの権限が不適切な場合（例: 管理者なのにアクセスできない）、
+                                        以下のボタンを押して「Super Admin」権限を強制付与します。
+                                    </p>
+                                    <button 
+                                        onClick={async () => {
+                                            if (!confirm("本当に自身をSuper Adminに昇格させますか？")) return;
+                                            setLoading(true);
+                                            try {
+                                                const token = localStorage.getItem('meo_auth_token');
+                                                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/debug/promote_admin?secret=super_secret_promote_123`, {
+                                                    method: 'POST',
+                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                });
+                                                const d = await res.json();
+                                                alert(d.message || JSON.stringify(d));
+                                                window.location.reload();
+                                            } catch (e: any) {
+                                                alert("Error: " + e.message);
+                                            } finally {
+                                                setLoading(false);
+                                            }
+                                        }}
+                                        disabled={loading}
+                                        className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded font-bold text-sm w-full"
+                                    >
+                                        自身をSuper Adminに昇格
+                                    </button>
+                                </div>
                              </div>
                         ) : (
                             <div className="text-slate-400 animate-pulse">Loading system info...</div>
