@@ -113,6 +113,41 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
              </div>
         </div>
 
+        {/* Regular Menu */}
+        <nav className="p-4 border-b border-white/10 space-y-1">
+          {menuItems.map((item) => (
+            <Link 
+              key={item.name} 
+              href={item.href}
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
+            >
+              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-aurora-cyan transition-colors" viewBox="0 0 24 24">
+                <path d={item.icon} />
+              </svg>
+              <span className="font-medium text-sm">{item.name}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* Tools Menu */}
+        <nav className="p-4 border-b border-white/10 space-y-1">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">ツール</p>
+          {toolsItems.map((item) => (
+            <Link 
+              key={item.name} 
+              href={item.href}
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
+            >
+              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-aurora-purple transition-colors" viewBox="0 0 24 24">
+                <path d={item.icon} />
+              </svg>
+              <span className="font-medium text-sm">{item.name}</span>
+            </Link>
+          ))}
+        </nav>
+
         {/* System Admin Menu (Restricted) */}
         {isSystemAdmin && (
           <nav className="p-4 border-b border-white/10 space-y-1">

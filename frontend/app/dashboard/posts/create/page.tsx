@@ -146,6 +146,15 @@ export default function CreatePostPage() {
         return;
     }
     
+    // Check connections for selected platforms
+    const unconnected = selectedPlatforms.filter(p => !connections[p as keyof typeof connections]);
+    if (unconnected.length > 0) {
+        const confirmMsg = `以下のプラットフォームは未連携ですが、投稿を続行しますか？\n(連携されていない場合、投稿は失敗します)\n\n- ${unconnected.join('\n- ')}`;
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+    }
+    
     if (platforms.youtube && mediaType !== 'VIDEO') {
         alert('YouTube Shortsには動画ファイルが必要です');
         return;
@@ -155,23 +164,8 @@ export default function CreatePostPage() {
     
     try {
         const token = localStorage.getItem('meo_auth_token');
-        const formData = new FormData();
-        formData.append('store_id', userInfo?.store_id || '');
-        formData.append('content', content);
-        formData.append('media_type', mediaType);
-        formData.append('status', isScheduled ? 'SCHEDULED' : 'PUBLISHED');
-        if (isScheduled && scheduledDate) {
-            formData.append('scheduled_at', new Date(scheduledDate).toISOString());
-        }
-        formData.append('target_platforms', JSON.stringify(selectedPlatforms)); // JSON Stringify for list
         
-        // Handle Media Upload if needed
-        // Since backend expects media_url, we usually upload first.
-        // For simplicity here, assuming media upload endpoint exists or handled separately.
-        // Let's assume we have a simple media upload or we pass logic.
-        // Actually the backend `create_post` expects `media_url` string.
-        // So we need to upload first.
-        
+        // Upload Media if needed
         let mediaUrl = null;
         if (mediaFile) {
              const uploadData = new FormData();
@@ -188,10 +182,6 @@ export default function CreatePostPage() {
                  throw new Error('メディアのアップロードに失敗しました');
              }
         }
-        
-        // Re-construct payload for Post Creation
-        // Note: The backend expects JSON body for create_post, not FormData unless changed.
-        // Checking `posts.py` -> `create_post(post: PostCreate)` -> expecting JSON.
         
         const payload = {
             store_id: userInfo?.store_id,
@@ -213,8 +203,16 @@ export default function CreatePostPage() {
         });
 
         if (postRes.ok) {
-            alert(isScheduled ? '投稿を予約しました！' : '投稿が完了しました！');
-            router.push('/dashboard/posts');
+            const data = await postRes.json();
+            if (data.status === 'FAILED') {
+                alert('投稿に失敗しました。各SNSの連携状態を確認してください。');
+            } else if (data.status === 'PARTIAL') {
+                alert('一部のプラットフォームへの投稿に失敗しました。');
+                router.push('/dashboard/posts');
+            } else {
+                alert(isScheduled ? '投稿を予約しました！' : '投稿が完了しました！');
+                router.push('/dashboard/posts');
+            }
         } else {
             const err = await postRes.text();
             alert(`投稿に失敗しました: ${err}`);
@@ -473,35 +471,43 @@ interface PlatformCheckboxProps {
     color: string;
     checked: boolean;
     onChange: (checked: boolean) => void;
-    disabled: boolean;
+    disabled: boolean; // Keep prop but verify usage in parent
     connected: boolean;
 }
 
 function PlatformCheckbox({ id, label, icon, color, checked, onChange, disabled, connected }: PlatformCheckboxProps) {
+    // We ignore 'disabled' prop effectively from the parent logic perspective if we want to allow selection
+    // But let's handle the styling.
+    
     return (
         <div 
-            onClick={() => !disabled && onChange(!checked)}
+            onClick={() => onChange(!checked)}
             className={`
                 relative p-4 rounded-xl border transition-all cursor-pointer flex flex-col items-center gap-2 text-center select-none group
                 ${checked 
                     ? `bg-slate-800 border-${color.replace('bg-', '')} ring-1 ring-${color.replace('bg-', '')}` 
                     : 'bg-slate-900/50 border-white/5 hover:border-white/20 hover:bg-slate-800/50'
                 }
-                ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : ''}
             `}
         >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg transition-transform group-hover:scale-110 ${color}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg transition-transform group-hover:scale-110 ${color} ${!connected ? 'opacity-80' : ''}`}>
                 {icon}
             </div>
             <div className="text-sm font-bold text-white">{label}</div>
             
             {!connected && (
-                <div className="text-[10px] text-slate-500 bg-slate-950/50 px-2 py-0.5 rounded-full">未連携</div>
+                <div className="flex flex-col gap-1 items-center">
+                   <div className="text-[10px] text-slate-400 bg-slate-950/50 px-2 py-0.5 rounded-full">未連携</div>
+                </div>
             )}
             
-            {checked && (
-                <div className="absolute top-2 right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-lg shadow-green-500/50">✓</div>
-            )}
+            {/* Explicit Checkbox UI */}
+            <div className={`
+                absolute top-2 right-2 w-6 h-6 rounded-md border flex items-center justify-center transition-all
+                ${checked ? 'bg-green-500 border-green-500' : 'bg-slate-800 border-slate-600'}
+            `}>
+                {checked && <span className="text-white text-sm font-bold">✓</span>}
+            </div>
         </div>
     );
 }
