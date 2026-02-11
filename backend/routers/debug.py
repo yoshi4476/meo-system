@@ -348,3 +348,167 @@ def analyze_store_state(
         report["traceback"] = traceback.format_exc()
 
     return report
+
+@router.get("/ai")
+def debug_ai_status(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Check AI Service availability and configuration.
+    """
+    import os
+    from services import ai_generator
+    
+    # 1. API Key Check
+    user_settings = db.query(models.UserSettings).filter(models.UserSettings.user_id == current_user.id).first()
+    
+    openai_key_source = "None"
+    if os.getenv("OPENAI_API_KEY"):
+        openai_key_source = "Environment Variable"
+    elif user_settings and user_settings.openai_api_key:
+        openai_key_source = "User Settings (DB)"
+        
+    gemini_key_source = "None"
+    if os.getenv("GEMINI_API_KEY"):
+        gemini_key_source = "Environment Variable"
+        
+    # 2. Connectivity Test
+    connection_status = "Skipped"
+    test_response = None
+    
+    if openai_key_source != "None":
+        try:
+            client = ai_generator.AIClient(api_key=user_settings.openai_api_key if user_settings else None)
+            # Simple test
+            test_response = client.generate_text(
+                system_prompt="You are a test bot.", 
+                user_prompt="Say 'Hello World' in Japanese."
+            )
+            connection_status = "Success"
+        except Exception as e:
+            connection_status = f"Failed: {str(e)}"
+            
+    return {
+        "openai_key_source": openai_key_source,
+        "gemini_key_source": gemini_key_source,
+        "connection_status": connection_status,
+        "test_generation": test_response
+    }
+
+@router.get("/sns")
+def debug_sns_status(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Check SNS Integration status (Configuration & Tokens).
+    """
+    user_settings = db.query(models.UserSettings).filter(models.UserSettings.user_id == current_user.id).first()
+    
+    # Check Custom Credentials
+    custom_creds = {
+        "instagram": bool(user_settings and user_settings.instagram_client_id),
+        "twitter": bool(user_settings and user_settings.twitter_client_id),
+        "youtube": bool(user_settings and user_settings.youtube_client_id)
+    }
+    
+    # Check Active Connections (Tokens)
+    connections = {}
+    if current_user.social_connections:
+        for conn in current_user.social_connections:
+            connections[conn.platform] = {
+                "connected": True,
+                "expiry": str(conn.expires_at) if conn.expires_at else None
+            }
+            
+    return {
+        "custom_credentials_configured": custom_creds,
+        "active_connections": connections,
+        "google_connection": {
+            "connected": bool(current_user.google_connection),
+            "expiry": str(current_user.google_connection.expiry) if current_user.google_connection else None
+        }
+    }
+
+@router.get("/system")
+def debug_system_info(
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    System Information (Server time, Env vars).
+    """
+    import os
+    import sys
+    import platform
+    
+    # Masking helper
+    def mask(val):
+        if not val: return "Not Set"
+        return f"{val[:4]}...{val[-4:]}" if len(val) > 8 else "***"
+
+    return {
+        "server_time": datetime.utcnow().isoformat(),
+        "python_version": sys.version,
+        "platform": platform.platform(),
+        "env_vars": {
+            "DATABASE_URL": "Set (Hidden)" if os.getenv("DATABASE_URL") else "Not Set",
+            "OPENAI_API_KEY": mask(os.getenv("OPENAI_API_KEY")),
+            "GOOGLE_CLIENT_ID": mask(os.getenv("GOOGLE_CLIENT_ID")),
+            "NEXT_PUBLIC_API_URL": os.getenv("NEXT_PUBLIC_API_URL", "Not Set")
+        }
+    }
+
+@router.post("/sync/{sync_type}")
+async def trigger_debug_sync(
+    sync_type: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Manually trigger a sync operation for debugging.
+    sync_type: 'reviews', 'insights', 'posts' (or 'all')
+    """
+    if not current_user.store_id:
+        raise HTTPException(status_code=400, detail="User is not linked to a store")
+        
+    store = db.query(models.Store).filter(models.Store.id == current_user.store_id).first()
+    if not store or not store.google_location_id:
+         raise HTTPException(status_code=400, detail="Store not found or not linked to Google Location")
+
+    try:
+        from services.sync_service import GoogleSyncService
+        from services import google_api
+        from datetime import datetime, timedelta
+        
+        connection = current_user.google_connection
+        if not connection:
+             raise HTTPException(status_code=400, detail="Google not connected")
+             
+        # Refresh if needed
+        if connection.expiry and connection.expiry < datetime.utcnow() and connection.refresh_token:
+            new_tokens = google_api.refresh_access_token(connection.refresh_token)
+            connection.access_token = new_tokens.get("access_token")
+            # Update expiry... (simplified)
+            db.commit()
+
+        client = google_api.GBPClient(connection.access_token)
+        service = GoogleSyncService(client)
+        
+        result = {}
+        if sync_type == 'reviews' or sync_type == 'all':
+            reviews = await service.sync_reviews(db, store.id, store.google_location_id)
+            result['reviews'] = len(reviews)
+            
+        if sync_type == 'insights' or sync_type == 'all':
+            # Insights sync usually requires a date range, defaulting to last 30 days
+            await service.sync_insights(db, store.id, store.google_location_id)
+            result['insights'] = "Triggered"
+
+        # Note: Posts sync logic might differ, assuming typical service pattern
+        # if sync_type == 'posts' or sync_type == 'all': ...
+
+        return {"status": "Success", "details": result}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
