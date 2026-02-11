@@ -30,18 +30,18 @@ export default function UsageManualPage() {
 
       <div className="space-y-16 pb-20">
         
-        {/* ■ 1. 初期設定（Google連携） */}
+        {/* ■ 1. 初期設定（Google連携・SNS連携） */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/30">1</div>
-                <h2 className="text-2xl font-bold text-white">初期設定：Googleアカウント連携</h2>
+                <h2 className="text-2xl font-bold text-white">初期設定：アカウント連携</h2>
           </div>
 
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
             <div className="flex flex-col md:flex-row gap-8 items-center">
                 <div className="flex-1 space-y-4">
                     <p className="text-slate-300 leading-relaxed">
-                        MEO Mastermind AIを利用するには、まずあなたのGoogleビジネスプロフィールを管理しているGoogleアカウントと連携する必要があります。
+                        MEO Mastermind AIをフル活用するために、まずはGoogleビジネスプロフィールおよび各SNSアカウントをシステムと連携させます。
                     </p>
                     
                     <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4">
@@ -50,9 +50,9 @@ export default function UsageManualPage() {
                         </h4>
                         <ol className="list-decimal list-inside text-slate-300 space-y-2 text-sm">
                             <li>サイドメニューの「<span className="text-white font-bold">設定</span>」をクリックします。</li>
-                            <li>「<span className="text-white font-bold">Googleアカウント連携</span>」セクションを探します。</li>
-                            <li>「<span className="bg-white text-black px-2 py-0.5 rounded text-xs font-bold">G</span> 連携する」ボタンをクリックします。</li>
-                            <li>Googleの認証画面が表示されるので、店舗を管理しているアカウントでログインし、権限を許可してください。</li>
+                            <li>「<span className="text-white font-bold">Googleアカウント連携</span>」で「連携する」ボタンを押し、Google認証を行います。</li>
+                            <li>「<span className="text-white font-bold">ソーシャルメディア連携</span>」セクションへ移動します。</li>
+                            <li>Instagram, X (旧Twitter), YouTube の各「連携」ボタンを押し、認証を完了させます。</li>
                         </ol>
                     </div>
 
@@ -61,19 +61,9 @@ export default function UsageManualPage() {
                              重要：店舗の選択
                         </h4>
                         <p className="text-sm text-slate-300">
-                            連携が完了すると、管理可能な店舗の一覧が表示されます。<br/>
+                            Google連携後、管理可能な店舗の一覧が表示されます。<br/>
                             <span className="text-white font-bold">操作したい店舗を選択して「保存」</span>を押してください。<br/>
                             これを行わないと、ダッシュボードにデータが表示されません。
-                        </p>
-                    </div>
-
-                    <div className="bg-pink-900/20 border border-pink-500/30 rounded-xl p-4 mt-4">
-                        <h4 className="font-bold text-pink-300 mb-2 flex items-center gap-2">
-                             SNS連携（Instagram / X / YouTube）
-                        </h4>
-                        <p className="text-sm text-slate-300">
-                            「設定」ページでは、Google以外のSNSアカウントも連携できます。<br/>
-                            「AI投稿スタジオ」で一括投稿するために、事前に各プラットフォームの「連携する」ボタンから接続を行ってください。
                         </p>
                     </div>
                 </div>
@@ -199,32 +189,31 @@ export default function UsageManualPage() {
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
             <p className="text-slate-300">
-                Googleビジネスプロフィールだけでなく、Instagram、X (旧Twitter)、YouTube Shortsへも一括で投稿できます。<br/>
-                AIが魅力的な文章を自動生成し、X向けの要約も自動で行います。
+                Googleビジネスプロフィール、Instagram、X (旧Twitter)、YouTube Shortsへ一括投稿できる強力なツールです。<br/>
+                投稿管理画面右上の「+ 新規投稿を作成」からアクセスできます。
             </p>
             
             <div className="space-y-4">
-                <h3 className="font-bold text-white text-lg">投稿の手順</h3>
+                <h3 className="font-bold text-white text-lg">基本ステップ</h3>
                 <ol className="list-decimal list-inside text-slate-300 space-y-4 ml-2">
                     <li className="pl-2">
                         <strong className="text-white block mb-1">投稿先の選択</strong>
-                        投稿したいプラットフォームにチェックを入れます。<br/>
-                        <span className="text-xs text-slate-400">※ Instagramなどを利用するには、事前に「設定」画面で連携が必要です。</span>
+                        画面上部のアイコン（Google, Instagram, X, YouTube）をクリックして選択します。<br/>
+                        <span className="text-xs text-yellow-400">※ 未連携のアイコンはここからは選択できません。「設定」画面で連携してください。</span>
                     </li>
                     <li className="pl-2">
-                        <strong className="text-white block mb-1">AIコンテンツ生成</strong>
-                        キーワード（例：「春のランチ」）とトーン（例：「親しみやすく」）を選択し、「AIで文章を自動生成」ボタンを押します。<br/>
-                        数秒で各プラットフォームに最適な文章が生成されます。
+                        <strong className="text-white block mb-1">コンテンツの作成</strong>
+                        キーワードを入力して「AI生成」を押すと、各SNSに最適化された文章が生成されます。<br/>
+                        <span className="text-xs text-slate-400">例：X向けには140文字以内で、ハッシュタグも自動調整されます。</span>
                     </li>
                     <li className="pl-2">
-                        <strong className="text-white block mb-1">メディアのアップロード</strong>
-                        写真や動画をアップロードします。<br/>
-                        <span className="text-xs text-yellow-400">※ YouTube Shortsには動画ファイルが必須です。</span>
+                        <strong className="text-white block mb-1">メディアの追加</strong>
+                        写真または動画をアップロードします。<br/>
+                        <span className="text-xs text-pink-400">※ Instagramは写真必須、YouTube Shortsは動画必須です。</span>
                     </li>
                     <li className="pl-2">
-                        <strong className="text-white block mb-1">投稿または予約</strong>
-                        「今すぐ投稿」ですぐに公開するか、「予約投稿する」にチェックを入れて日時を指定します。<br/>
-                        指定した日時に全プラットフォームへ一斉に投稿されます。
+                        <strong className="text-white block mb-1">公開または予約</strong>
+                        「今すぐ投稿」で即時公開、または日時指定で予約投稿が可能です。
                     </li>
                 </ol>
             </div>
