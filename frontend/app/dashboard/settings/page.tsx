@@ -1,9 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useDashboard } from '../../../contexts/DashboardContext';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
   const { userInfo, refreshUser, isDemoMode } = useDashboard();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   
   const [notifications, setNotifications] = useState({
     reviews: true,
@@ -18,9 +21,79 @@ export default function SettingsPage() {
   });
 
   // Derived state from global userInfo
+  // We also need local state for immediate feedback after connecting
+  const [localConnections, setLocalConnections] = useState<any>({});
+
   const connectionStatus = {
     google: (isDemoMode || userInfo?.is_google_connected) ? 'connected' : 'disconnected',
-    openai: (isDemoMode || apiKeys.openai) ? 'connected' : 'disconnected'
+    openai: (isDemoMode || apiKeys.openai) ? 'connected' : 'disconnected',
+    instagram: localConnections.instagram?.connected ? 'connected' : 'disconnected',
+    twitter: localConnections.twitter?.connected ? 'connected' : 'disconnected',
+    youtube: localConnections.youtube?.connected ? 'connected' : 'disconnected'
+  };
+
+  // Check for Social Auth Callback
+  useEffect(() => {
+    const platform = searchParams.get('platform');
+    const code = searchParams.get('code');
+    
+    if (platform && code) {
+        handleSocialCallback(platform, code);
+    }
+  }, [searchParams]);
+
+  const handleSocialCallback = async (platform: string, code: string) => {
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          // Clean URL
+          router.replace('/dashboard/settings');
+          
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/social/callback/${platform}?code=${code}`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (res.ok) {
+              alert(`${platform} と連携しました！`);
+              fetchSocialStatus(); // Refresh status
+          } else {
+              alert(`連携に失敗しました: ${await res.text()}`);
+          }
+      } catch (e) {
+          console.error(e);
+          alert('連携処理中にエラーが発生しました');
+      }
+  };
+
+  // Fetch Connection Status on Mount
+  useEffect(() => {
+      if (userInfo) {
+          fetchSocialStatus();
+      }
+  }, [userInfo]);
+
+  const fetchSocialStatus = async () => {
+      if (isDemoMode) {
+          setLocalConnections({
+              instagram: { connected: true },
+              twitter: { connected: true },
+              youtube: { connected: true }
+          });
+          return;
+      }
+
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/social/status`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+              const data = await res.json();
+              setLocalConnections(data);
+          }
+      } catch (e) {
+          console.error("Failed to fetch social status", e);
+      }
   };
 
   // 店舗選択用

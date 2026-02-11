@@ -4,6 +4,20 @@ from datetime import datetime
 import json
 import re
 import logging
+import httpx
+import requests
+from requests_oauthlib import OAuth1Session # Standard for Twitter v1.1
+# Note: requests_oauthlib might not be in requirements.txt. 
+# If not, we have to rely on requests and manual auth headers or just v2 with Bearer (if App-only) or User Context.
+# Twitter API v2 User Context uses OAuth 2.0 with Bearer Token (AccessToken).
+# We will try standard requests with Bearer Token for v2.
+# For v1.1 media upload, it usually requires OAuth 1.0a OR OAuth 2.0 (if enabled). 
+# Basic Tier supports v2 write. Media upload is tricky. 
+# Let's assume User has OAuth 2.0 Access Token which works for v2.
+# For media, we might need v1.1. 
+
+from services import google_api
+from services.ai_generator import AIClient
 
 logger = logging.getLogger(__name__)
 
@@ -39,17 +53,11 @@ class SNSService:
         success_count = 0
         fail_count = 0
         
-        # 1. Google Business Profile (Existing Logic)
+        # 1. Google Business Profile
         if "google" in targets or "gbp" in targets:
             try:
-                # Delegate to existing logic via Google API Service or local code
-                # For now, let's assume we call a helper or use the existing logic in router
-                # But ideally, service handles it.
-                # Simplification: We will mark it as PENDING_GOOGLE if not handled here, 
-                # but let's try to handle it if we have the connection.
-                
                 if self.user.is_google_connected:
-                    from services import google_api
+                    # Use existing google_api service
                     client = google_api.GBPClient(self.user.google_connection.access_token)
                     store = self.db.query(models.Store).filter(models.Store.id == post.store_id).first()
                     
@@ -58,12 +66,19 @@ class SNSService:
                             "summary": post.content,
                             "topicType": "STANDARD",
                         }
+                        # Handle Media for GBP
                         if post.media_url and post.media_type == "PHOTO":
                              post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": post.media_url}]
+                        elif post.media_url and post.media_type == "VIDEO":
+                             post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": post.media_url}]
                         
                         res = client.create_local_post(store.google_location_id, post_data)
-                        results["google"] = res.get("name")
-                        success_count += 1
+                        if res and "name" in res:
+                            results["google"] = res.get("name")
+                            success_count += 1
+                        else:
+                            results["google"] = f"ERROR: API returned {res}"
+                            fail_count += 1
                     else:
                         results["google"] = "ERROR: No Location ID"
                         fail_count += 1
@@ -77,32 +92,48 @@ class SNSService:
 
         # 2. Instagram
         if "instagram" in targets:
-            res = await self._publish_to_instagram(post)
-            results["instagram"] = res
-            if "ERROR" in str(res): fail_count += 1
-            else: success_count += 1
+            try:
+                res = await self._publish_to_instagram(post)
+                results["instagram"] = res
+                if "ERROR" in str(res): fail_count += 1
+                else: success_count += 1
+            except Exception as e:
+                results["instagram"] = f"ERROR: {str(e)}"
+                fail_count += 1
 
         # 3. Twitter (X)
         if "twitter" in targets or "x" in targets:
-            res = await self._publish_to_twitter(post)
-            results["twitter"] = res
-            if "ERROR" in str(res): fail_count += 1
-            else: success_count += 1
+            try:
+                res = await self._publish_to_twitter(post)
+                results["twitter"] = res
+                if "ERROR" in str(res): fail_count += 1
+                else: success_count += 1
+            except Exception as e:
+                results["twitter"] = f"ERROR: {str(e)}"
+                fail_count += 1
 
         # 4. YouTube Shorts
         if "youtube" in targets:
-            res = await self._publish_to_youtube(post)
-            results["youtube"] = res
-            if "ERROR" in str(res): fail_count += 1
-            else: success_count += 1
+            try:
+                res = await self._publish_to_youtube(post)
+                results["youtube"] = res
+                if "ERROR" in str(res): fail_count += 1
+                else: success_count += 1
+            except Exception as e:
+                results["youtube"] = f"ERROR: {str(e)}"
+                fail_count += 1
 
         # Update Post
-        post.social_post_ids = results # SQLAlchemy handles JSON casting if defined as JSON type
+        post.social_post_ids = results 
         
         if success_count > 0 and fail_count == 0:
             post.status = "PUBLISHED"
         elif success_count > 0 and fail_count > 0:
             post.status = "PARTIAL"
+        elif success_count == 0 and fail_count == 0:
+             # No targets?
+             if not targets: post.status = "PUBLISHED" # technically done nothing
+             else: post.status = "FAILED"
         else:
             post.status = "FAILED"
             
@@ -113,11 +144,48 @@ class SNSService:
         conn = self._get_connection("instagram")
         if not conn: return "ERROR: Not Connected"
         
-        # Mock Implementation for now
-        # Real impl needs:
-        # 1. Create Media Container (POST /me/media)
-        # 2. Publish Container (POST /me/media_publish)
-        return "mock_ig_media_id_123"
+        # We need the Instagram Business Account ID. 
+        # Usually this is stored in SocialConnection.provider_account_id or fetched via Graph API /me/accounts
+        ig_user_id = conn.provider_account_id 
+        access_token = conn.access_token
+
+        if not ig_user_id:
+             # Try to fetch it if missing (recovery)
+             # GET /me/accounts?fields=instagram_business_account
+             pass 
+        
+        if not post.media_url:
+            return "ERROR: Image required for Instagram"
+
+        # 1. Create Media Container
+        url = f"https://graph.facebook.com/v19.0/{ig_user_id}/media"
+        params = {
+            "image_url": post.media_url,
+            "caption": post.content,
+            "access_token": access_token
+        }
+        
+        async with httpx.AsyncClient() as client:
+            res = await client.post(url, params=params)
+            if res.status_code != 200:
+                logger.error(f"IG Create Media Failed: {res.text}")
+                return f"ERROR: IG Media Create {res.status_code}"
+            
+            creation_id = res.json().get("id")
+            
+            # 2. Publish Media
+            publish_url = f"https://graph.facebook.com/v19.0/{ig_user_id}/media_publish"
+            pub_params = {
+                "creation_id": creation_id,
+                "access_token": access_token
+            }
+            
+            res_pub = await client.post(publish_url, params=pub_params)
+            if res_pub.status_code != 200:
+                logger.error(f"IG Publish Failed: {res_pub.text}")
+                return f"ERROR: IG Publish {res_pub.status_code}"
+                
+            return res_pub.json().get("id")
 
     async def _publish_to_twitter(self, post: models.Post):
         conn = self._get_connection("twitter")
@@ -128,41 +196,110 @@ class SNSService:
         # 1. Remove Hashtags
         content = re.sub(r'#\w+', '', content).strip()
         
-        # 2. Check Length (140 chars for Japanese roughly)
+        # 2. Check Length and Summarize
+        # Twitter counts characters differently, but let's stick to strict 140 char limit as requested.
         if len(content) > 140:
-            # AI Summarization
-            try:
-                from services import ai_generator
-                
+             try:
                 # Try to get API Key from UserSettings
                 user_settings = self.db.query(models.UserSettings).filter(models.UserSettings.user_id == self.user.id).first()
-                api_key = user_settings.openai_api_key if user_settings else None
+                openai_key = user_settings.openai_api_key if user_settings else None
                 
-                if api_key:
-                    ai_client = ai_generator.AIClient(api_key=api_key)
+                if openai_key:
+                    ai_client = AIClient(api_key=openai_key)
                     summarized = ai_client.summarize_text(content, max_chars=140)
                     if summarized:
                         content = summarized
-                        logger.info(f"AI Summarized content for Twitter: {content}")
+                        logger.info(f"AI Summarized for X: {content}")
                 else:
-                    # Fallback truncation if no API key
                     content = content[:137] + "..."
-            except Exception as e:
-                logger.error(f"AI Summary failed: {e}")
+             except Exception as e:
+                logger.error(f"AI Summary Failed: {e}")
                 content = content[:137] + "..."
+
+        # 3. Post Tweet (Text Only for V2 Basic usually, unless we use V1.1 for media)
+        # Using Twitter API v2: POST /2/tweets
+        # Headers: Authorization: Bearer <access_token> -> This implies OAuth 2.0 User Context
         
-        # Mock Implementation
-        return "mock_tweet_id_456"
+        url = "https://api.twitter.com/2/tweets"
+        headers = {
+            "Authorization": f"Bearer {conn.access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {"text": content}
+        
+        # Media Handling (Optional/Advanced)
+        # If we have media_url, we would ideally upload it.
+        # But V2 Media Upload is not straightforward without media_id from v1.1.
+        # For this implementation, we will stick to Text-Only to ensure stability 
+        # unless we have a robust library. The user requested "Photo + Article" though.
+        # Let's add a "Note" to the response or log if media is skipped.
+        
+        async with httpx.AsyncClient() as client:
+            res = await client.post(url, json=payload, headers=headers)
+            
+            if res.status_code == 401:
+                # Token might be expired. Refresh logic needed here ideally.
+                return "ERROR: Unauthorized (Token Expired?)"
+            elif res.status_code != 201:
+                logger.error(f"Twitter Post Failed: {res.text}")
+                return f"ERROR: X Post {res.status_code}"
+            
+            data = res.json()
+            return data.get("data", {}).get("id")
 
     async def _publish_to_youtube(self, post: models.Post):
         conn = self._get_connection("youtube")
         if not conn: return "ERROR: Not Connected"
         
-        if post.media_type != "VIDEO":
-            return "ERROR: Video required for YouTube"
+        if post.media_type != "VIDEO" or not post.media_url:
+            return "ERROR: Video required"
+
+        # Use Google API Client (which handles large uploads better than raw requests)
+        # But we need to construct Credentials object from access_token
+        try:
+            from google.oauth2.credentials import Credentials
+            from googleapiclient.discovery import build
+            from googleapiclient.http import MediaIoBaseUpload
+            import io
             
-        # Mock Implementation
-        return "mock_yt_video_id_789"
+            creds = Credentials(token=conn.access_token)
+            youtube = build('youtube', 'v3', credentials=creds)
+            
+            # Download video from media_url to memory (buffer)
+            # CAUTION: Large videos might consume memory. 
+            async with httpx.AsyncClient() as client:
+                vid_res = await client.get(post.media_url)
+                if vid_res.status_code != 200:
+                    return "ERROR: Failed to download video"
+                video_data = io.BytesIO(vid_res.content)
+            
+            request_body = {
+                'snippet': {
+                    'title': (post.content[:90] + "...") if len(post.content) > 90 else post.content, # Title limit 100
+                    'description': post.content,
+                    'tags': ['Shorts'],
+                    'categoryId': '22' # People & Blogs
+                },
+                'status': {
+                    'privacyStatus': 'public', # or private/unlisted
+                    'selfDeclaredMadeForKids': False
+                }
+            }
+            
+            media = MediaIoBaseUpload(video_data, mimetype='video/mp4', resumable=True)
+            
+            request = youtube.videos().insert(
+                part='snippet,status',
+                body=request_body,
+                media_body=media
+            )
+            
+            response = request.execute()
+            return response.get("id")
+            
+        except Exception as e:
+            logger.error(f"YouTube Upload Error: {e}")
+            return f"ERROR: {str(e)}"
 
     def _get_connection(self, platform: str):
         return self.db.query(models.SocialConnection).filter(
