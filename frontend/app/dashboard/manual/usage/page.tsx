@@ -193,63 +193,46 @@ export default function UsageManualPage() {
                 投稿管理画面右上の「+ 新規投稿を作成」からアクセスできます。
             </p>
             
-            <div className="space-y-4">
-                <h3 className="font-bold text-white text-lg">基本ステップ</h3>
-                <ol className="list-decimal list-inside text-slate-300 space-y-4 ml-2">
-                    <li className="pl-2">
-                        <strong className="text-white block mb-1">投稿先の選択</strong>
-                        画面上部のアイコン（Google, Instagram, X, YouTube）をクリックして選択します。<br/>
-                        <span className="text-xs text-yellow-400">※ 未連携のアイコンはここからは選択できません。「設定」画面で連携してください。</span>
-                    </li>
-                    <li className="pl-2">
-                        <strong className="text-white block mb-1">コンテンツの作成</strong>
-                        キーワードを入力して「AI生成」を押すと、各SNSに最適化された文章が生成されます。<br/>
-                        <span className="text-xs text-slate-400">例：X向けには140文字以内で、ハッシュタグも自動調整されます。</span>
-                    </li>
-                    <li className="pl-2">
-                        <strong className="text-white block mb-1">メディアの追加</strong>
-                        写真または動画をアップロードします。<br/>
-                        <span className="text-xs text-pink-400">※ Instagramは写真必須、YouTube Shortsは動画必須です。</span>
-                    </li>
-                    <li className="pl-2">
-                        <strong className="text-white block mb-1">公開または予約</strong>
-                        「今すぐ投稿」で即時公開、または日時指定で予約投稿が可能です。
-                    </li>
-                </ol>
+            <div className="space-y-6">
+                <div>
+                    <h3 className="font-bold text-white text-lg mb-3">基本ステップ</h3>
+                    <ol className="list-decimal list-inside text-slate-300 space-y-4 ml-2">
+                        <li className="pl-2">
+                            <strong className="text-white block mb-1">投稿先の選択</strong>
+                            画面上部のアイコン（Google, Instagram, X, YouTube）をクリックして選択します。<br/>
+                            <span className="text-xs text-yellow-400">※ 未連携のアイコンはここからは選択できません。「設定」画面で連携してください。</span>
+                        </li>
+                        <li className="pl-2">
+                            <strong className="text-white block mb-1">コンテンツの作成（AI活用）</strong>
+                            <div className="bg-slate-900/50 p-4 rounded-lg mt-2 space-y-2 border border-blue-500/20">
+                                <p><span className="text-blue-400 font-bold">キーワード:</span> 投稿のテーマとなる単語を入力します（例：「忘年会」「個室」「飲み放題」）。</p>
+                                <p><span className="text-blue-400 font-bold">キーワード地域:</span> ターゲットとする地名を入力します（例：「新宿」「歌舞伎町」）。AIが文章内に自然に地名を盛り込み、MEO効果を高めます。</p>
+                                <p><span className="text-blue-400 font-bold">文字数:</span> SNSに合わせて長さを調整できます。Instagramなら「普通〜長め」、Xなら「短め」がおすすめです。</p>
+                            </div>
+                        </li>
+                        <li className="pl-2">
+                            <strong className="text-white block mb-1">メディアの追加</strong>
+                            <p className="mb-2">写真または動画をアップロードします。<span className="text-xs text-pink-400">※ Instagramは写真必須、YouTube Shortsは動画必須です。</span></p>
+                            <div className="flex gap-2">
+                                <span className="text-xs bg-slate-700 px-2 py-1 rounded">PCからアップロード</span>
+                                <span className="text-xs bg-slate-700 px-2 py-1 rounded">過去の投稿画像から選択</span>
+                                <span className="text-xs bg-slate-700 px-2 py-1 rounded">写真管理から選択</span>
+                            </div>
+                        </li>
+                        <li className="pl-2">
+                            <strong className="text-white block mb-1">公開または予約</strong>
+                            「今すぐ投稿」で即時公開、または日時指定で予約投稿が可能です。
+                        </li>
+                    </ol>
+                </div>
             </div>
           </div>
         </section>
 
-        {/* ■ 4. 店舗情報管理 */}
+        {/* ■ 4. 複数店舗管理 */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
                <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">4</div>
-               <h2 className="text-2xl font-bold text-white">店舗情報の編集・同期</h2>
-          </div>
-          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
-            <p className="text-slate-300">
-                営業時間や住所、電話番号の変更があった場合、ここから編集してGoogleに即時反映できます。
-            </p>
-            <div className="space-y-4">
-                <h3 className="font-bold text-white">Googleからの同期（インポート）</h3>
-                <p className="text-sm text-slate-400">
-                    Googleマップ側で直接変更した場合や、情報が最新でないと感じる場合は、プロフィール画面右上の「Googleから最新情報を同期」ボタンを押してください。<br/>
-                    住所、営業時間、属性情報などが再取得され、システムに反映されます。
-                </p>
-                
-                <h3 className="font-bold text-white mt-4">Googleへの反映（エクスポート）</h3>
-                <p className="text-sm text-slate-400">
-                    画面上のフォームで情報を編集し、「保存してGoogleに反映」ボタンを押すと、Googleビジネスプロフィールの情報が書き換わります。<br/>
-                    <span className="text-xs text-orange-400">※ 反映には数分かかる場合があります。また、大幅な変更（店名変更など）はGoogleの審査が入ることがあります。</span>
-                </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ■ 5. 複数店舗管理 */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">5</div>
                <h2 className="text-2xl font-bold text-white">複数店舗の管理</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
@@ -266,21 +249,14 @@ export default function UsageManualPage() {
                         <li>操作したい店舗をクリックすると、ダッシュボードの内容が瞬時にその店舗のものに切り替わります。</li>
                     </ol>
                 </div>
-                <div className="flex-1 bg-slate-900/50 p-5 rounded-xl border border-white/5">
-                    <h4 className="font-bold text-white mb-2">一括管理機能（予定）</h4>
-                    <p className="text-sm text-slate-400">
-                        サイドバーの「一括管理」メニューからは、全店舗のパフォーマンス比較や、特定エリア単位での投稿一括作成などが可能になる予定です。<br/>
-                        <span className="text-xs text-slate-500">※現在開発中の機能です。</span>
-                    </p>
-                </div>
             </div>
           </div>
         </section>
 
-        {/* ■ 6. ユーザー・店舗設定 */}
+        {/* ■ 5. ユーザー・店舗設定 */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">6</div>
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">5</div>
                <h2 className="text-2xl font-bold text-white">ユーザー・店舗管理（管理者向け）</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">

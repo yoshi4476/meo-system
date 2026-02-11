@@ -8,8 +8,8 @@ export default function MeoGuidePage() {
           MEO対策 パーフェクトガイド
         </h1>
         <p className="text-slate-400 max-w-2xl mx-auto">
-          Googleマップで地域No.1を目指すための、具体的かつ実践的なノウハウ集。
-          今日から始める「勝つための習慣」を解説します。
+          Googleマップで地域No.1を目指すための、具体的かつ実践的なノウハウ集。<br/>
+          今日から始める「勝つための習慣」を徹底解説します。
         </p>
       </div>
 
@@ -47,38 +47,63 @@ export default function MeoGuidePage() {
                 <div className="text-5xl font-black text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-cyan-400 my-4">
                     週2〜3回以上
                 </div>
-                <p className="text-slate-400">これを下回ると、効果は半減します。</p>
+                <p className="text-slate-400">これを下回ると、MEO効果は得られにくいのが現実です。</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 mt-8">
                 <div className="bg-black/20 p-6 rounded-xl border border-white/5">
                     <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                        <span className="text-red-400">✖</span> ダメなパターン
+                        <span className="text-red-400">✖</span> やってはいけない運用
                     </h3>
-                    <ul className="space-y-3 text-slate-400">
-                        <li>気が向いた時に月1回だけ投稿</li>
-                        <li>完璧な写真を撮ろうとして更新が止まる</li>
-                        <li>毎回同じ「営業しています」だけの定型文</li>
+                    <ul className="space-y-3 text-slate-400 text-sm">
+                        <li>× 気が向いた時に月1回だけ長文を投稿する</li>
+                        <li>× プロのような完璧な写真を撮ろうとして更新が止まる</li>
+                        <li>× 毎回同じ「営業しています」だけの定型文</li>
+                        <li>× 年末年始やGWの休業情報を載せない</li>
                     </ul>
                 </div>
                 <div className="bg-emerald-500/10 p-6 rounded-xl border border-emerald-500/20">
                     <h3 className="text-lg font-bold text-emerald-300 mb-3 flex items-center gap-2">
-                        <span className="text-emerald-400">◎</span> 勝てるパターン
+                        <span className="text-emerald-400">◎</span> 勝てる運用パターン
                     </h3>
-                    <ul className="space-y-3 text-slate-200">
-                        <li className="font-bold text-white">週2〜3回、できれば毎日投稿する</li>
-                        <li>スマホ写真でOK！リアルな日常を見せる</li>
-                        <li>「雨の日はポイント2倍」などリアルタイムな情報</li>
+                    <ul className="space-y-3 text-slate-200 text-sm">
+                        <li className="font-bold text-white">○ 短くてもいいので、週2〜3回更新する</li>
+                        <li>○ スマホ写真でOK！リアルな日常を見せる</li>
+                        <li>○ 「雨の日はポイント2倍」などリアルタイムな情報</li>
+                        <li>○ 季節限定メニューや新商品の裏側を見せる</li>
                     </ul>
                 </div>
             </div>
 
-            <div className="mt-8 bg-slate-800 p-4 rounded-xl border border-white/10 text-center">
-                 <p className="text-slate-300">
-                    <span className="text-yellow-400 font-bold">💡 なぜ「多ければ多いほどいい」のか？</span><br/>
-                    Googleのアルゴリズムは「情報の鮮度」を極めて重視します。更新頻度が高い店舗は「ユーザーに有益な情報を提供している」と判断され、検索順位が優遇される傾向にあります。<br/>
-                    <span className="text-sm mt-2 block text-slate-500">（SEOにおけるブログ更新と同じ原理です）</span>
-                 </p>
+            {/* 投稿ネタ帳 */}
+            <div className="mt-8 bg-slate-800/80 p-6 rounded-xl border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4">📝 何を書けばいいか迷ったら？「投稿ネタ帳」</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-slate-900 p-4 rounded-lg">
+                        <h4 className="text-emerald-400 font-bold mb-2">商品・サービス</h4>
+                        <ul className="text-slate-400 text-xs space-y-2">
+                            <li>・新メニューの試作風景</li>
+                            <li>・一番人気メニューのこだわり</li>
+                            <li>・、まかない料理の紹介</li>
+                        </ul>
+                    </div>
+                    <div className="bg-slate-900 p-4 rounded-lg">
+                        <h4 className="text-blue-400 font-bold mb-2">人・雰囲気</h4>
+                        <ul className="text-slate-400 text-xs space-y-2">
+                            <li>・スタッフの笑顔や自己紹介</li>
+                            <li>・店内の活気ある様子</li>
+                            <li>・お客様からの頂き物</li>
+                        </ul>
+                    </div>
+                    <div className="bg-slate-900 p-4 rounded-lg">
+                        <h4 className="text-purple-400 font-bold mb-2">知識・お役立ち</h4>
+                        <ul className="text-slate-400 text-xs space-y-2">
+                            <li>・自宅でできるプロのコツ</li>
+                            <li>・業界の裏話や豆知識</li>
+                            <li>・周辺のおすすめスポット</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
           </div>
         </section>
@@ -92,18 +117,41 @@ export default function MeoGuidePage() {
                 <h3 className="text-xl font-bold text-white mb-3">数を集める技術</h3>
                 <ul className="list-disc list-inside space-y-3 text-slate-300">
                     <li>会計時の一言「Googleで応援コメントいただけると嬉しいです」が最強。</li>
-                    <li>QRコードをテーブルやレジ横に設置する（手間を省く）。</li>
-                    <li><span className="text-red-400">禁止事項:</span> 割引やサービスの対価としてクチコミを強要すること（インセンティブ禁止）。</li>
+                    <li>QRコードをテーブルやレジ横に設置する。</li>
+                    <li><span className="text-red-400">禁止事項:</span> 「クチコミでドリンク無料」などの対価提供（インセンティブ）はGoogleの規約で厳しく禁止されています。</li>
                 </ul>
              </div>
              <div className="bg-slate-800/50 p-6 rounded-2xl border border-white/5">
                 <h3 className="text-xl font-bold text-white mb-3">返信の鉄則</h3>
                 <ul className="list-disc list-inside space-y-3 text-slate-300">
                     <li><strong className="text-emerald-400">全件返信</strong>が基本です。★のみの評価にも返信しましょう。</li>
-                    <li><strong className="text-emerald-400">キーワードを入れる</strong>。「ランチのご利用ありがとうございます」「個室はいかがでしたか？」など、検索されたいワードを自然に盛り込むのが高等テクニックです。</li>
-                    <li>当システムのAI自動返信を使えば、この最適化を自動で行えます。</li>
+                    <li><strong className="text-emerald-400">2日以内</strong>に返信するスピード感が信頼を生みます。</li>
+                    <li><strong className="text-emerald-400">キーワードを入れる</strong>。「ランチのご利用ありがとうございます」など、検索されたいワードを自然に盛り込むのが高等テクニックです。</li>
                 </ul>
              </div>
+          </div>
+          
+          {/* 返信テンプレート */}
+          <div className="mt-6 bg-slate-900/50 p-6 rounded-xl border border-white/10">
+              <h3 className="font-bold text-white mb-4">💬 そのまま使える！返信テンプレート</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                      <h4 className="text-emerald-400 text-sm font-bold mb-2">良いクチコミへ</h4>
+                      <p className="text-xs text-slate-400 italic bg-black/20 p-3 rounded">
+                          「○○様、高評価ありがとうございます！<br/>
+                          今回召し上がっていただいた【メニュー名 in キーワード】は当店の看板商品です。<br/>
+                          またのご来店をスタッフ一同お待ちしております！」
+                      </p>
+                  </div>
+                  <div>
+                      <h4 className="text-red-400 text-sm font-bold mb-2">悪いクチコミへ（大人の対応）</h4>
+                      <p className="text-xs text-slate-400 italic bg-black/20 p-3 rounded">
+                          「○○様、この度は不快な思いをさせてしまい大変申し訳ございません。<br/>
+                          ご指摘いただいた【問題点】について、スタッフ全員で共有し改善に努めます。<br/>
+                          貴重なご意見をありがとうございました。」
+                      </p>
+                  </div>
+              </div>
           </div>
         </section>
 
@@ -113,13 +161,32 @@ export default function MeoGuidePage() {
            <h2 className="text-2xl font-bold text-white mb-6">4. 写真で選ばれるお店になる</h2>
            <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
              <p className="text-slate-300 text-lg">
-                人間が視覚から得る情報は8割以上と言われます。
+                人間が視覚から得る情報は8割以上と言われます。<br/>
                 メニュー名だけでは伝わらない魅力を、写真で伝えましょう。
              </p>
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+             
+             <div className="mt-6">
+                <h4 className="font-bold text-white mb-3">📷 スマホでプロっぽく撮る3つのコツ</h4>
+                <div className="grid md:grid-cols-3 gap-4">
+                    <div className="bg-slate-900 p-4 rounded-lg border border-white/5">
+                        <div className="text-yellow-400 font-bold mb-1">1. 自然光を使う</div>
+                        <p className="text-xs text-slate-400">フラッシュはNG。窓際の自然光で撮ると、料理が一番美味しそうに見えます。</p>
+                    </div>
+                    <div className="bg-slate-900 p-4 rounded-lg border border-white/5">
+                        <div className="text-yellow-400 font-bold mb-1">2. 寄って撮る（シズル感）</div>
+                        <p className="text-xs text-slate-400">お皿全体を入れる必要はありません。「肉の照り」や「湯気」に近づいて撮影しましょう。</p>
+                    </div>
+                    <div className="bg-slate-900 p-4 rounded-lg border border-white/5">
+                        <div className="text-yellow-400 font-bold mb-1">3. 斜め45度 vs 真上</div>
+                        <p className="text-xs text-slate-400">立体感を出したいなら斜め45度、おしゃれな配置を見せたいなら真上がおすすめです。</p>
+                    </div>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                  <div className="bg-slate-900 p-4 rounded-lg text-center border border-white/5">
                      <span className="block text-2xl mb-2">🥘</span>
-                     <span className="text-sm text-slate-300 font-bold">商品・メニュー</span>
+                     <span className="text-sm text-slate-300 font-bold">メニュー</span>
                  </div>
                  <div className="bg-slate-900 p-4 rounded-lg text-center border border-white/5">
                      <span className="block text-2xl mb-2">🪑</span>
@@ -134,8 +201,7 @@ export default function MeoGuidePage() {
                      <span className="text-sm text-slate-300 font-bold">スタッフ</span>
                  </div>
              </div>
-             <p className="text-slate-400 text-sm mt-4">
-                ※ ユーザー投稿の写真も重要ですが、オーナー投稿のきれいな写真は信頼感を高めます。<br/>
+             <p className="text-slate-400 text-sm mt-4 text-center">
                 ※ 投稿機能を使って、最低でも<strong className="text-white">月に10枚以上</strong>は新しい写真を追加し続けましょう。
              </p>
            </div>
@@ -144,9 +210,9 @@ export default function MeoGuidePage() {
         {/* 5. サイテーション（NAP情報）の統一 */}
         <section className="relative">
           <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
-           <h2 className="text-2xl font-bold text-white mb-6">5. 基礎中の基礎：NAPの統一</h2>
+           <h2 className="text-2xl font-bold text-white mb-6">5. 基礎中の基礎：NAPの統一とサイテーション</h2>
            <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
-             <div className="flex items-start gap-4">
+             <div className="flex flex-col md:flex-row items-start gap-8">
                 <div className="flex-1">
                     <p className="text-slate-300 mb-4">
                         Googleはインターネット上の情報を巡回し、あなたのお店の信頼性を判断しています。
@@ -169,7 +235,7 @@ export default function MeoGuidePage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex-1 bg-red-900/10 border border-red-500/20 p-4 rounded-xl">
+                <div className="flex-1 bg-red-900/10 border border-red-500/20 p-4 rounded-xl w-full">
                     <h4 className="font-bold text-red-300 mb-2 text-sm">よくある失敗例 (NG)</h4>
                     <ul className="space-y-2 text-sm text-slate-400">
                         <li>Google: 「お好み焼き オコノミ」</li>
@@ -179,9 +245,21 @@ export default function MeoGuidePage() {
                     </ul>
                 </div>
              </div>
-             <p className="text-emerald-400 font-bold text-center border-t border-white/10 pt-4">
-                HP、SNS、ポータルサイト（食べログ等）の表記を、Googleビジネスプロフィールの登録内容と完全に統一しましょう。
-             </p>
+
+             <div className="mt-6 pt-6 border-t border-white/10">
+                 <h3 className="font-bold text-white mb-3">🌐 無料で登録できるポータルサイト（サイテーション獲得）</h3>
+                 <p className="text-slate-400 text-sm mb-4">
+                     以下のサイトに店舗情報を登録する際は、必ずGoogleビジネスプロフィールと同じNAP情報を使用してください。これらはGoogleからの評価を高めます。
+                 </p>
+                 <div className="flex flex-wrap gap-2">
+                     <span className="bg-slate-700 px-3 py-1 rounded text-sm text-white">エキテン</span>
+                     <span className="bg-slate-700 px-3 py-1 rounded text-sm text-white">Retty</span>
+                     <span className="bg-slate-700 px-3 py-1 rounded text-sm text-white">Yahoo!プレイス</span>
+                     <span className="bg-slate-700 px-3 py-1 rounded text-sm text-white">TripAdvisor</span>
+                     <span className="bg-slate-700 px-3 py-1 rounded text-sm text-white">Facebookページ</span>
+                     <span className="bg-slate-700 px-3 py-1 rounded text-sm text-white">Instagramビジネス</span>
+                 </div>
+             </div>
            </div>
         </section>
 
@@ -235,7 +313,7 @@ export default function MeoGuidePage() {
                  </div>
 
                  <div className="flex items-center gap-4 bg-slate-900/30 p-4 rounded-xl border border-white/5">
-                    <div className="w-32 font-bold text-blue-400">閲覧表示が多いのに<br/>アクションが少ない</div>
+                    <div className="w-32 font-bold text-blue-400">閲覧が多いのに<br/>アクションが少ない</div>
                     <div className="text-slate-500">→</div>
                     <div className="flex-1 text-slate-300">
                         <strong className="text-white">魅力不足です。</strong><br/>
@@ -254,49 +332,24 @@ export default function MeoGuidePage() {
                  </div>
 
              </div>
-           </div>
-        </section>
-
-        {/* 8. キーワード選定の重要性 */}
-        <section className="relative">
-          <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
-           <h2 className="text-2xl font-bold text-white mb-6">8. 検索されるための「キーワード選定」</h2>
-           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
-             <p className="text-slate-300">
-                どれだけ良いお店でも、ユーザーが検索する言葉（キーワード）とマッチしていなければ表示されません。
-             </p>
-             <div className="bg-linear-to-br from-slate-900 to-slate-800 p-6 rounded-xl border border-white/5">
-                <h4 className="font-bold text-white mb-4">正しいキーワードの方程式</h4>
-                <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
-                    <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30 text-blue-300 font-bold">
-                        地域名 (Where)
-                    </div>
-                    <div className="text-slate-500">+</div>
-                    <div className="bg-emerald-900/30 p-3 rounded-lg border border-emerald-500/30 text-emerald-300 font-bold">
-                        業種 (What)
-                    </div>
-                    <div className="text-slate-500">+</div>
-                    <div className="bg-purple-900/30 p-3 rounded-lg border border-purple-500/30 text-purple-300 font-bold">
-                        目的・特徴 (Why/How)
-                    </div>
-                </div>
-                <div className="mt-4 bg-black/20 p-4 rounded-lg text-sm text-slate-400">
-                    <p className="mb-1"><strong className="text-white">例1:</strong> 「新宿 居酒屋 個室」</p>
-                    <p className="mb-1"><strong className="text-white">例2:</strong> 「大阪 美容院 髪質改善」</p>
-                    <p><strong className="text-white">例3:</strong> 「横浜 カフェ Wi-Fiあり」</p>
-                </div>
+             
+             {/* トラブルシューティング */}
+             <div className="mt-8 pt-6 border-t border-white/10">
+                 <h3 className="font-bold text-white mb-3">🆘 困ったときのトラブルシューティング</h3>
+                 <div className="bg-slate-900 p-4 rounded-xl">
+                     <p className="font-bold text-red-300 mb-2">Q. 急に順位が下がった！</p>
+                     <p className="text-sm text-slate-400 mb-4">
+                         A. 焦らないでください。Googleのアルゴリズム変更や、競合の出現が原因かもしれません。<br/>
+                         まずは「基本情報が変わっていないか」「悪いクチコミが入っていないか」を確認し、いつも通り投稿を続けましょう。一過性の変動であることも多いです。
+                     </p>
+                     
+                     <p className="font-bold text-red-300 mb-2">Q. 「ビジネス情報が重複しています」と出たら？</p>
+                     <p className="text-sm text-slate-400">
+                         A. 同じ住所・電話番号で古い情報が残っている可能性があります。Googleマップ上でその古い店舗情報を検索し、「情報の修正を提案」→「閉業または存在しない場所」として報告し、統合を促しましょう。
+                     </p>
+                 </div>
              </div>
-
-             <div className="space-y-4 pt-4">
-                <h4 className="font-bold text-white">キーワードをどこに入れるべきか？</h4>
-                <ul className="list-disc list-inside text-slate-300 space-y-2">
-                    <li><strong className="text-emerald-400">ビジネスの説明文:</strong> 自然な文章の中で、ターゲットとするキーワードを盛り込みます。</li>
-                    <li><strong className="text-emerald-400">投稿（最新情報）:</strong> 毎回、「春の宴会」「歓送迎会」など季節やイベントに合わせたキーワードを入れます。</li>
-                    <li><strong className="text-emerald-400">クチコミへの返信:</strong> お客様のコメントにあるキーワードを拾って返信します（「個室のご利用ありがとうございました」等）。</li>
-                    <li><strong className="text-emerald-400">Q&A:</strong> 質問と回答の中にキーワードを含めます。</li>
-                    <li><strong className="text-red-400">注意:</strong> 店舗名（ビジネス名）に不要なキーワードを詰め込むのはGoogleの規約違反です（アカウント停止のリスクがあります）。</li>
-                </ul>
-             </div>
+             
            </div>
         </section>
 

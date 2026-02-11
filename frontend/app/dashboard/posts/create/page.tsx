@@ -38,9 +38,12 @@ export default function CreatePostPage() {
   
   // AI Params
   const [keywords, setKeywords] = useState('');
+  const [isKeywordsLocked, setIsKeywordsLocked] = useState(false); // New
   const [tone, setTone] = useState('friendly');
   const [keyArea, setKeyArea] = useState('');
-  const [charCount, setCharCount] = useState<string>('auto'); // 'auto', 'short', 'medium', 'long'
+  const [isKeyAreaLocked, setIsKeyAreaLocked] = useState(false); // New
+  const [charCount, setCharCount] = useState<string>('auto'); // 'auto', '140', '300', '500'
+  const [customPrompt, setCustomPrompt] = useState(''); // New
 
   // Media Library State
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -51,12 +54,6 @@ export default function CreatePostPage() {
   // Initial Check
   useEffect(() => {
     if (userInfo) {
-       // Logic to determine connections. 
-       // Currently userInfo.is_google_connected is the main one.
-       // For others, we need to check userInfo.social_connections or similar if available.
-       // Since the frontend context might not have the full social list yet, we might need to fetch status.
-       // For now, we assume simple checks or fetch logic.
-       
        checkConnections();
     }
   }, [userInfo]);
@@ -172,6 +169,18 @@ export default function CreatePostPage() {
     setIsGenerating(true);
     try {
         const token = localStorage.getItem('meo_auth_token');
+        
+        // Prepare charCount logic
+        let lengthOpt = 'MEDIUM';
+        let charCountValue: number | null = null;
+        
+        if (charCount === '140' || charCount === '300' || charCount === '500') {
+            lengthOpt = 'CUSTOM';
+            charCountValue = parseInt(charCount);
+        } else {
+            lengthOpt = 'MEDIUM'; // Default for auto
+        }
+
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate/post`, { // Updated endpoint
             method: 'POST',
             headers: {
@@ -181,8 +190,10 @@ export default function CreatePostPage() {
             body: JSON.stringify({
                 keywords,
                 tone,
-                keywords_region: keyArea, // New
-                length_option: charCount === 'auto' ? 'MEDIUM' : charCount.toUpperCase(), // New mapping
+                keywords_region: keyArea, 
+                length_option: lengthOpt,
+                char_count: charCountValue, // Send specific integer
+                custom_prompt: customPrompt, // Send custom prompt
                 store_id: userInfo?.store_id
             })
         });
@@ -373,44 +384,82 @@ export default function CreatePostPage() {
             {/* AI Generator Input */}
             <div className="bg-slate-800/50 p-4 rounded-xl mb-4 border border-white/5">
                 <div className="flex gap-4 mb-3">
-                    <input 
-                        type="text" 
-                        placeholder="キーワードや話題を入力 (例: ランチ, 新メニュー, 季節限定)"
-                        value={keywords}
-                        onChange={(e) => setKeywords(e.target.value)}
-                        className="flex-1 bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan"
-                    />
+                    <div className="flex-1 relative">
+                        <input 
+                            type="text" 
+                            placeholder="キーワードや話題を入力 (例: ランチ, 新メニュー, 季節限定)"
+                            value={keywords}
+                            onChange={(e) => setKeywords(e.target.value)}
+                            readOnly={isKeywordsLocked}
+                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan pr-10 ${isKeywordsLocked ? 'border-red-500/50 text-slate-400 cursor-not-allowed' : 'border-white/10'}`}
+                        />
+                        <button 
+                            onClick={() => setIsKeywordsLocked(!isKeywordsLocked)} 
+                            className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                            title={isKeywordsLocked ? "ロック解除" : "入力をロック"}
+                        >
+                            {isKeywordsLocked ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                            )}
+                        </button>
+                    </div>
                     <select 
                         value={tone}
                         onChange={(e) => setTone(e.target.value)}
-                        className="bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none"
+                        className="bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none w-32"
                     >
-                        <option value="friendly">親しみやすく</option>
-                        <option value="formal">フォーマル</option>
+                        <option value="friendly">親しみ</option>
+                        <option value="formal">丁寧</option>
                         <option value="professional">専門的</option>
-                        <option value="excited">エネルギッシュ</option>
+                        <option value="excited">情熱</option>
                     </select>
                 </div>
                 
                 {/* Advanced AI Options */}
                 <div className="grid grid-cols-2 gap-4 mb-3">
-                    <input 
-                        type="text" 
-                        placeholder="地域・エリア (例: 新宿, 大阪梅田)" 
-                        value={keyArea}
-                        onChange={(e) => setKeyArea(e.target.value)}
-                        className="bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm"
-                    />
+                    <div className="relative">
+                        <input 
+                            type="text" 
+                            placeholder="地域・エリア (例: 新宿, 大阪梅田)" 
+                            value={keyArea}
+                            onChange={(e) => setKeyArea(e.target.value)}
+                            readOnly={isKeyAreaLocked}
+                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm pr-10 ${isKeyAreaLocked ? 'border-red-500/50 text-slate-400 cursor-not-allowed' : 'border-white/10'}`}
+                        />
+                         <button 
+                            onClick={() => setIsKeyAreaLocked(!isKeyAreaLocked)} 
+                            className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                            title={isKeyAreaLocked ? "ロック解除" : "入力をロック"}
+                        >
+                            {isKeyAreaLocked ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                            )}
+                        </button>
+                    </div>
                     <select 
                         value={charCount}
                         onChange={(e) => setCharCount(e.target.value)}
                         className="bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none text-sm"
                     >
                         <option value="auto">文字数：自動最適化</option>
-                        <option value="short">短め (〜100文字)</option>
-                        <option value="medium">普通 (〜300文字)</option>
-                        <option value="long">長め (ブログ風)</option>
+                        <option value="140">140文字 (X向け)</option>
+                        <option value="300">300文字 (標準)</option>
+                        <option value="500">500文字 (長文)</option>
                     </select>
+                </div>
+                
+                {/* Custom Prompt */}
+                <div className="mb-4">
+                     <textarea 
+                        placeholder="AIへの追加指示 (例: 「冒頭は挨拶から始めて」「ターゲットは30代女性」「絵文字を多めに」)" 
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        className="w-full h-16 bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm resize-none"
+                     />
                 </div>
 
                 <button 
