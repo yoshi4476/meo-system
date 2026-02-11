@@ -29,6 +29,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <footer className="fixed bottom-0 right-0 p-1 text-[10px] text-white/20 pointer-events-none z-50 font-mono">
+          {process.env.NEXT_PUBLIC_DEPLOY_TIME?.substring(0, 16).replace('T', ' ')} :: {process.env.NEXT_PUBLIC_GIT_COMMIT}
+        </footer>
       </body>
     </html>
   );

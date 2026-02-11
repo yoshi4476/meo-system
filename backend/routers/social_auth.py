@@ -39,8 +39,8 @@ def social_auth_start(platform: str, db: Session = Depends(database.get_db), cur
 
     callback_url = f"{frontend_url}/dashboard/settings?platform={platform}&code=mock_code_{platform}_{state}&state={state}"
     
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url=callback_url)
+    # Return JSON so frontend can redirect
+    return {"url": callback_url}
 
 @router.post("/callback/{platform}")
 def social_auth_callback(platform: str, code: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):

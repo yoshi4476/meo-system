@@ -258,6 +258,49 @@ export default function SettingsPage() {
 
 
 
+  const handleConnect = async (platform: string) => {
+    try {
+        const token = localStorage.getItem('meo_auth_token');
+        if (!token) {
+            alert('ログインしてください');
+            return;
+        }
+
+        // ユーザーにフィードバック
+        const btn = document.activeElement as HTMLElement;
+        const originalText = btn ? btn.innerText : '';
+        if(btn) btn.innerText = "準備中...";
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/social/auth/${platform}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert('連携用URLの取得に失敗しました');
+                if(btn) btn.innerText = originalText;
+            }
+        } else {
+            const err = await res.text();
+            if (res.status === 401) {
+                 alert('認証切れです。再度ログインしてください。');
+                 window.location.href = '/';
+            } else {
+                 alert(`エラー: ${err}`);
+                 if(btn) btn.innerText = originalText;
+            }
+        }
+    } catch (e: any) {
+        console.error(e);
+        alert(`通信エラー: ${e.message}`);
+        const btn = document.activeElement as HTMLElement;
+        if(btn) btn.innerText = "連携する";
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Suspense Boundary for SearchParams */}
@@ -697,8 +740,13 @@ export default function SettingsPage() {
                   <p className="text-xs text-slate-400">画像投稿をフィードに自動共有します</p>
                 </div>
               </div>
-              <button onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/social/auth/instagram`, '_blank')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+              {getStatusBadge(connectionStatus.instagram)}
             </div>
+            {connectionStatus.instagram !== 'connected' && (
+                <div className="flex justify-end">
+                    <button onClick={() => handleConnect('instagram')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+                </div>
+            )}
           </div>
 
           {/* X (Twitter) API */}
@@ -713,8 +761,13 @@ export default function SettingsPage() {
                   <p className="text-xs text-slate-400">140文字制限をAIが自動調整して投稿します</p>
                 </div>
               </div>
-              <button onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/social/auth/twitter`, '_blank')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+              {getStatusBadge(connectionStatus.twitter)}
             </div>
+            {connectionStatus.twitter !== 'connected' && (
+                <div className="flex justify-end">
+                    <button onClick={() => handleConnect('twitter')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+                </div>
+            )}
           </div>
 
           {/* YouTube Shorts API */}
@@ -729,11 +782,17 @@ export default function SettingsPage() {
                   <p className="text-xs text-slate-400">動画投稿をショート動画として自動共有します</p>
                 </div>
               </div>
-              <button onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/social/auth/youtube`, '_blank')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+              {getStatusBadge(connectionStatus.youtube)}
             </div>
+            {connectionStatus.youtube !== 'connected' && (
+                <div className="flex justify-end">
+                    <button onClick={() => handleConnect('youtube')} className="text-xs bg-slate-700 px-3 py-1.5 rounded text-white hover:bg-slate-600">連携する</button>
+                </div>
+            )}
           </div>
         </div>
       </section>
+
 
       {/* 通知設定 */}
       <section className="glass-card p-6">
