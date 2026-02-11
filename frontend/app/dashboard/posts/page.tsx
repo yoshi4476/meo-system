@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useDashboard } from '../../../contexts/DashboardContext';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -28,6 +28,7 @@ const demoImages = [
 
 function PostsContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const { userInfo, isDemoMode } = useDashboard();
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -414,8 +415,6 @@ function PostsContent() {
                         </div>
                         <button 
                             onClick={() => {
-                                setEditingPost(null);
-                                setNewPostContent('');
                                 setIsCreating(true);
                             }}
                             className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
