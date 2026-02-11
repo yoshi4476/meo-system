@@ -4,7 +4,7 @@ import models, database, auth, schemas
 from services import google_api
 from datetime import datetime, timedelta
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 router = APIRouter(
     prefix="/posts",
