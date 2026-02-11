@@ -1,5 +1,13 @@
+```javascript
 import Link from 'next/link';
 import { useDashboard } from '../../contexts/DashboardContext';
+
+// Emails allowed to see System Admin section
+const ALLOWED_ADMIN_EMAILS = [
+  '7senses.gran.toukou@gmail.com',
+  'y.wakata.linkdesign@gmail.com',
+  // 'demo@example.com' // Uncomment for testing if needed, or rely on demo mode logic inside component
+];
 
 const menuItems = [
   { name: 'ダッシュボード', href: '/dashboard', icon: 'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z' },
@@ -17,15 +25,21 @@ const toolsItems = [
   { name: 'プロフィール最適化', href: '/dashboard/optimize', icon: 'M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z' },
 ];
 
-const settingsItems = [
+const systemAdminItems = [
   { name: 'ユーザー管理', href: '/dashboard/users', icon: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' },
   { name: '店舗管理', href: '/dashboard/stores', icon: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z' },
+];
+
+const settingsItems = [
   { name: '設定', href: '/dashboard/settings', icon: 'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.04.64.09.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z' },
   { name: 'デバッグ', href: '/dashboard/debug', icon: 'M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.25c.34-.34.34-.89 0-1.23-.34-.34-.89-.34-1.23 0l-1.67 1.67c-1.16-.54-2.45-.84-3.8-.84-1.35 0-2.64.3-3.8.84L4.83 3.02c-.34-.34-.89-.34-1.23 0-.34.34-.34.89 0 1.23l1.64 1.81c-.75.51-1.37 1.18-1.82 1.96H.6c-.33 0-.6.27-.6.6 0 .33.27.6.6.6h2.2c-.13.65-.2 1.32-.2 2 0 .68.07 1.35.2 2H.6c-.33 0-.6.27-.6.6 0 .33.27.6.6.6h2.8c.45.78 1.07 1.45 1.82 1.96L3.6 19.75c-.34.34-.34.89 0 1.23.17.17.39.25.61.25.22 0 .44-.08.61-.25l1.67-1.67c1.16.54 2.45.84 3.8.84 1.35 0 2.64-.3 3.8-.84l1.67 1.67c.17.17.39.25.61.25.22 0 .44-.08.61-.25.34-.34.34-.89 0-1.23l-1.64-1.81c.75-.51 1.37-1.18 1.82-1.96h2.2c.33 0 .6-.27.6-.6 0-.33-.27-.6-.6-.6h-2.2c.13-.65.2-1.32.2-2 0-.68-.07-1.35-.2-2h2.2c.33 0 .6-.27.6-.6 0-.33-.27-.6-.6-.6z' },
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const { isDemoMode, toggleDemoMode, syncData, availableStores, userInfo } = useDashboard();
+
+  // Check if user is System Admin
+  const isSystemAdmin = userInfo?.email && ALLOWED_ADMIN_EMAILS.includes(userInfo.email);
 
   return (
     <aside className="w-64 h-screen bg-deep-navy/95 backdrop-blur-xl border-r border-white/10 flex flex-col relative z-50">
@@ -100,67 +114,6 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
              </div>
         </div>
       
-      {/* メインメニュー */}
-        <nav className="p-4 space-y-1">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">メイン</p>
-          {menuItems.map((item) => (
-            <Link 
-              key={item.name} 
-              href={item.href}
-              onClick={onClose}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
-            >
-              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-aurora-cyan transition-colors" viewBox="0 0 24 24">
-                <path d={item.icon} />
-              </svg>
-              <span className="font-medium text-sm">{item.name}</span>
-            </Link>
-          ))}
-        </nav>
-
-        {/* ツール */}
-        <nav className="p-4 pt-0 space-y-1">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">ツール</p>
-          {toolsItems.map((item) => (
-            <Link 
-              key={item.name} 
-              href={item.href}
-              onClick={onClose}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
-            >
-              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-aurora-purple transition-colors" viewBox="0 0 24 24">
-                <path d={item.icon} />
-              </svg>
-              <span className="font-medium text-sm">{item.name}</span>
-            </Link>
-          ))}
-        </nav>
-
-        {/* マニュアル */}
-        <nav className="p-4 pt-0 space-y-1">
-            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">クライアントサポート</p>
-            <Link 
-              href="/dashboard/manual/usage"
-              onClick={onClose}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
-            >
-              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-amber-400 transition-colors" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" />
-              </svg>
-              <span className="font-medium text-sm">システム操作マニュアル</span>
-            </Link>
-            <Link 
-              href="/dashboard/manual/meo-guide"
-              onClick={onClose}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
-            >
-              <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-amber-400 transition-colors" viewBox="0 0 24 24">
-                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-              </svg>
-              <span className="font-medium text-sm">MEO対策ガイド</span>
-            </Link>
-        </nav>
-
         {/* 設定 */}
         <nav className="p-4 pt-0 space-y-1">
           <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">設定</p>
