@@ -1,11 +1,26 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useDashboard } from '../../../contexts/DashboardContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 
+// Separate component for SearchParams logic to enable Suspense boundary
+function SocialAuthHandler({ onCallback }: { onCallback: (platform: string, code: string) => void }) {
+    const searchParams = useSearchParams();
+    
+    useEffect(() => {
+        const platform = searchParams.get('platform');
+        const code = searchParams.get('code');
+        
+        if (platform && code) {
+            onCallback(platform, code);
+        }
+    }, [searchParams, onCallback]);
+
+    return null; // Invisible component
+}
+
 export default function SettingsPage() {
   const { userInfo, refreshUser, isDemoMode } = useDashboard();
-  const searchParams = useSearchParams();
   const router = useRouter();
   
   const [notifications, setNotifications] = useState({
@@ -31,16 +46,6 @@ export default function SettingsPage() {
     twitter: localConnections.twitter?.connected ? 'connected' : 'disconnected',
     youtube: localConnections.youtube?.connected ? 'connected' : 'disconnected'
   };
-
-  // Check for Social Auth Callback
-  useEffect(() => {
-    const platform = searchParams.get('platform');
-    const code = searchParams.get('code');
-    
-    if (platform && code) {
-        handleSocialCallback(platform, code);
-    }
-  }, [searchParams]);
 
   const handleSocialCallback = async (platform: string, code: string) => {
       try {
@@ -255,6 +260,11 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8 max-w-4xl">
+      {/* Suspense Boundary for SearchParams */}
+      <Suspense fallback={null}>
+          <SocialAuthHandler onCallback={handleSocialCallback} />
+      </Suspense>
+
       <div>
         <h1 className="text-3xl font-bold text-white">設定</h1>
         <p className="text-slate-400 mt-1">アカウント設定、通知、API連携の管理</p>
