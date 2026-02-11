@@ -32,16 +32,15 @@ def social_auth_start(platform: str, db: Session = Depends(database.get_db), cur
     # Ideally: Return https://api.instagram.com/oauth/authorize?client_id=...
     
     # SIMULATION: Redirect to our own callback with a fake code
-    callback_url = f"http://localhost:3000/dashboard/settings?platform={platform}&code=mock_code_{platform}_{state}&state={state}"
+    import os
+    frontend_url = os.getenv("FRONTEND_URL", "https://meo-system-act.vercel.app").rstrip("/")
+    if "localhost" in frontend_url:
+        frontend_url = "http://localhost:3000" # Local dev override if needed, but env var is better
+
+    callback_url = f"{frontend_url}/dashboard/settings?platform={platform}&code=mock_code_{platform}_{state}&state={state}"
     
-    # In a real app, this would be the Provider's URL. 
-    # Since we can't really do OAuth without keys, we'll return a "Direct Success" URL for testing.
-    # However, frontend expects a URL to navigate to.
-    
-    # Let's return a "Mock Provider" URL hosted by us? No, simpler.
-    # Just return our own callback URL to simulate "The user approved".
-    
-    return {"url": callback_url}
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=callback_url)
 
 @router.post("/callback/{platform}")
 def social_auth_callback(platform: str, code: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):

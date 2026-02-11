@@ -770,7 +770,8 @@ export default function SettingsPage() {
 
       {/* チームメンバー */}
       <section className="glass-card p-6">
-        <div className="flex justify-between items-center mb-6">
+      
+       <div className="flex justify-between items-center mb-8">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <span className="text-2xl">👥</span> チームメンバー
           </h2>

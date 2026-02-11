@@ -12,6 +12,46 @@ router = APIRouter(
     tags=["media"],
 )
 
+from fastapi import Request
+import shutil
+import os
+import uuid
+
+# Base URL for static files (Render sets RENDER_EXTERNAL_URL)
+BASE_URL = os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8000"
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Upload a file to local static storage (Ephemeral on Render).
+    Returns a URL that can be used for posting.
+    """
+    try:
+        # Create unique filename
+        ext = file.filename.split(".")[-1]
+        filename = f"{uuid.uuid4()}.{ext}"
+        filepath = f"static/uploads/{filename}"
+        
+        # Save file
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Construct URL
+        # If on Render, RENDER_EXTERNAL_URL starts with https://...
+        # If local, localhost...
+        
+        # We can also use Request.base_url to be dynamic but let's try env var first if available
+        # or just return relative if consumer handles it. 
+        # Frontend expects full URL for preview.
+        # GBP API expects full URL for download.
+        
+        full_url = f"{BASE_URL}/static/uploads/{filename}"
+        
+        return {"url": full_url, "filename": filename}
+    except Exception as e:
+        print(f"Upload Error: {e}")
+        raise HTTPException(status_code=500, detail="File upload failed")
+
 class MediaItemCreate(BaseModel):
     media_format: str = "PHOTO"
     location_association: str = "ADDITIONAL" # PROFILE, COVER, LOGO, ADDITIONAL

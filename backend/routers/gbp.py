@@ -130,10 +130,21 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
              print(f"[AUTH LOG ERROR] Could not write to {log_file}: {log_err}")
 
     auth_log(f"Callback received. Code: {code[:10]}... State: {state}")
-
+    
+    # Determine Frontend URL
+    # Fallback to production URL if not localhost
+    env_frontend = os.getenv("FRONTEND_URL")
+    if not env_frontend:
+        env_frontend = "https://meo-system-act.vercel.app" # Production Fallback
+    
+    # Clean trailing slash
+    frontend_url = env_frontend.rstrip("/")
+    
     try:
         user = None
-        if state != "default":
+        if state and state != "default":
+             # Verify if state is a valid user ID (UUID-like)
+             # prevent crashing if state is random string
              user = db.query(models.User).filter(models.User.id == state).first()
              auth_log(f"User found from state: {user.email if user else 'None'}")
         
@@ -144,14 +155,20 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
             auth_log(f"Token exchange successful. Scopes: {tokens.get('scope')}")
         except Exception as token_err:
             auth_log(f"Token exchange FAILED: {token_err}")
-            raise HTTPException(status_code=400, detail=f"Google Login Failed: {str(token_err)}")
+            # Redirect with error
+            return RedirectResponse(url=f"{frontend_url}/dashboard?error=token_failed&detail={str(token_err)}")
         
         # 2. If User not known...
         if not user:
             auth_log("Fetching Google User Info (Login Flow)...")
             access_token = tokens.get("access_token")
             client = google_api.GBPClient(access_token)
-            user_info = client.get_user_info()
+            try:
+                user_info = client.get_user_info()
+            except Exception as e:
+                 # Failed to get user info -> Access Token might be invalid or scope missing
+                 return RedirectResponse(url=f"{frontend_url}/dashboard?error=user_info_failed&detail={str(e)}")
+
             email = user_info.get("email")
             
             user = db.query(models.User).filter(models.User.email == email).first()
@@ -197,16 +214,16 @@ def callback_google(code: str, state: str, db: Session = Depends(database.get_db
         )
         
         # 5. Redirect
-        import os
         from fastapi.responses import RedirectResponse
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         auth_log(f"Redirecting user to {frontend_url}/dashboard")
         
-        return RedirectResponse(url=f"{frontend_url}/dashboard?token={access_token}&status=success")
+        response = RedirectResponse(url=f"{frontend_url}/dashboard?token={access_token}&status=success")
+        return response
 
     except Exception as e:
         auth_log(f"Callback FATAL Error: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        # IMPORTANT: Redirect to frontend even on error, so user isn't stuck on backend URL
+        return RedirectResponse(url=f"{frontend_url}/dashboard?error=callback_exception&detail={str(e)}")
 
 @router.get("/locations")
 def list_locations(db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):

@@ -202,8 +202,12 @@ class SNSService:
         content = re.sub(r'#\w+', '', content).strip()
         
         # 2. Check Length and Summarize
-        # Twitter counts characters differently, but let's stick to strict 140 char limit as requested.
-        if len(content) > 140:
+        # Reserve space for Media URL (23 chars for t.co) + space = 24 chars
+        max_chars = 140
+        if post.media_url:
+            max_chars = 115
+            
+        if len(content) > max_chars:
              try:
                 # Try to get API Key from UserSettings
                 user_settings = self.db.query(models.UserSettings).filter(models.UserSettings.user_id == self.user.id).first()
@@ -211,15 +215,19 @@ class SNSService:
                 
                 if openai_key:
                     ai_client = AIClient(api_key=openai_key)
-                    summarized = ai_client.summarize_text(content, max_chars=140)
+                    summarized = ai_client.summarize_text(content, max_chars=max_chars)
                     if summarized:
                         content = summarized
                         logger.info(f"AI Summarized for X: {content}")
                 else:
-                    content = content[:137] + "..."
+                    content = content[:(max_chars-3)] + "..."
              except Exception as e:
                 logger.error(f"AI Summary Failed: {e}")
-                content = content[:137] + "..."
+                content = content[:(max_chars-3)] + "..."
+
+        # Append Media URL if exists
+        if post.media_url:
+            content += f" {post.media_url}"
 
         # 3. Post Tweet (Text Only for V2 Basic usually, unless we use V1.1 for media)
         # Using Twitter API v2: POST /2/tweets
@@ -231,13 +239,6 @@ class SNSService:
             "Content-Type": "application/json"
         }
         payload = {"text": content}
-        
-        # Media Handling (Optional/Advanced)
-        # If we have media_url, we would ideally upload it.
-        # But V2 Media Upload is not straightforward without media_id from v1.1.
-        # For this implementation, we will stick to Text-Only to ensure stability 
-        # unless we have a robust library. The user requested "Photo + Article" though.
-        # Let's add a "Note" to the response or log if media is skipped.
         
         async with httpx.AsyncClient() as client:
             res = await client.post(url, json=payload, headers=headers)
