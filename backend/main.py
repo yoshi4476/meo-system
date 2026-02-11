@@ -14,17 +14,21 @@ from routers import gbp, posts, reviews, admin, locations, insights, media, qa, 
 from services import scheduler
 from datetime import timedelta
 
-models.Base.metadata.create_all(bind=engine)
-
-
+try:
+    print("DEBUG: Creating database tables...")
+    models.Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"CRITICAL WARNING: failed to create tables: {e}")
 
 # Run DB Migration (Add store_id if missing)
 try:
+    print("DEBUG: Starting application...")
     import migrate_db
     print("DEBUG: Running DB migration... Version 1.0.3 (Tracer)")
     migrate_db.migrate()
 except Exception as e:
     print(f"WARNING: DB Migration failed: {e}")
+
 
 API_DESCRIPTION = """
 ## MEO Mastermind AI API 🚀

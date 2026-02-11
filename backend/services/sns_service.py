@@ -6,7 +6,12 @@ import re
 import logging
 import httpx
 import requests
-from requests_oauthlib import OAuth1Session # Standard for Twitter v1.1
+try:
+    from requests_oauthlib import OAuth1Session # Standard for Twitter v1.1
+except ImportError:
+    OAuth1Session = None
+    print("WARNING: requests_oauthlib not found. Twitter v1.1 features will be disabled.")
+
 # Note: requests_oauthlib might not be in requirements.txt. 
 # If not, we have to rely on requests and manual auth headers or just v2 with Bearer (if App-only) or User Context.
 # Twitter API v2 User Context uses OAuth 2.0 with Bearer Token (AccessToken).
