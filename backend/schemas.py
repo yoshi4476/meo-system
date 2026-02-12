@@ -184,3 +184,29 @@ class Subscription(BaseModel):
     class Config:
         from_attributes = True
 
+# --- Essential Service Schemas ---
+
+class InquiryBase(BaseModel):
+    category: str
+    message: str
+
+class InquiryCreate(InquiryBase):
+    pass
+
+class Inquiry(InquiryBase):
+    id: str
+    user_id: str
+    status: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class LoginHistory(BaseModel):
+    id: str
+    user_id: str
+    login_at: datetime
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    class Config:
+        from_attributes = True
+
