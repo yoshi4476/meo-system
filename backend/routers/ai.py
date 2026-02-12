@@ -62,7 +62,7 @@ class GeneratePostRequest(BaseModel):
     char_count: Optional[int] = None
     custom_prompt: Optional[str] = None
     keywords_region: Optional[str] = None
-    # Future: reuse_photo_id
+    store_id: Optional[str] = None
 
 class GenerateReplyRequest(BaseModel):
     review_text: str

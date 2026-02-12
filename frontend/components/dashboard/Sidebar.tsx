@@ -25,6 +25,7 @@ const toolsItems = [
 ];
 
 const systemAdminItems = [
+  { name: '企業管理', href: '/dashboard/companies', icon: 'M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z' },
   { name: 'ユーザー管理', href: '/dashboard/users', icon: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' },
   { name: '店舗管理', href: '/dashboard/stores', icon: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z' },
 ];
@@ -37,8 +38,8 @@ const settingsItems = [
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const { isDemoMode, toggleDemoMode, syncData, availableStores, userInfo } = useDashboard();
 
-  // Check if user is System Admin
-  const isSystemAdmin = userInfo?.email && ALLOWED_ADMIN_EMAILS.includes(userInfo.email);
+  // Check if user is System Admin or Super Admin
+  const isSystemAdmin = (userInfo?.email && ALLOWED_ADMIN_EMAILS.includes(userInfo.email)) || userInfo?.role === 'SUPER_ADMIN';
 
   return (
     <aside className="w-64 h-screen bg-deep-navy/95 backdrop-blur-xl border-r border-white/10 flex flex-col relative z-50">

@@ -204,20 +204,25 @@ export default function UsageManualPage() {
                         </li>
                         <li className="pl-2">
                             <strong className="text-white block mb-1">コンテンツの作成（AI活用）</strong>
-                            <div className="bg-slate-900/50 p-4 rounded-lg mt-2 space-y-2 border border-blue-500/20">
-                                <p><span className="text-blue-400 font-bold">キーワード:</span> 投稿のテーマとなる単語を入力します（例：「忘年会」「個室」「飲み放題」）。</p>
-                                <p><span className="text-blue-400 font-bold">キーワード地域:</span> ターゲットとする地名を入力します（例：「新宿」「歌舞伎町」）。AIが文章内に自然に地名を盛り込み、MEO効果を高めます。</p>
-                                <p><span className="text-blue-400 font-bold">文字数:</span> SNSに合わせて長さを調整できます。Instagramなら「普通〜長め」、Xなら「短め」がおすすめです。</p>
+                            <div className="bg-slate-900/50 p-4 rounded-lg mt-2 space-y-3 border border-blue-500/20">
+                                <p><span className="text-blue-400 font-bold">キーワード (固定機能):</span> 投稿テーマを入力します。鍵アイコンをクリックすると次回以降も入力を保持できます。</p>
+                                <p><span className="text-blue-400 font-bold">地域・エリア (固定機能):</span> ターゲット地域を入力します。こちらも固定可能です。</p>
+                                <p><span className="text-blue-400 font-bold">文字数・長さ:</span> 「自動」「短文 (140文字/X向け)」「標準」「長文 (ブログ風)」から選択し、AIの出力長をコントロールできます。</p>
+                                <p><span className="text-blue-400 font-bold">ハッシュタグ提案:</span> 本文生成後、「Hashtag AI提案 #」ボタンを押すと、内容に最適なタグを自動追加します。</p>
                             </div>
                         </li>
                         <li className="pl-2">
                             <strong className="text-white block mb-1">メディアの追加</strong>
                             <p className="mb-2">写真または動画をアップロードします。<span className="text-xs text-pink-400">※ Instagramは写真必須、YouTube Shortsは動画必須です。</span></p>
-                            <div className="flex gap-2">
-                                <span className="text-xs bg-slate-700 px-2 py-1 rounded">PCからアップロード</span>
-                                <span className="text-xs bg-slate-700 px-2 py-1 rounded">過去の投稿画像から選択</span>
-                                <span className="text-xs bg-slate-700 px-2 py-1 rounded">写真管理から選択</span>
+                            <div className="flex gap-2 items-center flex-wrap">
+                                <span className="text-xs bg-slate-700 px-3 py-1.5 rounded border border-white/10 text-slate-300">PCからアップロード</span>
+                                <span className="text-xs text-slate-500">または</span>
+                                <button className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded border border-white/10 text-white flex items-center gap-1 transition-colors">
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    メディアライブラリから選択
+                                </button>
                             </div>
+                            <p className="text-xs text-slate-400 mt-2">※ 「メディアライブラリ」から、過去にアップロードした画像を再利用できます。</p>
                         </li>
                         <li className="pl-2">
                             <strong className="text-white block mb-1">公開または予約</strong>

@@ -75,6 +75,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    company_id: Optional[str] = None
+    store_id: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str
@@ -103,3 +105,11 @@ class UserSettingsUpdate(BaseModel):
     twitter_client_secret: Optional[str] = None
     youtube_client_id: Optional[str] = None
     youtube_client_secret: Optional[str] = None
+
+class UserSettings(UserSettingsUpdate):
+    id: str
+    user_id: str
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True

@@ -29,6 +29,14 @@ def update_user_me(user_update: schemas.UserUpdate, db: Session = Depends(databa
     db.refresh(current_user)
     return current_user
 
+@router.get("/me/settings", response_model=schemas.UserSettings)
+def read_user_settings(db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
+    user_settings = db.query(models.UserSettings).filter(models.UserSettings.user_id == current_user.id).first()
+    if not user_settings:
+        # Return empty/default settings if none exist
+        return models.UserSettings(user_id=current_user.id)
+    return user_settings
+
 @router.put("/me/settings", response_model=schemas.User)
 def update_user_settings(settings: schemas.UserSettingsUpdate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     """
@@ -72,7 +80,14 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
              )
 
     hashed_password = auth.get_password_hash(user.password)
-    db_user = models.User(email=user.email, role=user.role, hashed_password=hashed_password, is_active=True)
+    db_user = models.User(
+        email=user.email, 
+        role=user.role, 
+        hashed_password=hashed_password, 
+        is_active=True,
+        company_id=user.company_id,
+        store_id=user.store_id
+    )
     
     db.add(db_user)
     db.commit()

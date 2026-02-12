@@ -65,6 +65,7 @@ class UserCreate(BaseModel):
 
 class StoreCreate(BaseModel):
     name: str
+    company_id: Optional[str] = None
 
 @router.get("/users")
 def list_all_users(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
@@ -162,7 +163,7 @@ def create_store(store: StoreCreate, db: Session = Depends(database.get_db), cur
     if current_user.role not in ["SUPER_ADMIN", "COMPANY_ADMIN"]:
         raise HTTPException(status_code=403, detail="Not authorized")
         
-    company_id = None
+    company_id = store.company_id
     if current_user.role == "COMPANY_ADMIN":
         company_id = current_user.company_id
         

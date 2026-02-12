@@ -229,20 +229,64 @@ export default function SettingsPage() {
 
   useEffect(() => {
     // コンポーネントマウント時にローカルストレージからAPIキーを読み込む
-    const loadSettings = () => {
+    const loadSettings = async () => {
       if (isDemoMode) {
           setApiKeys({
               google: 'demo-google-key-xxxxx',
-              openai: 'demo-openai-key-xxxxx'
+              openai: 'demo-openai-key-xxxxx',
+              instagramId: 'demo-insta-id',
+              twitterId: 'demo-twitter-id',
+              youtubeId: 'demo-youtube-id'
           });
           return;
       }
 
+      // 1. LocalStorage (Fallback / Legacy)
       const savedGoogleKey = localStorage.getItem('google_api_key');
       const savedOpenaiKey = localStorage.getItem('openai_api_key');
-      // ... existing logic
-      if (savedGoogleKey) setApiKeys(prev => ({ ...prev, google: savedGoogleKey }));
-      if (savedOpenaiKey) setApiKeys(prev => ({ ...prev, openai: savedOpenaiKey }));
+      
+      let baseKeys = {
+          google: savedGoogleKey || '',
+          openai: savedOpenaiKey || ''
+      };
+
+      // 2. Fetch from Backend
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          if (token) {
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/users/me/settings`, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+              });
+              
+              if (res.ok) {
+                  const data = await res.json();
+                  // Merge backend data. Note: We prioritize backend data over localStorage for OpenAI key if present
+                  if (data.openai_api_key) baseKeys.openai = data.openai_api_key;
+                  
+                  setApiKeys(prev => ({
+                      ...prev,
+                      ...baseKeys,
+                      instagramId: data.instagram_client_id,
+                      instagramSecret: data.instagram_client_secret,
+                      twitterId: data.twitter_client_id,
+                      twitterSecret: data.twitter_client_secret,
+                      youtubeId: data.youtube_client_id,
+                      youtubeSecret: data.youtube_client_secret,
+                      
+                      // Auto-expanded if keys exist
+                      showInstagram: !!data.instagram_client_id,
+                      showTwitter: !!data.twitter_client_id,
+                      showYoutube: !!data.youtube_client_id
+                  }));
+                  return; 
+              }
+          }
+      } catch (e) {
+          console.error("Failed to load settings from server", e);
+      }
+
+      // Fallback if server fetch failed or empty
+      setApiKeys(prev => ({ ...prev, ...baseKeys }));
     };
 
     loadSettings();

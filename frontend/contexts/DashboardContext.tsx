@@ -8,6 +8,7 @@ type UserInfo = {
   email: string;
   role: string;
   is_google_connected: boolean;
+  company_id?: string;
   store_id?: string;
   store?: {
     id: string;

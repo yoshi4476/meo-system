@@ -439,10 +439,10 @@ function CreatePostContent() {
         {/* LEFT COLUMN: Input & AI */}
         <div className="lg:col-span-2 space-y-6">
           
-           {/* 1. Posting Checklist (Renamed from Platform Selection) */}
-           <section className="glass-card p-6">
+           {/* 1. Posting Checklist */}
+           <section className="glass-card p-6 border-b-4 border-aurora-cyan/20">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                 <span className="bg-aurora-cyan/20 text-aurora-cyan w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                 <span className="bg-aurora-cyan text-slate-900 font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
                  投稿先を選択
               </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -459,7 +459,7 @@ function CreatePostContent() {
                 <PlatformCheckbox 
                     id="instagram" 
                     label="Instagram" 
-                    icon={<svg viewBox="0 0 24 24" className="w-6 h-6 fill-white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>}
+                    icon={<svg viewBox="0 0 24 24" className="w-6 h-6 fill-white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>}
                     color="bg-gradient-to-br from-pink-500 to-orange-400" 
                     checked={platforms.instagram} 
                     onChange={c => setPlatforms({...platforms, instagram: c})}
@@ -495,129 +495,143 @@ function CreatePostContent() {
           </section>
 
           {/* 2. Content Creation */}
-          <section className="glass-card p-6">
+          <section className="glass-card p-6 border-b-4 border-aurora-cyan/40">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="bg-aurora-cyan/20 text-aurora-cyan w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                <span className="bg-aurora-cyan text-slate-900 font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
                 コンテンツ作成
              </h3>
             
             {/* AI Generator Input */}
-            <div className="bg-slate-800/50 p-4 rounded-xl mb-4 border border-white/5 space-y-4">
-                <div className="flex gap-4">
+            <div className="bg-slate-800/80 p-5 rounded-xl mb-4 border border-white/10 space-y-5 shadow-inner">
+                <div className="flex flex-col md:flex-row gap-5">
                     <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
-                            <label className="text-xs text-slate-400">キーワード</label>
+                            <label className="text-xs font-bold text-aurora-cyan/80">キーワード <span className="text-red-400">*</span></label>
                             <button 
                                 onClick={() => handleKeywordsLockChange(!isKeywordsLocked)}
-                                className={`text-xs flex items-center gap-1 ${isKeywordsLocked ? 'text-aurora-cyan' : 'text-slate-500'}`}
+                                className={`text-xs flex items-center gap-1 transition-colors px-2 py-0.5 rounded ${isKeywordsLocked ? 'bg-aurora-cyan/20 text-aurora-cyan' : 'text-slate-500 hover:text-slate-300'}`}
+                                title="次回もこのキーワードを使用する"
                             >
                                 {isKeywordsLocked ? '🔒 固定中' : '🔓 固定しない'}
                             </button>
                         </div>
                         <input 
                             type="text" 
-                            placeholder="例: ランチ, 新メニュー"
+                            placeholder="例: ランチ, 新メニュー, 期間限定"
                             value={keywords}
                             onChange={(e) => handleKeywordsChange(e.target.value)}
-                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan ${isKeywordsLocked ? 'border-aurora-cyan/30 bg-aurora-cyan/5' : 'border-white/10'}`}
+                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-aurora-cyan transition-colors ${isKeywordsLocked ? 'border-aurora-cyan/50 bg-aurora-cyan/5' : 'border-white/10'}`}
                         />
                     </div>
-                    <div className="w-40">
-                         <label className="text-xs text-slate-400 mb-1 block">トーン</label>
+                    <div className="w-full md:w-48">
+                         <label className="text-xs font-bold text-slate-400 mb-1 block">トーン</label>
                          <select 
                             value={tone}
                             onChange={(e) => setTone(e.target.value)}
-                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none"
+                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-aurora-cyan cursor-pointer"
                         >
-                            <option value="friendly">親しみ</option>
-                            <option value="formal">丁寧</option>
-                            <option value="professional">専門的</option>
-                            <option value="excited">情熱</option>
+                            <option value="friendly">😊 親しみやすい</option>
+                            <option value="formal">👔 丁寧・フォーマル</option>
+                            <option value="professional">🎓 専門的・信頼感</option>
+                            <option value="excited">🔥 情熱的・アピール</option>
                         </select>
                     </div>
                 </div>
                 
                 {/* Advanced AI Options */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                          <div className="flex justify-between items-center mb-1">
-                            <label className="text-xs text-slate-400">地域・エリア</label>
+                            <label className="text-xs font-bold text-slate-400">地域・エリア名</label>
                             <button 
                                 onClick={() => handleKeyAreaLockChange(!isKeyAreaLocked)}
-                                className={`text-xs flex items-center gap-1 ${isKeyAreaLocked ? 'text-aurora-cyan' : 'text-slate-500'}`}
+                                className={`text-xs flex items-center gap-1 transition-colors px-2 py-0.5 rounded ${isKeyAreaLocked ? 'bg-aurora-cyan/20 text-aurora-cyan' : 'text-slate-500 hover:text-slate-300'}`}
+                                title="次回もこのエリアを使用する"
                             >
                                 {isKeyAreaLocked ? '🔒 固定中' : '🔓 固定しない'}
                             </button>
                         </div>
                         <input 
                             type="text" 
-                            placeholder="例: 新宿, 大阪梅田" 
+                            placeholder="例: 新宿駅東口, 大阪梅田" 
                             value={keyArea}
                             onChange={(e) => handleKeyAreaChange(e.target.value)}
-                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm ${isKeyAreaLocked ? 'border-aurora-cyan/30 bg-aurora-cyan/5' : 'border-white/10'}`}
+                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-aurora-cyan text-sm transition-colors ${isKeyAreaLocked ? 'border-aurora-cyan/50 bg-aurora-cyan/5' : 'border-white/10'}`}
                         />
                     </div>
                     <div>
-                        <label className="text-xs text-slate-400 mb-1 block">文字数目安</label>
+                        <label className="text-xs font-bold text-slate-400 mb-1 block">文字数目安 (AI指示)</label>
                         <select 
                             value={charCount}
                             onChange={(e) => setCharCount(e.target.value)}
-                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none text-sm"
+                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none text-sm cursor-pointer hover:border-white/30 transition-colors"
                         >
-                            <option value="auto">自動最適化</option>
-                            <option value="140">140文字 (X向け)</option>
-                            <option value="300">300文字 (標準)</option>
-                            <option value="500">500文字 (長文)</option>
+                            <option value="auto">✨ 自動最適化 (プラットフォーム別)</option>
+                            <option value="140">🐦 短文 (約140文字 - X向け)</option>
+                            <option value="300">📝 標準 (約300文字)</option>
+                            <option value="500">📖 長文 (約500文字 - ブログ風)</option>
                         </select>
                     </div>
                 </div>
 
                 {/* Custom Prompt */}
                 <div>
-                     <label className="text-xs text-slate-400 mb-1 block">カスタムプロンプト (AIへの指示)</label>
+                     <label className="text-xs font-bold text-slate-400 mb-1 block">カスタムプロンプト (AIへの追加指示)</label>
                      <textarea 
                         value={customPrompt}
                         onChange={(e) => setCustomPrompt(e.target.value)}
-                        placeholder="例: 絵文字を多めに使って。ターゲットは20代女性。ハッシュタグを5個つけて。"
-                        className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none text-sm h-16 resize-none"
+                        placeholder="例: 若い女性向けに、絵文字を多めに使って。ハッシュタグは5個以内で。"
+                        className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm h-16 resize-none placeholder-slate-600"
                      />
                 </div>
                 
                 <button 
                     onClick={handleGenerateAI}
                     disabled={isGenerating || !keywords}
-                    className="w-full bg-aurora-purple/80 hover:bg-aurora-purple text-white py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-linear-to-r from-aurora-purple to-indigo-600 hover:from-aurora-purple/80 hover:to-indigo-500 text-white py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed group"
                 >
-                    {isGenerating ? 'AIが生成中...' : '✨ AIで文章を自動生成'}
+                    {isGenerating ? (
+                        <>
+                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                         AIが考え中...
+                        </>
+                    ) : (
+                        <>
+                        <span className="text-xl group-hover:scale-110 transition-transform">✨</span> AIで文章を生成する
+                        </>
+                    )}
                 </button>
             </div>
 
             <textarea 
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="投稿内容を入力してください..."
-                className="w-full h-40 bg-slate-900/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-aurora-cyan resize-none"
+                placeholder="ここに生成された文章が表示されます。手動で編集も可能です..."
+                className="w-full h-48 bg-slate-900/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-aurora-cyan resize-none leading-relaxed"
             />
             
-            <div className="flex justify-between items-start mt-2">
+            <div className="flex justify-between items-start mt-2 px-1">
                 <button 
                   onClick={handleGenerateHashtags}
                   disabled={isHashtagGenerating}
-                  className="text-xs text-aurora-cyan hover:text-white border border-aurora-cyan/30 hover:border-aurora-cyan/80 bg-aurora-cyan/5 px-3 py-1 rounded-full transition-all flex items-center gap-1"
+                  className="text-xs font-bold text-aurora-cyan hover:text-white border border-aurora-cyan/30 hover:border-aurora-cyan/80 bg-aurora-cyan/5 hover:bg-aurora-cyan/20 px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5"
+                  title="本文をもとにハッシュタグを提案します"
                 >
-                  {isHashtagGenerating ? '生成中...' : 'Hashtag AI提案 #'}
+                  {isHashtagGenerating ? '生成中...' : '# ハッシュタグを追加'}
                 </button>
-                <div className="text-right text-xs text-slate-400">
-                    {content.length} 文字
-                    {platforms.twitter && content.length > 140 && <span className="text-yellow-400 ml-2">⚠️ X(Twitter)用にAIが自動要約します</span>}
+                <div className="text-right text-xs text-slate-400 font-mono">
+                    <span className={content.length > (platforms.twitter ? 140 : 2000) ? 'text-red-400 font-bold' : ''}>
+                        {content.length}
+                    </span> 文字
+                    {platforms.twitter && content.length > 140 && <span className="text-yellow-400 ml-2 font-sans">⚠️ X(Twitter)制限超過</span>}
                 </div>
             </div>
           </section>
 
           {/* 3. Media Upload */}
-          <section className="glass-card p-6">
+          <section className="glass-card p-6 border-b-4 border-aurora-cyan/60">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="bg-aurora-cyan/20 text-aurora-cyan w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+                <span className="bg-aurora-cyan text-slate-900 font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
                 メディア (写真/動画)
              </h3>
              
@@ -626,32 +640,33 @@ function CreatePostContent() {
                     onClick={() => {
                         setIsMediaModalOpen(true);
                     }}
-                    className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+                    className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-white/5"
                  >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    ライブラリから選択
+                    メディアライブラリから選択
                  </button>
              </div>
 
-             <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-aurora-cyan transition-colors relative bg-slate-800/30">
+             <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-aurora-cyan transition-colors relative bg-slate-800/30 group">
                 <input 
                     type="file" 
                     accept="image/*,video/*"
                     onChange={handleMediaChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
                 {!mediaPreview ? (
-                    <div className="text-slate-400">
-                        <div className="text-4xl mb-2">📷</div>
-                        <p>ここにファイルをドラッグ＆ドロップ<br/>またはクリックしてアップロード</p>
-                        <p className="text-xs mt-2 text-slate-500">JPG, PNG, MP4 (Max 100MB)</p>
+                    <div className="text-slate-400 group-hover:text-aurora-cyan transition-colors">
+                        <div className="text-4xl mb-3 transform group-hover:scale-110 transition-transform">📷</div>
+                        <p className="font-bold">ここにファイルをドラッグ＆ドロップ</p>
+                        <p className="text-sm mt-1">またはクリックしてアップロード</p>
+                        <p className="text-xs mt-3 text-slate-500">JPG, PNG, MP4 (Max 100MB)</p>
                     </div>
                 ) : (
                     <div className="relative h-64 flex items-center justify-center">
                         {mediaType === 'VIDEO' ? (
-                            <video src={mediaPreview} controls className="max-h-full max-w-full rounded-lg" />
+                            <video src={mediaPreview} controls className="max-h-full max-w-full rounded-lg shadow-lg" />
                         ) : (
-                            <img src={mediaPreview} alt="Preview" className="max-h-full max-w-full rounded-lg object-contain" />
+                            <img src={mediaPreview} alt="Preview" className="max-h-full max-w-full rounded-lg object-contain shadow-lg" />
                         )}
                         <button 
                             onClick={(e) => {
@@ -660,7 +675,7 @@ function CreatePostContent() {
                                 setMediaFile(null);
                                 setMediaPreview(null);
                             }}
-                            className="absolute top-2 right-2 bg-black/50 hover:bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center"
+                            className="absolute top-2 right-2 bg-black/60 hover:bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-20 transition-colors backdrop-blur-sm"
                         >
                             ✕
                         </button>
@@ -668,7 +683,10 @@ function CreatePostContent() {
                 )}
              </div>
              {platforms.youtube && mediaType !== 'VIDEO' && (
-                 <p className="text-red-400 text-xs mt-2">⚠️ YouTube Shortsには動画が必要です</p>
+                 <p className="text-red-400 text-xs mt-2 font-bold flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    YouTube Shortsには動画ファイルが必要です
+                 </p>
              )}
           </section>
         </div>

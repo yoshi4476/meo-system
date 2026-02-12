@@ -10,19 +10,34 @@ type Store = {
   company_id?: string;
 };
 
+type Company = {
+    id: string;
+    name: string;
+};
+
 export default function AdminStoresPage() {
   const { userInfo, isDemoMode } = useDashboard();
   const [stores, setStores] = useState<Store[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+
   useEffect(() => {
-    const fetchStores = async () => {
+    const fetchData = async () => {
       if (isDemoMode) {
           setStores([
-              { id: 's1', name: 'MEO Cafe 渋谷店', google_location_id: 'loc-001', company_id: 'c1' },
-              { id: 's2', name: 'MEO Cafe 新宿店', google_location_id: 'loc-002', company_id: 'c1' },
-              { id: 's3', name: 'MEO Cafe 池袋店', google_location_id: 'loc-003', company_id: 'c1' },
+              { id: 's1', name: 'MEO Cafe 渋谷店 (Demo)', google_location_id: 'loc-001', company_id: 'c1' },
+              { id: 's2', name: 'MEO Cafe 新宿店 (Demo)', google_location_id: 'loc-002', company_id: 'c1' },
+              { id: 's3', name: 'MEO Cafe 池袋店 (Demo)', google_location_id: 'loc-003', company_id: 'c1' },
+          ]);
+          setCompanies([
+              { id: 'c1', name: '株式会社サンプル（デモ）' },
+              { id: 'c2', name: '合同会社テスト（デモ）' }
           ]);
           setIsLoading(false);
           return;
@@ -31,20 +46,23 @@ export default function AdminStoresPage() {
       try {
         const token = localStorage.getItem('meo_auth_token');
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-        
-        const response = await fetch(`${apiUrl}/admin/stores`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const headers = { 'Authorization': `Bearer ${token}` };
 
-        if (response.ok) {
-          const data = await response.json();
-          setStores(data);
+        // Fetch Stores
+        const storesRes = await fetch(`${apiUrl}/admin/stores`, { headers });
+        if (storesRes.ok) {
+           setStores(await storesRes.json());
         } else {
-          const err = await response.text();
-          setError(`Error ${response.status}: ${err}`);
+           const err = await storesRes.text();
+           setError(`Error ${storesRes.status}: ${err}`);
         }
+        
+        // Fetch Companies (Only for Super Admin)
+        if (userInfo?.role === 'SUPER_ADMIN') {
+            const compRes = await fetch(`${apiUrl}/admin/companies`, { headers });
+            if (compRes.ok) setCompanies(await compRes.json());
+        }
+
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -53,28 +71,40 @@ export default function AdminStoresPage() {
     };
 
     if (isDemoMode || (userInfo && (userInfo.role === 'SUPER_ADMIN' || userInfo.role === 'COMPANY_ADMIN'))) {
-        fetchStores();
+        fetchData();
     } else if (userInfo) {
        setIsLoading(false);
        setError("権限がありません (Super Admin or Company Admin required)");
     }
   }, [userInfo, isDemoMode]);
 
-  const handleCreateStore = () => {
-      // TODO: Implement Modal
-      const name = prompt("新しい店舗名を入力してください:");
-      if (!name) return;
+  const handleCreateStore = async (e: React.FormEvent) => {
+      e.preventDefault();
       
-      // Call API (Quick implementation)
       const token = localStorage.getItem('meo_auth_token');
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/admin/stores`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ name })
-      }).then(res => {
-          if(res.ok) window.location.reload();
-          else alert("作成に失敗しました");
-      });
+      const payload: any = { name: newStoreName };
+      
+      if (userInfo?.role === 'SUPER_ADMIN' && selectedCompanyId) {
+          payload.company_id = selectedCompanyId;
+      }
+
+      try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/admin/stores`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+          });
+          
+          if(res.ok) {
+              window.location.reload();
+          } else { 
+              const err = await res.json();
+              alert("作成に失敗しました: " + (err.detail || JSON.stringify(err)));
+          }
+      } catch (e) {
+          console.error(e);
+          alert("エラーが発生しました");
+      }
   };
 
   if (isLoading) return <div className="p-8 text-slate-400">読み込み中...</div>;
@@ -99,7 +129,7 @@ export default function AdminStoresPage() {
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-4">
             <button 
-                onClick={handleCreateStore}
+                onClick={() => setIsModalOpen(true)}
                 className="bg-aurora-cyan text-deep-navy font-bold px-3 sm:px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors text-sm sm:text-base"
             >
                 + 店舗を追加
@@ -116,7 +146,7 @@ export default function AdminStoresPage() {
                 <tr className="bg-slate-800/50 text-slate-400 border-b border-white/5">
                     <th className="p-4 font-medium">店舗名 / ID</th>
                     <th className="p-4 font-medium">Google Location ID</th>
-                    <th className="p-4 font-medium">会社ID</th>
+                    <th className="p-4 font-medium">所属企業</th>
                     <th className="p-4 font-medium">アクション</th>
                 </tr>
             </thead>
@@ -127,7 +157,9 @@ export default function AdminStoresPage() {
                             店舗が見つかりません
                         </td>
                     </tr>
-                ) : stores.map((store) => (
+                ) : stores.map((store) => {
+                    const company = companies.find(c => c.id === store.company_id);
+                    return (
                     <tr key={store.id} className="hover:bg-white/5 transition-colors">
                         <td className="p-4">
                             <div className="font-bold text-white">{store.name}</div>
@@ -137,7 +169,11 @@ export default function AdminStoresPage() {
                             {store.google_location_id || '-'}
                         </td>
                         <td className="p-4 text-sm text-slate-500">
-                            {store.company_id || '未所属'}
+                             {company ? (
+                                <div className="text-purple-300">🏢 {company.name}</div>
+                             ) : (
+                                store.company_id ? store.company_id : '未所属'
+                             )}
                         </td>
                         <td className="p-4">
                             <button className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded transition-colors">
@@ -145,10 +181,65 @@ export default function AdminStoresPage() {
                             </button>
                         </td>
                     </tr>
-                ))}
+                )})}
             </tbody>
         </table>
       </div>
+
+      {/* Create Store Modal */}
+      {isModalOpen && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+              <div className="bg-slate-900 border border-white/10 rounded-xl p-6 w-full max-w-md shadow-2xl">
+                  <h2 className="text-xl font-bold text-white mb-4">新規店舗作成</h2>
+                  <form onSubmit={handleCreateStore} className="space-y-4">
+                      <div>
+                          <label className="block text-xs text-slate-400 mb-1">店舗名</label>
+                          <input 
+                              type="text" 
+                              required
+                              value={newStoreName}
+                              onChange={e => setNewStoreName(e.target.value)}
+                              className="w-full bg-slate-800 border border-white/10 rounded px-3 py-2 text-white"
+                          />
+                      </div>
+                      
+                      {/* Company Selection (Only for Super Admin) */}
+                      {userInfo?.role === 'SUPER_ADMIN' && (
+                          <div>
+                              <label className="block text-xs text-slate-400 mb-1">所属企業</label>
+                              <select 
+                                  value={selectedCompanyId}
+                                  onChange={e => setSelectedCompanyId(e.target.value)}
+                                  className="w-full bg-slate-800 border border-white/10 rounded px-3 py-2 text-white"
+                                  required
+                              >
+                                  <option value="">未選択</option>
+                                  {companies.map(c => (
+                                      <option key={c.id} value={c.id}>{c.name}</option>
+                                  ))}
+                              </select>
+                          </div>
+                      )}
+
+                      <div className="flex gap-3 pt-4">
+                          <button 
+                              type="button" 
+                              onClick={() => setIsModalOpen(false)}
+                              className="flex-1 bg-slate-800 text-slate-300 py-2 rounded hover:bg-slate-700"
+                          >
+                              キャンセル
+                          </button>
+                          <button 
+                              type="submit" 
+                              className="flex-1 bg-aurora-cyan text-deep-navy font-bold py-2 rounded hover:bg-cyan-400"
+                          >
+                              作成
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
     </div>
   );
 }
