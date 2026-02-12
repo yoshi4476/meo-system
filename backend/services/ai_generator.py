@@ -42,9 +42,12 @@ class AIClient:
         
         length_guide = ""
         if char_count:
-             length_guide = f"{char_count}文字前後"
+             if char_count <= 140:
+                 length_guide = f"{char_count}文字以内（厳守）"
+             else:
+                 length_guide = f"{char_count}文字前後"
         elif length_option == "SHORT":
-            length_guide = "100〜200文字程度で簡潔に"
+            length_guide = "140文字程度で簡潔に"
         elif length_option == "MEDIUM":
             length_guide = "300〜500文字程度で標準的な長さに"
         elif length_option == "LONG":
@@ -98,6 +101,21 @@ class AIClient:
 {additional_instruction}
 
 投稿文を作成してください。ハッシュタグも含めてください。 
+"""
+        return self.generate_text(system_prompt, user_prompt)
+
+    def generate_hashtags(self, keywords: str, content: str = None, count: int = 10):
+        system_prompt = f"""
+あなたはSNSマーケティングのエキスパートです。
+提供された投稿内容やキーワードに基づいて、集客効果が高く、関連性の強いハッシュタグを**{count}個**提案してください。
+出力はハッシュタグのみをスペース区切りで列挙してください。余計な文章は含めないでください。
+例: #ランチ #新宿 #カフェ
+"""
+        user_prompt = f"""
+キーワード: {keywords}
+投稿内容の一部: {content[:200] if content else "なし"}
+
+ハッシュタグを生成してください。
 """
         return self.generate_text(system_prompt, user_prompt)
 

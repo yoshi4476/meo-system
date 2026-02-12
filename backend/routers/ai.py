@@ -141,6 +141,30 @@ def generate_post(
             raise HTTPException(status_code=401, detail="OpenAI APIキーが無効または未設定です。設定画面でAPIキーを確認してください。")
         raise HTTPException(status_code=500, detail=str(e))
 
+class GenerateHashtagsRequest(BaseModel):
+    keywords: str
+    content: Optional[str] = None
+    count: int = 10
+
+@router.post("/generate/hashtags")
+def generate_hashtags(
+    req: GenerateHashtagsRequest,
+    x_openai_api_key: Optional[str] = APIHeader(None, alias="X-OpenAI-Api-Key"),
+    x_gemini_api_key: Optional[str] = APIHeader(None, alias="X-Gemini-Api-Key")
+):
+    try:
+        api_key = x_openai_api_key or x_gemini_api_key
+        client = ai_generator.AIClient(api_key=api_key)
+        hashtags = client.generate_hashtags(
+            keywords=req.keywords,
+            content=req.content,
+            count=req.count
+        )
+        return {"hashtags": hashtags}
+    except Exception as e:
+        logger.error(f"Error in generate_hashtags: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/prompts")
 def list_prompts(category: Optional[str] = None, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
     query = db.query(models.Prompt).filter(models.Prompt.user_id == current_user.id)

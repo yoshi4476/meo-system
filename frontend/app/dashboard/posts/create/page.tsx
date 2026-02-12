@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, Suspense } from 'react';
 import { useDashboard } from '../../../../contexts/DashboardContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
+import MediaLibraryModal from '../../../../components/dashboard/MediaLibraryModal';
 
-export default function CreatePostPage() {
+function CreatePostContent() {
   const { userInfo, isDemoMode, refreshUser } = useDashboard();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
   
   // State
   const [content, setContent] = useState('');
@@ -34,29 +37,87 @@ export default function CreatePostPage() {
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isHashtagGenerating, setIsHashtagGenerating] = useState(false); // New state
   const [isPosting, setIsPosting] = useState(false);
   
   // AI Params
   const [keywords, setKeywords] = useState('');
-  const [isKeywordsLocked, setIsKeywordsLocked] = useState(false); // New
+  const [isKeywordsLocked, setIsKeywordsLocked] = useState(false); 
   const [tone, setTone] = useState('friendly');
   const [keyArea, setKeyArea] = useState('');
-  const [isKeyAreaLocked, setIsKeyAreaLocked] = useState(false); // New
+  const [isKeyAreaLocked, setIsKeyAreaLocked] = useState(false); 
   const [charCount, setCharCount] = useState<string>('auto'); // 'auto', '140', '300', '500'
-  const [customPrompt, setCustomPrompt] = useState(''); // New
+  const [customPrompt, setCustomPrompt] = useState('');
 
-  // Media Library State
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  const [mediaTab, setMediaTab] = useState<'photos' | 'history'>('photos');
-  const [mediaList, setMediaList] = useState<{id: string, url: string, type: 'PHOTO'|'VIDEO'}[]>([]);
-  const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
-  // Initial Check
+  // Platform Preview Tab
+  const [previewTab, setPreviewTab] = useState<'google' | 'instagram' | 'twitter'>('google'); // New state
+
+  // Initial Check & Load Locks
   useEffect(() => {
     if (userInfo) {
        checkConnections();
     }
-  }, [userInfo]);
+
+    // Load Locks from LocalStorage
+    const savedKeywordsLock = localStorage.getItem('post_keywords_locked') === 'true';
+    const savedKeyAreaLock = localStorage.getItem('post_keyarea_locked') === 'true';
+    
+    setIsKeywordsLocked(savedKeywordsLock);
+    setIsKeyAreaLocked(savedKeyAreaLock);
+
+    if (savedKeywordsLock) {
+        const savedK = localStorage.getItem('post_keywords_content');
+        if (savedK) setKeywords(savedK);
+    }
+    if (savedKeyAreaLock) {
+        const savedA = localStorage.getItem('post_keyarea_content');
+        if (savedA) setKeyArea(savedA);
+    }
+
+    // Fetch if editing
+    if (editId && userInfo) {
+        fetchPostData(editId);
+    }
+  }, [userInfo, editId]);
+
+  const fetchPostData = async (id: string) => {
+      if (isDemoMode) return;
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${id}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+              const post = await res.json();
+              setContent(post.content || '');
+              
+              if (post.media_url) {
+                  setMediaPreview(post.media_url);
+                  setMediaType(post.media_type === 'VIDEO' ? 'VIDEO' : 'PHOTO');
+              }
+              
+              if (post.status === 'SCHEDULED' && post.scheduled_at) {
+                  setIsScheduled(true);
+                  // Format for datetime-local: YYYY-MM-DDThh:mm
+                  const date = new Date(post.scheduled_at);
+                  const localIso = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                  setScheduledDate(localIso);
+              }
+              
+              if (post.target_platforms && Array.isArray(post.target_platforms)) {
+                  const newPlatforms = {
+                      google: post.target_platforms.includes('google'),
+                      instagram: post.target_platforms.includes('instagram'),
+                      twitter: post.target_platforms.includes('twitter'),
+                      youtube: post.target_platforms.includes('youtube')
+                  };
+                  setPlatforms(newPlatforms);
+              }
+          }
+      } catch(e) { console.error(e); }
+  };
   
   const checkConnections = async () => {
     if (isDemoMode) {
@@ -91,6 +152,37 @@ export default function CreatePostPage() {
     }
   };
 
+  const handleKeywordsLockChange = (locked: boolean) => {
+    setIsKeywordsLocked(locked);
+    localStorage.setItem('post_keywords_locked', String(locked));
+    if (locked) {
+        localStorage.setItem('post_keywords_content', keywords);
+    }
+  };
+
+  const handleKeyAreaLockChange = (locked: boolean) => {
+    setIsKeyAreaLocked(locked);
+    localStorage.setItem('post_keyarea_locked', String(locked));
+    if (locked) {
+        localStorage.setItem('post_keyarea_content', keyArea);
+    }
+  };
+  
+  // Update storage when content changes IF locked
+  const handleKeywordsChange = (val: string) => {
+      setKeywords(val);
+      if (isKeywordsLocked) {
+          localStorage.setItem('post_keywords_content', val);
+      }
+  };
+
+  const handleKeyAreaChange = (val: string) => {
+      setKeyArea(val);
+      if (isKeyAreaLocked) {
+          localStorage.setItem('post_keyarea_content', val);
+      }
+  };
+
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -106,66 +198,19 @@ export default function CreatePostPage() {
       reader.readAsDataURL(file);
     }
   };
-  const fetchMediaLibrary = async (type: 'photos' | 'history') => {
-      setIsLoadingMedia(true);
-      setMediaTab(type);
-      try {
-        const token = localStorage.getItem('meo_auth_token');
-        let endpoint = type === 'photos' 
-            ? `${process.env.NEXT_PUBLIC_API_URL}/media/?store_id=${userInfo?.store_id}` 
-            : `${process.env.NEXT_PUBLIC_API_URL}/posts/?store_id=${userInfo?.store_id}`; // Simplified, ideally a separate endpoint for used media
-        
-        const res = await fetch(endpoint, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            let items: any[] = [];
-            
-            if (type === 'photos') {
-                items = data.map((d: any) => ({
-                    id: d.id,
-                    url: d.thumbnail_url || d.google_url,
-                    type: d.media_format === 'VIDEO' ? 'VIDEO' : 'PHOTO'
-                }));
-            } else {
-                // Post history logic
-                 items = data
-                    .filter((p: any) => p.media_url)
-                    .map((p: any) => ({
-                        id: p.id,
-                        url: p.media_url,
-                        type: p.media_type
-                    }));
-            }
-            // Dedup by URL
-            const unique = Array.from(new Map(items.map(item => [item.url, item])).values());
-            setMediaList(unique as any);
-        }
-      } catch (e) {
-          console.error(e);
-      } finally {
-          setIsLoadingMedia(false);
-      }
-  };
-
   const handleSelectLibraryMedia = (url: string, type: 'PHOTO' | 'VIDEO') => {
       setMediaPreview(url);
       setMediaType(type);
       setMediaFile(null); // Clear file input since we are using URL
       setIsMediaModalOpen(false);
   };
-    
-  useEffect(() => {
-     if(isMediaModalOpen) {
-         fetchMediaLibrary(mediaTab);
-     }
-  }, [mediaTab]);
 
 
   const handleGenerateAI = async () => {
-    if (!keywords) return;
+    if (!keywords && !customPrompt) {
+        alert('キーワードまたはカスタムプロンプトを入力してください');
+        return;
+    }
     setIsGenerating(true);
     try {
         const token = localStorage.getItem('meo_auth_token');
@@ -211,31 +256,71 @@ export default function CreatePostPage() {
     }
   };
 
-  const handlePost = async () => {
-    if (!content) {
+  const handleGenerateHashtags = async () => {
+      if (!keywords && !content) {
+          alert("キーワードまたは本文を入力してから実行してください");
+          return;
+      }
+      setIsHashtagGenerating(true);
+      try {
+          const token = localStorage.getItem('meo_auth_token');
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate/hashtags`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                  keywords: keywords,
+                  content: content
+              })
+          });
+          if (res.ok) {
+              const data = await res.json();
+              if (data.hashtags) {
+                  // Append hashtags to content
+                  setContent(prev => prev + (prev.endsWith("\n") ? "" : "\n\n") + data.hashtags);
+              }
+          }
+      } catch (e) {
+          console.error(e);
+          alert('ハッシュタグ生成に失敗しました');
+      } finally {
+          setIsHashtagGenerating(false);
+      }
+  };
+
+  const handlePost = async (isDraft: boolean = false) => {
+    if (!content && !isDraft) {
         alert('投稿内容を入力してください');
         return;
     }
+    if (!content && isDraft) {
+        // Allow saving draft with just title/keywords if implemented, but here we need content for Post model
+        alert('下書きを保存するには本文を入力してください');
+        return;
+    }
     
-    // Validate selections
+    // Validate selections only if not draft
     const selectedPlatforms = Object.entries(platforms).filter(([k, v]) => v).map(([k]) => k);
-    if (selectedPlatforms.length === 0) {
+    if (!isDraft && selectedPlatforms.length === 0) {
         alert('投稿先のプラットフォームを少なくとも1つ選択してください');
         return;
     }
     
-    // Check connections for selected platforms
-    const unconnected = selectedPlatforms.filter(p => !connections[p as keyof typeof connections]);
-    if (unconnected.length > 0) {
-        const confirmMsg = `以下のプラットフォームは未連携ですが、投稿を続行しますか？\n(連携されていない場合、投稿は失敗します)\n\n- ${unconnected.join('\n- ')}`;
-        if (!confirm(confirmMsg)) {
+    // Check connections for selected platforms if not draft
+    if (!isDraft) {
+        const unconnected = selectedPlatforms.filter(p => !connections[p as keyof typeof connections]);
+        if (unconnected.length > 0) {
+            const confirmMsg = `以下のプラットフォームは未連携ですが、投稿を続行しますか？\n(連携されていない場合、投稿は失敗します)\n\n- ${unconnected.join('\n- ')}`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+        }
+        if (platforms.youtube && mediaType !== 'VIDEO') {
+            alert('YouTube Shortsには動画ファイルが必要です');
             return;
         }
-    }
-    
-    if (platforms.youtube && mediaType !== 'VIDEO') {
-        alert('YouTube Shortsには動画ファイルが必要です');
-        return;
     }
 
     setIsPosting(true);
@@ -259,20 +344,31 @@ export default function CreatePostPage() {
              } else {
                  throw new Error('メディアのアップロードに失敗しました');
              }
+        } else if (mediaPreview && !mediaPreview.startsWith('data:')) {
+            // Existing URL (from library or edit)
+            mediaUrl = mediaPreview;
         }
         
+        const status = isDraft ? 'DRAFT' : (isScheduled ? 'SCHEDULED' : 'PUBLISHED');
+
         const payload = {
             store_id: userInfo?.store_id,
             content: content,
             media_url: mediaUrl,
             media_type: mediaType,
-            status: isScheduled ? 'SCHEDULED' : 'PUBLISHED',
-            scheduled_at: isScheduled ? new Date(scheduledDate).toISOString() : null,
+            status: status,
+            scheduled_at: (status === 'SCHEDULED' || status === 'DRAFT') && scheduledDate ? new Date(scheduledDate).toISOString() : null,
             target_platforms: selectedPlatforms
         };
 
-        const postRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/`, {
-            method: 'POST',
+        const url = editId 
+            ? `${process.env.NEXT_PUBLIC_API_URL}/posts/${editId}`
+            : `${process.env.NEXT_PUBLIC_API_URL}/posts/`;
+            
+        const method = editId ? 'PATCH' : 'POST';
+
+        const postRes = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
@@ -282,7 +378,10 @@ export default function CreatePostPage() {
 
         if (postRes.ok) {
             const data = await postRes.json();
-            if (data.status === 'FAILED') {
+            if (isDraft) {
+                alert('下書きを保存しました');
+                router.push('/dashboard/posts');
+            } else if (data.status === 'FAILED') {
                 alert('投稿に失敗しました。各SNSの連携状態を確認してください。');
             } else if (data.status === 'PARTIAL') {
                 alert('一部のプラットフォームへの投稿に失敗しました。');
@@ -293,7 +392,7 @@ export default function CreatePostPage() {
             }
         } else {
             const err = await postRes.text();
-            alert(`投稿に失敗しました: ${err}`);
+            alert(`処理に失敗しました: ${err}`);
         }
 
     } catch (e: any) {
@@ -319,12 +418,12 @@ export default function CreatePostPage() {
         {/* LEFT COLUMN: Input & AI */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* 1. Platform Selection */}
-          <section className="glass-card p-6">
-             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="bg-aurora-cyan/20 text-aurora-cyan w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                投稿先を選択
-             </h3>
+           {/* 1. Posting Checklist (Renamed from Platform Selection) */}
+           <section className="glass-card p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                 <span className="bg-aurora-cyan/20 text-aurora-cyan w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                 投稿先を選択
+              </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <PlatformCheckbox 
                     id="google" 
@@ -382,86 +481,87 @@ export default function CreatePostPage() {
              </h3>
             
             {/* AI Generator Input */}
-            <div className="bg-slate-800/50 p-4 rounded-xl mb-4 border border-white/5">
-                <div className="flex gap-4 mb-3">
-                    <div className="flex-1 relative">
+            <div className="bg-slate-800/50 p-4 rounded-xl mb-4 border border-white/5 space-y-4">
+                <div className="flex gap-4">
+                    <div className="flex-1">
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs text-slate-400">キーワード</label>
+                            <button 
+                                onClick={() => handleKeywordsLockChange(!isKeywordsLocked)}
+                                className={`text-xs flex items-center gap-1 ${isKeywordsLocked ? 'text-aurora-cyan' : 'text-slate-500'}`}
+                            >
+                                {isKeywordsLocked ? '🔒 固定中' : '🔓 固定しない'}
+                            </button>
+                        </div>
                         <input 
                             type="text" 
-                            placeholder="キーワードや話題を入力 (例: ランチ, 新メニュー, 季節限定)"
+                            placeholder="例: ランチ, 新メニュー"
                             value={keywords}
-                            onChange={(e) => setKeywords(e.target.value)}
-                            readOnly={isKeywordsLocked}
-                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan pr-10 ${isKeywordsLocked ? 'border-red-500/50 text-slate-400 cursor-not-allowed' : 'border-white/10'}`}
+                            onChange={(e) => handleKeywordsChange(e.target.value)}
+                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan ${isKeywordsLocked ? 'border-aurora-cyan/30 bg-aurora-cyan/5' : 'border-white/10'}`}
                         />
-                        <button 
-                            onClick={() => setIsKeywordsLocked(!isKeywordsLocked)} 
-                            className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
-                            title={isKeywordsLocked ? "ロック解除" : "入力をロック"}
-                        >
-                            {isKeywordsLocked ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                            ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                            )}
-                        </button>
                     </div>
-                    <select 
-                        value={tone}
-                        onChange={(e) => setTone(e.target.value)}
-                        className="bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none w-32"
-                    >
-                        <option value="friendly">親しみ</option>
-                        <option value="formal">丁寧</option>
-                        <option value="professional">専門的</option>
-                        <option value="excited">情熱</option>
-                    </select>
+                    <div className="w-40">
+                         <label className="text-xs text-slate-400 mb-1 block">トーン</label>
+                         <select 
+                            value={tone}
+                            onChange={(e) => setTone(e.target.value)}
+                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none"
+                        >
+                            <option value="friendly">親しみ</option>
+                            <option value="formal">丁寧</option>
+                            <option value="professional">専門的</option>
+                            <option value="excited">情熱</option>
+                        </select>
+                    </div>
                 </div>
                 
                 {/* Advanced AI Options */}
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div className="relative">
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                         <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs text-slate-400">地域・エリア</label>
+                            <button 
+                                onClick={() => handleKeyAreaLockChange(!isKeyAreaLocked)}
+                                className={`text-xs flex items-center gap-1 ${isKeyAreaLocked ? 'text-aurora-cyan' : 'text-slate-500'}`}
+                            >
+                                {isKeyAreaLocked ? '🔒 固定中' : '🔓 固定しない'}
+                            </button>
+                        </div>
                         <input 
                             type="text" 
-                            placeholder="地域・エリア (例: 新宿, 大阪梅田)" 
+                            placeholder="例: 新宿, 大阪梅田" 
                             value={keyArea}
-                            onChange={(e) => setKeyArea(e.target.value)}
-                            readOnly={isKeyAreaLocked}
-                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm pr-10 ${isKeyAreaLocked ? 'border-red-500/50 text-slate-400 cursor-not-allowed' : 'border-white/10'}`}
+                            onChange={(e) => handleKeyAreaChange(e.target.value)}
+                            className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm ${isKeyAreaLocked ? 'border-aurora-cyan/30 bg-aurora-cyan/5' : 'border-white/10'}`}
                         />
-                         <button 
-                            onClick={() => setIsKeyAreaLocked(!isKeyAreaLocked)} 
-                            className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
-                            title={isKeyAreaLocked ? "ロック解除" : "入力をロック"}
-                        >
-                            {isKeyAreaLocked ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                            ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                            )}
-                        </button>
                     </div>
-                    <select 
-                        value={charCount}
-                        onChange={(e) => setCharCount(e.target.value)}
-                        className="bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none text-sm"
-                    >
-                        <option value="auto">文字数：自動最適化</option>
-                        <option value="140">140文字 (X向け)</option>
-                        <option value="300">300文字 (標準)</option>
-                        <option value="500">500文字 (長文)</option>
-                    </select>
-                </div>
-                
-                {/* Custom Prompt */}
-                <div className="mb-4">
-                     <textarea 
-                        placeholder="AIへの追加指示 (例: 「冒頭は挨拶から始めて」「ターゲットは30代女性」「絵文字を多めに」)" 
-                        value={customPrompt}
-                        onChange={(e) => setCustomPrompt(e.target.value)}
-                        className="w-full h-16 bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm resize-none"
-                     />
+                    <div>
+                        <label className="text-xs text-slate-400 mb-1 block">文字数目安</label>
+                        <select 
+                            value={charCount}
+                            onChange={(e) => setCharCount(e.target.value)}
+                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none text-sm"
+                        >
+                            <option value="auto">自動最適化</option>
+                            <option value="140">140文字 (X向け)</option>
+                            <option value="300">300文字 (標準)</option>
+                            <option value="500">500文字 (長文)</option>
+                        </select>
+                    </div>
                 </div>
 
+                {/* Custom Prompt */}
+                <div>
+                     <label className="text-xs text-slate-400 mb-1 block">カスタムプロンプト (AIへの指示)</label>
+                     <textarea 
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        placeholder="例: 絵文字を多めに使って。ターゲットは20代女性。ハッシュタグを5個つけて。"
+                        className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none text-sm h-16 resize-none"
+                     />
+                </div>
+                
                 <button 
                     onClick={handleGenerateAI}
                     disabled={isGenerating || !keywords}
@@ -477,9 +577,19 @@ export default function CreatePostPage() {
                 placeholder="投稿内容を入力してください..."
                 className="w-full h-40 bg-slate-900/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-aurora-cyan resize-none"
             />
-            <div className="text-right text-xs text-slate-400 mt-2">
-                {content.length} 文字
-                {platforms.twitter && content.length > 140 && <span className="text-yellow-400 ml-2">⚠️ X(Twitter)用にAIが自動要約します</span>}
+            
+            <div className="flex justify-between items-start mt-2">
+                <button 
+                  onClick={handleGenerateHashtags}
+                  disabled={isHashtagGenerating}
+                  className="text-xs text-aurora-cyan hover:text-white border border-aurora-cyan/30 hover:border-aurora-cyan/80 bg-aurora-cyan/5 px-3 py-1 rounded-full transition-all flex items-center gap-1"
+                >
+                  {isHashtagGenerating ? '生成中...' : 'Hashtag AI提案 #'}
+                </button>
+                <div className="text-right text-xs text-slate-400">
+                    {content.length} 文字
+                    {platforms.twitter && content.length > 140 && <span className="text-yellow-400 ml-2">⚠️ X(Twitter)用にAIが自動要約します</span>}
+                </div>
             </div>
           </section>
 
@@ -494,7 +604,6 @@ export default function CreatePostPage() {
                  <button 
                     onClick={() => {
                         setIsMediaModalOpen(true);
-                        fetchMediaLibrary('photos');
                     }}
                     className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
                  >
@@ -547,29 +656,62 @@ export default function CreatePostPage() {
         <div className="lg:col-span-1 space-y-6">
             {/* Preview Card */}
             <section className="glass-card p-6 border border-white/5">
-                <h3 className="text-white font-bold mb-4">プレビュー</h3>
-                <div className="bg-white rounded-xl overflow-hidden shadow-lg text-black">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-white font-bold">プレビュー</h3>
+                    <div className="flex bg-slate-800 rounded-lg p-1">
+                        <button 
+                            onClick={() => setPreviewTab('google')} 
+                            className={`px-3 py-1 rounded text-xs transition-colors ${previewTab === 'google' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                        >G</button>
+                        <button 
+                            onClick={() => setPreviewTab('instagram')} 
+                            className={`px-3 py-1 rounded text-xs transition-colors ${previewTab === 'instagram' ? 'bg-pink-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                        >IG</button>
+                        <button 
+                            onClick={() => setPreviewTab('twitter')} 
+                            className={`px-3 py-1 rounded text-xs transition-colors ${previewTab === 'twitter' ? 'bg-black text-white border border-white/10' : 'text-slate-400 hover:text-white'}`}
+                        >X</button>
+                    </div>
+                </div>
+                
+                <div className={`bg-white rounded-xl overflow-hidden shadow-lg text-black ${previewTab === 'twitter' ? 'font-sans' : ''}`}>
                     {/* Mock Preview Header */}
                     <div className="p-3 border-b border-gray-100 flex items-center gap-2">
                         <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
                         <div>
                            <div className="text-xs font-bold text-gray-800">{userInfo?.store?.name || '店舗名'}</div>
-                           <div className="text-[10px] text-gray-500">たった今</div>
+                           <div className="text-[10px] text-gray-500">
+                               {previewTab === 'google' && '最新情報'}
+                               {previewTab === 'instagram' && 'Instagram'}
+                               {previewTab === 'twitter' && '@store_account'}
+                           </div>
                         </div>
                     </div>
                     {/* Media */}
-                    <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
-                        {mediaPreview ? (
-                            mediaType === 'VIDEO' ? <video src={mediaPreview} className="w-full h-full object-cover" /> : <img src={mediaPreview} className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="text-gray-300 text-sm">No Media</div>
-                        )}
-                    </div>
+                    {(previewTab === 'instagram' || previewTab === 'google') && (
+                        <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                            {mediaPreview ? (
+                                mediaType === 'VIDEO' ? <video src={mediaPreview} className="w-full h-full object-cover" /> : <img src={mediaPreview} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="text-gray-300 text-sm">No Media</div>
+                            )}
+                        </div>
+                    )}
                     {/* Content */}
                     <div className="p-3">
-                        <p className="text-sm text-gray-800 line-clamp-4 whitespace-pre-wrap">
+                        <p className="text-sm text-gray-800 line-clamp-6 whitespace-pre-wrap">
                             {content || 'ここに投稿内容が表示されます...'}
                         </p>
+                        {previewTab === 'twitter' && mediaPreview && (
+                             <div className="mt-2 rounded-xl overflow-hidden border border-gray-200 aspect-video">
+                                {mediaType === 'VIDEO' ? <video src={mediaPreview} className="w-full h-full object-cover" /> : <img src={mediaPreview} className="w-full h-full object-cover" />}
+                             </div>
+                        )}
+                         {previewTab === 'twitter' && content.length > 140 && (
+                            <div className="mt-2 text-xs text-red-500 font-bold bg-red-50 p-2 rounded">
+                                ※ 140文字を超えています。投稿時に自動でスレッド化または要約されます。
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -598,22 +740,45 @@ export default function CreatePostPage() {
                     </div>
                 )}
 
-                <button 
-                    onClick={handlePost}
-                    disabled={isPosting || (isScheduled && !scheduledDate)}
-                    className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg shadow-aurora-cyan/20 transition-all ${
-                        isPosting 
-                        ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
-                        : 'bg-aurora-cyan hover:bg-aurora-cyan/80 text-white hover:scale-[1.02]'
-                    }`}
-                >
-                    {isPosting ? '送信中...' : (isScheduled ? '予約する' : '今すぐ投稿')}
-                </button>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                     <button 
+                        onClick={() => handlePost(true)} // isDraft = true
+                        disabled={isPosting}
+                        className="w-full py-3 rounded-xl font-bold bg-slate-700 text-slate-300 hover:bg-slate-600 transition-all border border-white/10"
+                    >
+                        下書き保存
+                    </button>
+                    <button 
+                        onClick={() => handlePost(false)}
+                        disabled={isPosting || (isScheduled && !scheduledDate)}
+                        className={`w-full py-3 rounded-xl font-bold text-white shadow-lg shadow-aurora-cyan/20 transition-all ${
+                            isPosting 
+                            ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
+                            : 'bg-aurora-cyan hover:bg-aurora-cyan/80 hover:scale-[1.02]'
+                        }`}
+                    >
+                        {isPosting ? '送信中...' : (isScheduled ? '予約する' : '投稿する')}
+                    </button>
+                </div>
             </section>
         </div>
       </div>
+      <MediaLibraryModal 
+         isOpen={isMediaModalOpen}
+         onClose={() => setIsMediaModalOpen(false)}
+         onSelect={handleSelectLibraryMedia}
+         storeId={userInfo?.store_id}
+      />
     </div>
   );
+}
+
+export default function CreatePostPage() {
+    return (
+        <Suspense fallback={<div className="text-center py-20 text-slate-400">Loading...</div>}>
+            <CreatePostContent />
+        </Suspense>
+    );
 }
 
 interface PlatformCheckboxProps {

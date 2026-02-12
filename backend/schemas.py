@@ -22,6 +22,7 @@ class Post(PostBase):
     id: str
     store_id: str
     created_at: datetime
+    target_platforms: List[str] = []
 
     class Config:
         from_attributes = True

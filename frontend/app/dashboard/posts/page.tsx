@@ -5,8 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useDashboard } from '../../../contexts/DashboardContext';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { SmartphonePreview } from '../../../components/dashboard/SmartphonePreview';
-import { ImageSelector } from '../../../components/dashboard/ImageSelector';
 
 type Post = {
     id: string;
@@ -32,56 +30,13 @@ function PostsContent() {
     const { userInfo, isDemoMode } = useDashboard();
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isCreating, setIsCreating] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('new') === 'true') {
-            setIsCreating(true);
+            router.push('/dashboard/posts/create');
         }
-    }, [searchParams]);
+    }, [searchParams, router]);
 
-    // AI Studio State
-    const [postType, setPostType] = useState<'update' | 'event' | 'offer'>('update');
-    const [topic, setTopic] = useState('');
-    const [keywords, setKeywords] = useState('');
-    const [prompt, setPrompt] = useState('');
-    const [mood, setMood] = useState('プロフェッショナル');
-    const [charCount, setCharCount] = useState(300);
-    const [keywordsRegion, setKeywordsRegion] = useState('');
-    
-    // Prompt Locking
-    const [lockedPrompt, setLockedPrompt] = useState('');
-    const [isPromptLocked, setIsPromptLocked] = useState(false);
-    
-    // Field Locking (Local Storage)
-    const [isKeywordsLocked, setIsKeywordsLocked] = useState(false);
-    const [isRegionLocked, setIsRegionLocked] = useState(false);
-
-    // Image Selector
-    const [showImageSelector, setShowImageSelector] = useState(false);
-    
-    // Restoring missing state from previous error
-    const [couponCode, setCouponCode] = useState('');
-    const [offerTerms, setOfferTerms] = useState('');
-    
-    // Editor State
-    const [newPostContent, setNewPostContent] = useState('');
-    const [newPostMedia, setNewPostMedia] = useState('');
-    const [showImageGallery, setShowImageGallery] = useState(false);
-    const [editingPost, setEditingPost] = useState<Post | null>(null);
-    
-    // Schedule State
-    const [scheduleEnabled, setScheduleEnabled] = useState(false);
-    const [scheduleDate, setScheduleDate] = useState('');
-    const [scheduleTime, setScheduleTime] = useState('12:00');
-    
-    // Generation State
-    const [isGenerating, setIsGenerating] = useState(false);
-    
-    // API Key Settings
-    const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-    const [apiKey, setApiKey] = useState('');
-    const [hasApiKey, setHasApiKey] = useState(false);
 
     const fetchPosts = async () => {
         setIsLoading(true);
@@ -114,276 +69,16 @@ function PostsContent() {
 
     useEffect(() => {
         fetchPosts();
-        
-        // Fetch Locked Prompt
-        const fetchPrompt = async () => {
-            if (isDemoMode) {
-                // Demo
-                return;
-            }
-            try {
-                const token = localStorage.getItem('meo_auth_token');
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts?category=POST_GENERATION`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if(res.ok) {
-                    const prompts = await res.json();
-                    if (prompts.length > 0) {
-                        setPrompt(prompts[0].content);
-                        setLockedPrompt(prompts[0].content);
-                        setIsPromptLocked(prompts[0].is_locked);
-                    }
-                }
-            } catch(e) { console.error(e); }
-        };
-        fetchPrompt();
     }, [userInfo, isDemoMode]);
 
-    const handleToggleLock = async () => {
-        const newLockedState = !isPromptLocked;
-        setIsPromptLocked(newLockedState);
-        
-        if (isDemoMode) {
-             alert(newLockedState ? "プロンプトを固定しました (デモ)" : "プロンプトの固定を解除しました");
-             return;
-        }
-
-        try {
-            const token = localStorage.getItem('meo_auth_token');
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/prompts`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({
-                    title: "Locked Post Prompt",
-                    content: prompt,
-                    category: "POST_GENERATION",
-                    is_locked: newLockedState
-                })
-            });
-            if (newLockedState) setLockedPrompt(prompt);
-        } catch(e) {
-            console.error(e);
-            alert("保存に失敗しました");
-            setIsPromptLocked(!newLockedState); // Revert
-        }
-    };
-
-    // Load Local Locks and API Key
-    useEffect(() => {
-        const savedKeywordsLock = localStorage.getItem('post_keywords_locked') === 'true';
-        const savedRegionLock = localStorage.getItem('post_region_locked') === 'true';
-        setIsKeywordsLocked(savedKeywordsLock);
-        setIsRegionLocked(savedRegionLock);
-
-        if(savedKeywordsLock) {
-            const savedK = localStorage.getItem('post_keywords_content');
-            if(savedK) setKeywords(savedK);
-        }
-        if(savedRegionLock) {
-            const savedR = localStorage.getItem('post_region_content');
-            if(savedR) setKeywordsRegion(savedR);
-        }
-        
-        // Load API Key
-        const savedApiKey = localStorage.getItem('openai_api_key');
-        if (savedApiKey) {
-            setApiKey(savedApiKey);
-            setHasApiKey(true);
-        }
-    }, []);
-
-    const handleKeywordsLockChange = (value: string) => {
-        const isLocked = value === 'locked';
-        setIsKeywordsLocked(isLocked);
-        localStorage.setItem('post_keywords_locked', String(isLocked));
-        if (isLocked) {
-            localStorage.setItem('post_keywords_content', keywords);
-        }
-    };
-
-    const handleRegionLockChange = (value: string) => {
-        const isLocked = value === 'locked';
-        setIsRegionLocked(isLocked);
-        localStorage.setItem('post_region_locked', String(isLocked));
-        if (isLocked) {
-            localStorage.setItem('post_region_content', keywordsRegion);
-        }
-    };
-    
-    const handleSaveApiKey = () => {
-        if (apiKey.trim()) {
-            localStorage.setItem('openai_api_key', apiKey.trim());
-            setHasApiKey(true);
-            setShowApiKeyModal(false);
-        }
-    };
-
-    const handleGenerate = async () => {
-        setIsGenerating(true);
-        
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 1500));
-            // Demo Generation based on inputs
-            let content = "";
-            const storeName = "MEO Cafe 渋谷店";
-            
-            const regionStr = keywordsRegion ? `(${keywordsRegion}エリア)` : "";
-            
-            if (postType === 'offer') {
-                content = `【限定特典】${topic || '特別クーポン配布中！'}\n\n${storeName}${regionStr}から皆様へプレゼント🎁\n\n${keywords.split(',').map(k => `#${k.trim()}`).join(' ')}\n\n${couponCode ? `クーポンコード: ${couponCode}\n` : ''}${offerTerms ? `利用条件: ${offerTerms}\n` : ''}\n皆様のご来店をお待ちしております！`;
-            } else {
-                content = `【${mood}な${postType === 'event' ? 'イベント' : 'お知らせ'}】\n${topic || '季節のご挨拶'}\n\nいつも${storeName}をご利用ありがとうございます。\n${keywords.split(',').map(k => `#${k.trim()}`).join(' ')}\n\n${prompt ? `(${prompt}を反映)\n` : ''}ぜひお立ち寄りください！`;
-            }
-            setNewPostContent(content);
-            setIsGenerating(false);
-            return;
-        }
-
-        try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate/post`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    Authorization: `Bearer ${localStorage.getItem('meo_auth_token')}`,
-                    'X-OpenAI-Api-Key': localStorage.getItem('openai_api_key') || ''
-                },
-                body: JSON.stringify({ 
-                    keywords: keywords || topic, 
-                    length_option: 'MEDIUM', // Use char_count effectively
-                    char_count: charCount,
-                    tone: mood === 'プロフェッショナル' ? 'professional' : 'friendly',
-                    keywords_region: keywordsRegion,
-                    custom_prompt: prompt
-                })
-            });
-            if(res.ok) {
-                const data = await res.json();
-                setNewPostContent(data.content);
-            } else {
-                // Determine error message
-                const errText = await res.text();
-                let errMsg = `生成に失敗しました (Status: ${res.status})`;
-                let errJson = null;
-                try {
-                    errJson = JSON.parse(errText);
-                } catch(e) { /* ignore */ }
-
-                if (res.status === 429) {
-                    // Check for specific quota error
-                    if (errJson?.error?.code === 'insufficient_quota' || errText.includes('insufficient_quota')) {
-                        errMsg = "⚠️ OpenAI APIの利用枠（クレジット）が不足しています。\n\n無料枠の期限切れ、または上限に達している可能性があります。\nOpenAIのBilling設定をご確認いただき、クレジットを追加するか支払い情報を更新してください。";
-                    } else {
-                        errMsg = "⚠️ AIの利用制限（レートリミット）を超えました。\n\n短時間に多数のリクエストを送ることができません。\nしばらく待ってから再試行してください。";
-                    }
-                } else {
-                    if(errJson?.detail) errMsg += `\n${errJson.detail}`;
-                    else errMsg += `\n${errText.substring(0, 100)}`;
-                }
-                alert(errMsg);
-            }
-        } catch(e) { 
-            console.error(e); 
-            alert(`ネットワークエラーまたはサーバーエラー:\n${e}`); 
-        }
-        finally { setIsGenerating(false); }
-    };
-
-    const handleSavePost = async (status: 'DRAFT' | 'PUBLISHED') => {
-        if (isDemoMode) {
-            alert(`デモモード: 投稿を${status === 'PUBLISHED' ? '公開' : '保存'}しました！\n(仮想データとしてリストに追加されます)`);
-            const newPost: Post = {
-                id: `demo-new-${Date.now()}`,
-                content: newPostContent,
-                media_url: newPostMedia,
-                status: status,
-                created_at: new Date().toISOString(),
-                scheduled_at: scheduleEnabled ? new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString() : undefined
-            };
-            setPosts([newPost, ...posts]);
-            setIsCreating(false);
-            // Reset form
-            setNewPostContent('');
-            setTopic('');
-            return;
-        }
-
-        try {
-            // Determine Method and URL
-            const isEdit = !!editingPost;
-            const method = isEdit ? 'PATCH' : 'POST';
-            const url = isEdit 
-                ? `${process.env.NEXT_PUBLIC_API_URL}/posts/${editingPost.id}`
-                : `${process.env.NEXT_PUBLIC_API_URL}/posts/`;
-
-            const token = localStorage.getItem('meo_auth_token');
-            const res = await fetch(url, {
-                method: method,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    store_id: userInfo?.store_id,
-                    content: newPostContent,
-                    media_url: newPostMedia || undefined,
-                    status: scheduleEnabled ? 'SCHEDULED' : (isEdit ? editingPost.status : 'DRAFT'), 
-                    scheduled_at: scheduleEnabled ? new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString() : undefined
-                })
-            });
-            
-            if (res.ok) {
-                const createdPost = await res.json();
-                
-                // If user selected "今すぐ公開", call the publish endpoint
-                if (status === 'PUBLISHED' && !scheduleEnabled) {
-                    try {
-                        const publishRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${createdPost.id}/publish`, {
-                            method: 'POST',
-                            headers: { 
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-                        if (publishRes.ok) {
-                            alert('Googleマップに公開しました！');
-                        } else {
-                            const errData = await publishRes.json().catch(() => ({}));
-                            alert(`投稿は保存されましたが、Googleへの公開に失敗しました: ${errData.detail || 'Unknown error'}`);
-                        }
-                    } catch (pubErr: any) {
-                        alert(`投稿は保存されましたが、Googleへの公開に失敗しました: ${pubErr.message}`);
-                    }
-                } else {
-                    alert('保存しました');
-                }
-                
-                setNewPostContent('');
-                setEditingPost(null);
-                setIsCreating(false);
-                fetchPosts();
-            } else {
-                alert('保存に失敗しました');
-            }
-        } catch (e) {
-            console.error(e);
-            alert('エラーが発生しました');
-        }
-    };
 
     const handleEdit = (post: Post) => {
-        setEditingPost(post);
-        setNewPostContent(post.content);
-        setNewPostMedia(post.media_url || '');
-        setIsCreating(true);
+        router.push(`/dashboard/posts/create?edit=${post.id}`);
     };
 
     const handleDuplicate = (post: Post) => {
-        setEditingPost(null);
-        setNewPostContent(post.content);
-        setNewPostMedia(post.media_url || '');
-        setIsCreating(true);
+        // Future: Support duplication. For now, just go to create.
+        router.push(`/dashboard/posts/create`);
     };
 
     const handleDelete = async (postId: string) => {
@@ -405,413 +100,89 @@ function PostsContent() {
 
     return (
         <div className="space-y-6">
-            {!isCreating ? (
-                // リスト表示モード
-                <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h1 className="text-3xl font-bold text-white">投稿管理</h1>
-                            <p className="text-slate-400 mt-1">AIを活用して魅力的な記事を作成・管理します</p>
-                        </div>
-                        <button 
-                            onClick={() => {
-                                router.push('/dashboard/posts/create');
-                            }}
-                            className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
-                        >
-                            + 新規投稿を作成
-                        </button>
+            {/* リスト表示モード */}
+            <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white">投稿管理</h1>
+                        <p className="text-slate-400 mt-1">AIを活用して魅力的な記事を作成・管理します</p>
                     </div>
+                    <button 
+                        onClick={() => {
+                            router.push('/dashboard/posts/create');
+                        }}
+                        className="bg-aurora-cyan text-deep-navy font-bold px-4 py-2 rounded-lg hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
+                    >
+                        + 新規投稿を作成
+                    </button>
+                </div>
 
-                    <div className="grid gap-4">
-                        {isLoading ? (
-                            <div className="text-slate-400 text-center py-8">読み込み中...</div>
-                        ) : posts.length === 0 ? (
-                            <div className="text-slate-500 text-center py-8 glass-card">投稿履歴はありません</div>
-                        ) : (
-                            posts.map(post => (
-                                <div key={post.id} className="glass-card p-6 flex flex-col md:flex-row gap-6 hover:bg-white/5 transition-colors">
-                                    <div className="w-full md:w-48 h-32 bg-slate-800 rounded-lg overflow-hidden shrink-0">
-                                        {post.media_url ? (
-                                            <img src={post.media_url} alt="Post media" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-600">No Image</div>
+                <div className="grid gap-4">
+                    {isLoading ? (
+                        <div className="text-slate-400 text-center py-8">読み込み中...</div>
+                    ) : posts.length === 0 ? (
+                        <div className="text-slate-500 text-center py-8 glass-card">投稿履歴はありません</div>
+                    ) : (
+                        posts.map(post => (
+                            <div key={post.id} className="glass-card p-6 flex flex-col md:flex-row gap-6 hover:bg-white/5 transition-colors">
+                                <div className="w-full md:w-48 h-32 bg-slate-800 rounded-lg overflow-hidden shrink-0">
+                                    {post.media_url ? (
+                                        <img src={post.media_url} alt="Post media" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-600">No Image</div>
+                                    )}
+                                </div>
+                                <div className="flex-1 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                            post.status === 'PUBLISHED' ? 'bg-green-500/20 text-green-400' : 
+                                            post.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400' :
+                                            'bg-slate-700 text-slate-300'
+                                        }`}>
+                                            {post.status === 'PUBLISHED' ? '公開済み' : post.status === 'SCHEDULED' ? '予約済み' : '下書き'}
+                                        </span>
+                                        <span className="text-xs text-slate-500">
+                                            作成: {format(new Date(post.created_at), 'yyyy/MM/dd HH:mm', { locale: ja })}
+                                        </span>
+                                        {post.scheduled_at && (
+                                            <span className="text-xs text-blue-400 flex items-center gap-1">
+                                                📅 予約: {(() => {
+                                                    if (!post.scheduled_at) return '';
+                                                    try {
+                                                        // Force treat as UTC if no timezone indicator is present
+                                                        let dateStr = post.scheduled_at.replace(/ /g, 'T');
+                                                        if (!/Z|[\+\-]\d{2}:?\d{2}$/.test(dateStr)) {
+                                                            dateStr += 'Z';
+                                                        }
+                                                        // Check if it's already Z (UTC)
+                                                        const date = new Date(dateStr);
+                                                        return format(date, 'yyyy/MM/dd HH:mm', { locale: ja });
+                                                    } catch (e) {
+                                                        return post.scheduled_at;
+                                                    }
+                                                })()}
+                                            </span>
                                         )}
                                     </div>
-                                    <div className="flex-1 space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                                                post.status === 'PUBLISHED' ? 'bg-green-500/20 text-green-400' : 
-                                                post.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400' :
-                                                'bg-slate-700 text-slate-300'
-                                            }`}>
-                                                {post.status === 'PUBLISHED' ? '公開済み' : post.status === 'SCHEDULED' ? '予約済み' : '下書き'}
-                                            </span>
-                                            <span className="text-xs text-slate-500">
-                                                作成: {format(new Date(post.created_at), 'yyyy/MM/dd HH:mm', { locale: ja })}
-                                            </span>
-                                            {post.scheduled_at && (
-                                                <span className="text-xs text-blue-400 flex items-center gap-1">
-                                                    📅 予約: {(() => {
-                                                        if (!post.scheduled_at) return '';
-                                                        try {
-                                                            // Force treat as UTC if no timezone indicator is present
-                                                            let dateStr = post.scheduled_at.replace(/ /g, 'T');
-                                                            if (!/Z|[\+\-]\d{2}:?\d{2}$/.test(dateStr)) {
-                                                                dateStr += 'Z';
-                                                            }
-                                                            // Check if it's already Z (UTC)
-                                                            const date = new Date(dateStr);
-                                                            return format(date, 'yyyy/MM/dd HH:mm', { locale: ja });
-                                                        } catch (e) {
-                                                            return post.scheduled_at;
-                                                        }
-                                                    })()}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-slate-200 whitespace-pre-wrap line-clamp-3">{post.content}</p>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => handleEdit(post)} className="text-sm text-slate-400 hover:text-white">編集</button>
-                                            <button onClick={() => handleDuplicate(post)} className="text-sm text-slate-400 hover:text-white">複製</button>
-                                            <button onClick={() => handleDelete(post.id)} className="text-sm text-red-400 hover:text-red-300">削除</button>
-                                        </div>
+                                    <p className="text-slate-200 whitespace-pre-wrap line-clamp-3">{post.content}</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleEdit(post)} className="text-sm text-slate-400 hover:text-white">編集</button>
+                                        <button onClick={() => handleDuplicate(post)} className="text-sm text-slate-400 hover:text-white">複製</button>
+                                        <button onClick={() => handleDelete(post.id)} className="text-sm text-red-400 hover:text-red-300">削除</button>
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            ) : (
-                // 作成モード (AI Studio Integrated)
-                <div className="flex flex-col lg:flex-row gap-8 animate-fade-in">
-                    <div className="flex-1 space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                                <span className="text-aurora-purple">✨</span> AI投稿スタジオ
-                            </h2>
-
-                            <button onClick={() => { setIsCreating(false); setEditingPost(null); setNewPostContent(''); }} className="text-slate-400 hover:text-white">
-                                キャンセル
-                            </button>
-                        </div>
-
-                        <div className="glass-card p-6 space-y-6">
-                            {/* Type Selection */}
-                             <div className="grid grid-cols-3 gap-3">
-                              {['update', 'event', 'offer'].map(t => (
-                                <button 
-                                    key={t}
-                                    onClick={() => setPostType(t as any)}
-                                    className={`py-3 px-4 rounded-lg text-sm font-medium transition-all ${postType === t ? 'bg-aurora-cyan text-white ring-2 ring-aurora-cyan/50' : 'bg-slate-800 text-slate-400'}`}
-                                >
-                                    {t === 'update' ? '📰 最新情報' : t === 'event' ? '🎉 イベント' : '🏷️ 特典'}
-                                </button>
-                              ))}
                             </div>
-
-                            {/* Inputs */}
-                             <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-medium text-slate-300 block mb-1">トピック</label>
-                                    <input 
-                                        value={topic} onChange={e => setTopic(e.target.value)}
-                                        placeholder="例: 夏のランチメニュー開始"
-                                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className="text-sm font-medium text-slate-300">キーワード</label>
-                                            <select
-                                                value={isKeywordsLocked ? 'locked' : 'unlocked'}
-                                                onChange={(e) => handleKeywordsLockChange(e.target.value)}
-                                                className="text-xs bg-slate-800 border border-white/10 rounded px-2 py-1 text-slate-300"
-                                            >
-                                                <option value="unlocked">🔓 固定しない</option>
-                                                <option value="locked">🔒 固定する</option>
-                                            </select>
-                                        </div>
-                                        <input 
-                                            value={keywords} onChange={e => setKeywords(e.target.value)}
-                                            placeholder="例: 渋谷, カフェ, ランチ"
-                                            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-white ${isKeywordsLocked ? 'border-aurora-cyan/30 ring-1 ring-aurora-cyan/20' : 'border-white/10'}`}
-                                        />
-                                        {isKeywordsLocked && <p className="text-xs text-aurora-cyan mt-1">✓ 固定中: 次回も使用されます</p>}
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className="text-sm font-medium text-slate-300">キーワード地域</label>
-                                            <select
-                                                value={isRegionLocked ? 'locked' : 'unlocked'}
-                                                onChange={(e) => handleRegionLockChange(e.target.value)}
-                                                className="text-xs bg-slate-800 border border-white/10 rounded px-2 py-1 text-slate-300"
-                                            >
-                                                <option value="unlocked">🔓 固定しない</option>
-                                                <option value="locked">🔒 固定する</option>
-                                            </select>
-                                        </div>
-                                        <input 
-                                            value={keywordsRegion} onChange={e => setKeywordsRegion(e.target.value)}
-                                            placeholder="例: 東京都渋谷区"
-                                            className={`w-full bg-slate-900/50 border rounded-lg px-4 py-3 text-white ${isRegionLocked ? 'border-aurora-cyan/30 ring-1 ring-aurora-cyan/20' : 'border-white/10'}`}
-                                        />
-                                        {isRegionLocked && <p className="text-xs text-aurora-cyan mt-1">✓ 固定中: 次回も使用されます</p>}
-                                    </div>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-sm font-medium text-slate-300 block mb-1">トーン</label>
-                                        <select 
-                                            value={mood} onChange={e => setMood(e.target.value)}
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white"
-                                        >
-                                            <option>プロフェッショナル</option>
-                                            <option>フレンドリー</option>
-                                            <option>エキサイティング</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-slate-300 block mb-1">文字数目安</label>
-                                        <select 
-                                            value={charCount} onChange={e => setCharCount(Number(e.target.value))}
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white"
-                                        >
-                                            <option value={150}>短め (150文字)</option>
-                                            <option value={300}>標準 (300文字)</option>
-                                            <option value={600}>長め (600文字)</option>
-                                            <option value={1000}>詳細 (1000文字)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-sm font-medium text-slate-300">プロンプト (自由指示)</label>
-                                        <button 
-                                            onClick={handleToggleLock}
-                                            className={`text-xs flex items-center gap-1 ${isPromptLocked ? 'text-aurora-cyan' : 'text-slate-500 hover:text-slate-300'}`}
-                                            title={isPromptLocked ? "固定中: 次回もこのプロンプトが使用されます" : "クリックして固定"}
-                                        >
-                                            {isPromptLocked ? '🔒 固定中' : '🔓 固定する'}
-                                        </button>
-                                    </div>
-                                    <textarea 
-                                        value={prompt} onChange={e => setPrompt(e.target.value)}
-                                        placeholder="例: 絵文字を多めに使って、親しみやすい感じで。"
-                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white h-24 ${isPromptLocked ? 'ring-1 ring-aurora-cyan/30' : ''}`}
-                                    />
-                                </div>
-                            </div>
-                            
-                            {/* API Key Status & Generate Button */}
-                            <div className="space-y-3">
-                                {!isDemoMode && (
-                                    <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                                        <div className="flex items-center gap-2">
-                                            <span className={hasApiKey ? 'text-green-400' : 'text-yellow-400'}>
-                                                {hasApiKey ? '✓' : '⚠'}
-                                            </span>
-                                            <span className="text-sm text-slate-300">
-                                                {hasApiKey ? 'OpenAI APIキー設定済み' : 'APIキーが未設定です'}
-                                            </span>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowApiKeyModal(true)}
-                                            className="text-xs px-3 py-1 bg-slate-700 text-slate-300 rounded hover:bg-slate-600 transition-colors"
-                                        >
-                                            {hasApiKey ? '変更' : '設定'}
-                                        </button>
-                                    </div>
-                                )}
-                                
-                                <button 
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating || (!isDemoMode && !hasApiKey)}
-                                    className="w-full py-3 bg-linear-to-r from-aurora-purple to-pink-600 text-white font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isGenerating ? 'AIが生成中...' : '✨ AIで文章を生成'}
-                                </button>
-                                {!isDemoMode && !hasApiKey && (
-                                    <p className="text-xs text-yellow-400 text-center">AI生成にはOpenAIのAPIキーが必要です</p>
-                                )}
-                            </div>
-                        </div>
-                        
-                        {/* Editor */}
-                         <div className="glass-card p-6 space-y-4">
-                            <h3 className="font-bold text-white">投稿内容</h3>
-                            <textarea 
-                                value={newPostContent}
-                                onChange={e => setNewPostContent(e.target.value)}
-                                className="w-full h-40 bg-slate-900/50 border border-white/10 rounded-lg p-4 text-white"
-                                placeholder="AI生成または手動で入力..."
-                            />
-                            
-                            {/* Image Selection */}
-                            <div>
-                                <label className="text-sm font-medium text-slate-300 block mb-2">画像</label>
-                                <div className="flex gap-3">
-                                    <button 
-                                        onClick={() => setShowImageSelector(true)}
-                                        className="px-4 py-2 bg-slate-800 text-slate-300 rounded border border-white/10 hover:bg-slate-700 transition-colors"
-                                    >
-                                        📷 画像を選択...
-                                    </button>
-                                    <input 
-                                        type="text" 
-                                        value={newPostMedia} 
-                                        onChange={e => setNewPostMedia(e.target.value)}
-                                        placeholder="または画像URLを直接入力"
-                                        className="flex-1 bg-slate-900/50 border border-white/10 rounded px-3 text-white text-sm"
-                                    />
-                                </div>
-                                {newPostMedia && (
-                                    <div className="mt-2 w-full h-48 rounded-lg bg-slate-800 overflow-hidden relative border border-white/10 group">
-                                        <img src={newPostMedia} className="w-full h-full object-cover" />
-                                        <button 
-                                            onClick={() => setNewPostMedia('')} 
-                                            className="absolute top-2 right-2 bg-black/70 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {showImageSelector && (
-                                <ImageSelector 
-                                    onSelect={(url) => {
-                                        setNewPostMedia(url);
-                                        setShowImageSelector(false);
-                                    }}
-                                    onClose={() => setShowImageSelector(false)}
-                                />
-                            )}
-
-                            <div className="flex justify-between items-center pt-4 border-t border-white/10">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={scheduleEnabled} 
-                                        onChange={e => setScheduleEnabled(e.target.checked)} 
-                                        className="w-4 h-4 rounded border-slate-600"
-                                    />
-                                    <span className="text-slate-300 text-sm">予約投稿する</span>
-                                </label>
-                                {scheduleEnabled && (
-                                    <div className="flex gap-2 items-center">
-                                       {/* Changed icons to be visible: using css-built-in color-scheme or simple filters not easy on input[type=date]. 
-                                           Best way for raw HTML inputs is `color-scheme: dark`. */}
-                                        <input 
-                                            type="date" 
-                                            value={scheduleDate} 
-                                            onChange={e=>setScheduleDate(e.target.value)} 
-                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm scheme-dark focus:outline-none focus:border-aurora-cyan" 
-                                        />
-                                        <select
-                                            value={scheduleTime} 
-                                            onChange={e=>setScheduleTime(e.target.value)} 
-                                            className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-aurora-cyan"
-                                        >
-                                            {Array.from({length: 48}).map((_, i) => {
-                                                const hour = Math.floor(i / 2).toString().padStart(2, '0');
-                                                const min = (i % 2 === 0) ? '00' : '30';
-                                                const time = `${hour}:${min}`;
-                                                return <option key={time} value={time}>{time}</option>;
-                                            })}
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button className="flex-1 py-3 text-slate-400 hover:text-white" onClick={() => setIsCreating(false)}>キャンセル</button>
-                                <button className="flex-1 py-3 bg-white/10 text-white font-bold rounded-lg hover:bg-white/20" onClick={() => handleSavePost('DRAFT')}>下書き保存</button>
-                                <button className="flex-1 py-3 bg-aurora-cyan text-deep-navy font-bold rounded-lg hover:bg-cyan-400" onClick={() => handleSavePost('PUBLISHED')}>
-                                    {scheduleEnabled ? '予約する' : '投稿する'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Preview (Sticky) */}
-                    <div className="hidden lg:block w-[380px]">
-                        <div className="sticky top-6">
-                            <h3 className="text-white font-bold mb-4 text-center">プレビュー</h3>
-                            <div className="glass p-6 rounded-2xl bg-white/5">
-                                <SmartphonePreview 
-                                    content={newPostContent} 
-                                    image={newPostMedia || (demoImages[0].url)} 
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Gallery Modal */}
-                    {showImageGallery && (
-                         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                             <div className="bg-slate-900 p-6 rounded-xl max-w-2xl w-full">
-                                 <h3 className="text-xl font-bold text-white mb-4">画像を選択</h3>
-                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
-                                     {demoImages.map(img => (
-                                         <div key={img.id} onClick={() => { setNewPostMedia(img.url); setShowImageGallery(false); }} className="aspect-square bg-slate-800 rounded cursor-pointer hover:ring-2 hover:ring-aurora-cyan overflow-hidden">
-                                             <img src={img.url} className="w-full h-full object-cover" />
-                                         </div>
-                                     ))}
-                                 </div>
-                                 <button onClick={() => setShowImageGallery(false)} className="mt-6 w-full py-2 bg-slate-800 text-white rounded">閉じる</button>
-                             </div>
-                         </div>
-                    )}
-                    
-                    {/* API Key Modal */}
-                    {showApiKeyModal && (
-                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                            <div className="bg-slate-900 p-6 rounded-xl max-w-md w-full space-y-4">
-                                <h3 className="text-xl font-bold text-white">🔑 OpenAI APIキー設定(GPT-4o)</h3>
-                                <p className="text-sm text-slate-400">
-                                    AI文章生成にはOpenAIのAPIキーが必要です。<br/>
-                                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-aurora-cyan hover:underline">
-                                        ここから取得 →
-                                    </a>
-                                </p>
-                                <input 
-                                    type="password"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="APIキーを入力..."
-                                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white"
-                                />
-                                <div className="flex gap-3">
-                                    <button 
-                                        onClick={() => setShowApiKeyModal(false)} 
-                                        className="flex-1 py-2 text-slate-400 hover:text-white"
-                                    >
-                                        キャンセル
-                                    </button>
-                                    <button 
-                                        onClick={handleSaveApiKey}
-                                        disabled={!apiKey.trim()}
-                                        className="flex-1 py-2 bg-aurora-cyan text-deep-navy font-bold rounded-lg hover:bg-cyan-400 disabled:opacity-50"
-                                    >
-                                        保存
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        ))
                     )}
                 </div>
-            )}
+            </div>
         </div>
     );
 }
 
 export default function PostsPage() {
     return (
-        <Suspense fallback={<div className="text-white p-8">Loading...</div>}>
+        <Suspense fallback={<div>Loading...</div>}>
             <PostsContent />
         </Suspense>
     );
