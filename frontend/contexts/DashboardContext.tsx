@@ -26,6 +26,7 @@ type DashboardContextType = {
   toggleDemoMode: () => void;
   syncData: () => Promise<void>;
   availableStores: { id: string; name: string }[];
+  logout: () => void;
 };
 
 const DashboardContext = createContext<DashboardContextType>({
@@ -37,6 +38,7 @@ const DashboardContext = createContext<DashboardContextType>({
   toggleDemoMode: () => {},
   syncData: async () => {},
   availableStores: [],
+  logout: () => {},
 });
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
@@ -54,6 +56,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (saved === 'true') {
         setIsDemoMode(true);
     }
+  }, []);
+
+  const logout = useCallback(() => {
+      if (typeof window !== 'undefined') {
+          localStorage.removeItem('meo_auth_token');
+          localStorage.removeItem('is_demo_mode');
+          localStorage.removeItem('selected_location_id');
+          // Clear other keys if necessary
+          setUserInfo(null);
+          window.location.href = '/';
+      }
   }, []);
 
   const fetchUser = useCallback(async () => {
@@ -104,8 +117,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       } else {
         console.error('Failed to fetch user:', response.status);
         if (response.status === 401) {
-             localStorage.removeItem('meo_auth_token'); 
-             window.location.href = '/';
+             logout();
              return;
         }
       }
@@ -134,7 +146,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('meo_auth_token');
       if (!token) {
           alert("認証トークンが見つかりません。再度ログインしてください。");
-          window.location.href = '/';
+          logout();
           return;
       }
 
@@ -183,7 +195,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               console.error("Sync Failed:", res.status, res.statusText, errorText);
               if (res.status === 401) {
                   alert("セッションが切れました。再度ログインしてください。");
-                  window.location.href = '/';
+                  logout();
                   return;
               }
               alert(`同期エラー (${res.status}):\n${errorText || res.statusText}\n\nAPI URL: ${apiUrl}`);
@@ -209,7 +221,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       } else {
          // Exiting demo mode
          setUserInfo(null); // Clear mock data
-         window.location.href = '/'; // Redirect to login to be safe or just refresh
+         logout();
       }
       return next;
     });
@@ -254,14 +266,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
     return (
-      <DashboardContext.Provider value={{ userInfo: null, isLoading: true, error: null, refreshUser: async () => {}, isDemoMode: false, toggleDemoMode: () => {}, syncData: async () => {}, availableStores: [] }}>
+      <DashboardContext.Provider value={{ userInfo: null, isLoading: true, error: null, refreshUser: async () => {}, isDemoMode: false, toggleDemoMode: () => {}, syncData: async () => {}, availableStores: [], logout: () => {} }}>
         {children}
       </DashboardContext.Provider>
     );
   }
 
   return (
-    <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser, isDemoMode, toggleDemoMode, syncData, availableStores }}>
+    <DashboardContext.Provider value={{ userInfo, isLoading, error, refreshUser: fetchUser, isDemoMode, toggleDemoMode, syncData, availableStores, logout }}>
       {children}
     </DashboardContext.Provider>
   );
