@@ -79,7 +79,9 @@ def start_scheduler():
         scheduler.add_job(auto_reply_to_reviews, 'interval', minutes=5)  # Check every 5 minutes
         scheduler.add_job(sync_all_locations, 'interval', minutes=60) # Sync every hour
         scheduler.start()
-        logger.info("Scheduler started with post publishing, auto-reply, and hourly sync jobs.")
+        logger.info("Scheduler started with post publishing, auto-reply, and hourly sync jobs. (Debug Code Added)")
+        # Test job to confirm execution
+        scheduler.add_job(lambda: logger.info("Scheduler Heartbeat: Tick-tock"), 'interval', minutes=1)
 
 def shutdown_scheduler():
     if scheduler.running:

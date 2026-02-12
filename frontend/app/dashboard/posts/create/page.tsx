@@ -748,10 +748,30 @@ function CreatePostContent() {
                     <div className="mb-6">
                         <input 
                             type="datetime-local" 
+                            step="1800" // 30 minutes
                             value={scheduledDate}
                             onChange={(e) => setScheduledDate(e.target.value)}
+                            onBlur={(e) => {
+                                // Enforce 30-minute blocks on blur
+                                if (e.target.value) {
+                                    const date = new Date(e.target.value);
+                                    const minutes = date.getMinutes();
+                                    const roundedMinutes = minutes < 15 ? 0 : minutes < 45 ? 30 : 0;
+                                    if (minutes >= 45) date.setHours(date.getHours() + 1);
+                                    date.setMinutes(roundedMinutes);
+                                    
+                                    // Format back to YYYY-MM-DDTHH:mm local
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    const hours = String(date.getHours()).padStart(2, '0');
+                                    const mins = String(date.getMinutes()).padStart(2, '0');
+                                    setScheduledDate(`${year}-${month}-${day}T${hours}:${mins}`);
+                                }
+                            }}
                             className="w-full bg-slate-900 border border-white/20 rounded-lg px-4 py-2 text-white"
                         />
+                        <p className="text-xs text-slate-400 mt-1">※ 30分単位で指定可能です</p>
                     </div>
                 )}
 
