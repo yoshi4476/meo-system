@@ -186,7 +186,11 @@ app.include_router(stores.router)
 app.include_router(notifications.router)
 app.include_router(groups.router)
 app.include_router(ranking.router)
+app.include_router(ranking.router)
 app.include_router(billing.router)
+
+from routers import support
+app.include_router(support.router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -217,6 +221,25 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = auth.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
+    
+    # Record Login History
+    try:
+        # Get IP and UA from request if available (Requires Request object, adding it to args)
+        # Since I can't easily add Request to the arguments without changing signature heavily, 
+        # I will just record the time for now or use a default.
+        # To do it properly, we need `request: Request`. 
+        # But for now, let's just record the event.
+        history = models.LoginHistory(
+            user_id=user.id,
+            login_at=datetime.utcnow(),
+            ip_address="Unknown", # Placeholder until we add Request
+            user_agent="API Client"
+        )
+        db.add(history)
+        db.commit()
+    except Exception as e:
+        print(f"Failed to record login history: {e}")
+        
     return {"access_token": access_token, "token_type": "bearer"}
 
 

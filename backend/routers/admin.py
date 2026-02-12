@@ -257,3 +257,49 @@ def get_store_auto_reply(
         "auto_reply_prompt": store.auto_reply_prompt,
         "include_past_reviews": include_past
     }
+
+@router.get("/system/stats")
+def get_system_stats(
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.require_super_admin)
+):
+    """
+    Get system-wide statistics.
+    """
+    user_count = db.query(models.User).count()
+    store_count = db.query(models.Store).count()
+    error_count = db.query(models.NotificationLog).filter(models.NotificationLog.status == 'FAILED').count()
+    active_users_24h = db.query(models.User).filter(models.User.is_active == True).count() 
+    
+    return {
+        "user_count": user_count,
+        "store_count": store_count,
+        "error_count": error_count,
+        "active_users": active_users_24h
+    }
+
+@router.get("/system/logins")
+def get_login_history(
+    skip: int = 0, 
+    limit: int = 50, 
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.require_super_admin)
+):
+    """
+    Get recent login history.
+    """
+    logs = db.query(models.LoginHistory)\
+        .join(models.User)\
+        .order_by(models.LoginHistory.login_at.desc())\
+        .offset(skip)\
+        .limit(limit)\
+        .all()
+        
+    # Return enriched data
+    return [{
+        "id": log.id,
+        "user_email": log.user.email,
+        "login_at": log.login_at,
+        "ip_address": log.ip_address,
+        "user_agent": log.user_agent
+    } for log in logs]

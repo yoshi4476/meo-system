@@ -267,6 +267,9 @@ class UserSettings(Base):
     youtube_client_id = Column(String, nullable=True)
     youtube_client_secret = Column(String, nullable=True)
     
+    # Onboarding Status
+    has_completed_onboarding = Column(Boolean, default=False)
+    
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     user = relationship("User", back_populates="settings")

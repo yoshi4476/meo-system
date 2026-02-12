@@ -105,6 +105,7 @@ class UserSettingsUpdate(BaseModel):
     twitter_client_secret: Optional[str] = None
     youtube_client_id: Optional[str] = None
     youtube_client_secret: Optional[str] = None
+    has_completed_onboarding: Optional[bool] = None
 
 class UserSettings(UserSettingsUpdate):
     id: str
