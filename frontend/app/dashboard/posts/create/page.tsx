@@ -214,6 +214,7 @@ function CreatePostContent() {
     setIsGenerating(true);
     try {
         const token = localStorage.getItem('meo_auth_token');
+        const openaiKey = localStorage.getItem('openai_api_key');
         
         // Prepare charCount logic
         let lengthOpt = 'MEDIUM';
@@ -226,12 +227,17 @@ function CreatePostContent() {
             lengthOpt = 'MEDIUM'; // Default for auto
         }
 
+        const headers: any = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        if (openaiKey) {
+            headers['X-OpenAI-Api-Key'] = openaiKey;
+        }
+
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate/post`, { // Updated endpoint
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: headers,
             body: JSON.stringify({
                 keywords,
                 tone,
@@ -246,7 +252,7 @@ function CreatePostContent() {
             const data = await res.json();
             setContent(data.content);
         } else {
-            alert('AI生成に失敗しました');
+            alert('AI生成に失敗しました。設定ページでAPIキーが保存されているか確認してください。');
         }
     } catch (e) {
         console.error(e);
@@ -264,12 +270,19 @@ function CreatePostContent() {
       setIsHashtagGenerating(true);
       try {
           const token = localStorage.getItem('meo_auth_token');
+          const openaiKey = localStorage.getItem('openai_api_key');
+          
+          const headers: any = {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          };
+          if (openaiKey) {
+              headers['X-OpenAI-Api-Key'] = openaiKey;
+          }
+
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate/hashtags`, {
               method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-              },
+              headers: headers,
               body: JSON.stringify({
                   keywords: keywords,
                   content: content
@@ -281,6 +294,8 @@ function CreatePostContent() {
                   // Append hashtags to content
                   setContent(prev => prev + (prev.endsWith("\n") ? "" : "\n\n") + data.hashtags);
               }
+          } else {
+             alert('ハッシュタグ生成に失敗しました。APIキーを確認してください。');
           }
       } catch (e) {
           console.error(e);
