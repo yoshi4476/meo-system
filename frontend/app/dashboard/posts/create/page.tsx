@@ -365,14 +365,20 @@ function CreatePostContent() {
         }
         
         const status = isDraft ? 'DRAFT' : (isScheduled ? 'SCHEDULED' : 'PUBLISHED');
+        // Convert local scheduledDate to UTC ISO string if scheduled and date exists
+        let scheduledAtUTC = null;
+        if (isScheduled && scheduledDate) {
+            const localDate = new Date(scheduledDate);
+            scheduledAtUTC = localDate.toISOString(); 
+        }
 
         const payload = {
             store_id: userInfo?.store_id,
             content: content,
-            media_url: mediaUrl,
+            media_url: mediaUrl, // Can be null
             media_type: mediaType,
             status: status,
-            scheduled_at: (status === 'SCHEDULED' || status === 'DRAFT') && scheduledDate ? new Date(scheduledDate).toISOString() : null,
+            scheduled_at: scheduledAtUTC, // Send UTC
             target_platforms: selectedPlatforms
         };
 

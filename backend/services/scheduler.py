@@ -34,38 +34,69 @@ async def check_and_publish_scheduled_posts():
                 if not store:
                     logger.warning(f"Store not found for post {post.id}")
                     post.status = "FAILED"
+                    post.social_post_ids = {"error": "Store not found"}
                     continue
 
-                # Find valid user connection (Similar logic to before, or use the user who created it if we had that)
-                # Since we don't have created_by, we try to find ANY valid user.
-                # SNSService requires a user object.
+                # Find valid user connection
+                # We iterate through ALL users associated with the store (direct or via company)
+                # to find ONE that has a valid (or refreshable) Google connection.
                 
                 target_user = None
+                valid_connection = None
                 
-                # Try store users
-                for user in store.users:
-                    if user.google_connection: # Simplified check, SNSService checks specific connect
-                        target_user = user
-                        break
-                
-                if not target_user and store.company and store.company.users:
-                     target_user = store.company.users[0] # Fallback
+                potential_users = list(store.users)
+                if store.company and store.company.users:
+                     # Add company users, avoiding duplicates
+                     existing_ids = [u.id for u in potential_users]
+                     potential_users.extend([u for u in store.company.users if u.id not in existing_ids])
+
+                for user in potential_users:
+                    if user.google_connection:
+                        conn = user.google_connection
+                        # Check expiry and refresh if needed
+                        if conn.expiry and conn.expiry < datetime.utcnow():
+                            if conn.refresh_token:
+                                try:
+                                    logger.info(f"Refreshing token for user {user.email}...")
+                                    new_tokens = google_api.refresh_access_token(conn.refresh_token)
+                                    conn.access_token = new_tokens.get("access_token")
+                                    expires_in = new_tokens.get("expires_in", 3600)
+                                    conn.expiry = datetime.utcnow() + timedelta(seconds=expires_in)
+                                    db.commit() # Commit the refresh immediately
+                                    logger.info("Token refreshed successfully.")
+                                    target_user = user
+                                    valid_connection = conn
+                                    break # Found a working user!
+                                except Exception as e:
+                                    logger.warning(f"Failed to refresh token for user {user.email}: {e}")
+                                    # Continue to next user
+                            else:
+                                # Expired and no refresh token
+                                continue
+                        else:
+                            # Valid token
+                            target_user = user
+                            valid_connection = conn
+                            break
                 
                 if not target_user:
-                     logger.error(f"No valid user found to execute post {post.id}")
+                     logger.error(f"No valid user/token found to execute post {post.id} for store {store.name}")
                      post.status = "FAILED"
+                     post.social_post_ids = {"error": "No valid Google account linked. Please re-connect in Settings."}
                      continue
 
                 from services.sns_service import SNSService
+                # Re-fetch user to ensure attached to session (though likely still is)
                 service = SNSService(db, target_user)
                 
-                logger.info(f"Publishing post {post.id} via SNSService...")
+                logger.info(f"Publishing post {post.id} via SNSService (User: {target_user.email})...")
                 await service.publish_post(post.id)
                 logger.info(f"Post {post.id} processed.")
 
             except Exception as e:
                 logger.error(f"Failed to publish post {post.id}: {e}")
                 post.status = "FAILED"
+                post.social_post_ids = {"error": str(e)}
         
         db.commit()
     except Exception as e:
