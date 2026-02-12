@@ -176,12 +176,17 @@ app.include_router(sync.router)
 app.include_router(optimization.router)
 app.include_router(messages.router)
 app.include_router(messages.router)
-from routers import users, debug, social_auth, companies, stores
+app.include_router(messages.router)
+from routers import users, debug, social_auth, companies, stores, notifications, groups, ranking, billing
 app.include_router(users.router)
 app.include_router(debug.router)
 app.include_router(social_auth.router)
 app.include_router(companies.router)
 app.include_router(stores.router)
+app.include_router(notifications.router)
+app.include_router(groups.router)
+app.include_router(ranking.router)
+app.include_router(billing.router)
 
 @app.on_event("startup")
 async def startup_event():

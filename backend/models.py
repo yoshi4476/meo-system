@@ -65,6 +65,9 @@ class Store(Base):
     regular_hours = Column(JSON, nullable=True)
     attributes = Column(JSON, nullable=True)
     
+    group_id = Column(String, ForeignKey("store_groups.id"), nullable=True)
+    group = relationship("StoreGroup", back_populates="stores")
+
     company = relationship("Company", back_populates="stores")
     posts = relationship("Post", back_populates="store")
     users = relationship("User", back_populates="store")
@@ -270,3 +273,96 @@ class UserSettings(Base):
 
 User.settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
 User.social_connections = relationship("SocialConnection", back_populates="user", cascade="all, delete-orphan")
+
+# --- Enterprise Features ---
+
+class StoreGroup(Base):
+    __tablename__ = "store_groups"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    company_id = Column(String, ForeignKey("companies.id"))
+    name = Column(String)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    company = relationship("Company", back_populates="store_groups")
+    stores = relationship("Store", back_populates="group")
+
+class Keyword(Base):
+    __tablename__ = "keywords"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    store_id = Column(String, ForeignKey("stores.id"))
+    text = Column(String)
+    location = Column(String, nullable=True) # e.g. "Shibuya"
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    store = relationship("Store", back_populates="keywords")
+    rank_logs = relationship("RankLog", back_populates="keyword", cascade="all, delete-orphan")
+
+class RankLog(Base):
+    __tablename__ = "rank_logs"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    keyword_id = Column(String, ForeignKey("keywords.id"))
+    date = Column(DateTime, default=datetime.utcnow)
+    rank = Column(Integer) # 0 for unranked/out of top X
+    url = Column(String, nullable=True) # URL found at rank
+    
+    keyword = relationship("Keyword", back_populates="rank_logs")
+
+class NotificationLog(Base):
+    __tablename__ = "notification_logs"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"))
+    type = Column(String) # 'EMAIL', 'LINE', 'SYSTEM'
+    subject = Column(String, nullable=True)
+    message = Column(String)
+    status = Column(String) # 'SENT', 'FAILED', 'PENDING'
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", back_populates="notifications")
+
+class Plan(Base):
+    __tablename__ = "plans"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String) # STANDARD, PREMIUM
+    price = Column(Integer)
+    currency = Column(String, default="jpy")
+    limits = Column(JSON, nullable=True) # { "stores": 10, "users": 5 }
+    stripe_price_id = Column(String, nullable=True)
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    company_id = Column(String, ForeignKey("companies.id"))
+    plan_id = Column(String, ForeignKey("plans.id"))
+    stripe_subscription_id = Column(String, nullable=True)
+    status = Column(String) # ACTIVE, PAST_DUE, CANCELED
+    current_period_end = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    company = relationship("Company", back_populates="subscription", uselist=False)
+    plan = relationship("Plan")
+
+# Relationships updates
+Company.store_groups = relationship("StoreGroup", back_populates="company", cascade="all, delete-orphan")
+Company.subscription = relationship("Subscription", back_populates="company", uselist=False, cascade="all, delete-orphan")
+
+# Add group_id to Store (need valid column definition, not just relationship)
+# NOTE: We can't easily add a column to an existing table in SQLite without migration tool like Alembic.
+# For this prototype environment where we can re-create DB or just append, we will define it.
+# Ideally, we should add 'group_id = Column(String, ForeignKey("store_groups.id"), nullable=True)' to Store class.
+# But since Store class is already defined above, we can't 'monkeypatch' the Column definition effectively for SQLAlchemy initialization if table exists.
+# User environment allows us to modify valid files. I will assume I can edit the Store class in a separate step or just append here if I'm editing the whole file. 
+# Since I am appending to the end, I need to make sure Store class has group_id. 
+# I will use a separate call to add group_id to Store class definition if I haven't already.
+# Wait, I am editing the END of the file. I cannot modify Store class which is defined on line 40.
+# I will proceed with adding the new classes, and then I will do a separate edit to Store class to add group_id.
+
+User.notifications = relationship("NotificationLog", back_populates="user", cascade="all, delete-orphan")
+Store.keywords = relationship("Keyword", back_populates="store", cascade="all, delete-orphan")
+# Store.group = relationship("StoreGroup", back_populates="stores") # Will add this after adding group_id column

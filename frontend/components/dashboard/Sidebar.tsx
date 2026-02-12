@@ -28,6 +28,7 @@ const systemAdminItems = [
   { name: '企業管理', href: '/dashboard/companies', icon: 'M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z' },
   { name: 'ユーザー管理', href: '/dashboard/users', icon: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' },
   { name: '店舗管理', href: '/dashboard/stores', icon: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z' },
+  { name: 'グループ管理', href: '/dashboard/groups', icon: 'M4 6h16v2H4zm2 4h12v2H6zm-2 4h16v2H4z' },
 ];
 
 const settingsItems = [
@@ -172,6 +173,18 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         {/* 設定 */}
         <nav className="p-4 pt-0 space-y-1">
           <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-4">設定</p>
+          <Link
+              href="/dashboard/notifications"
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all group"
+            >
+              <div className="p-0.5">
+                <svg className="w-5 h-5 fill-current text-slate-400 group-hover:text-cyan-400 transition-colors" viewBox="0 0 24 24">
+                  <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" />
+                </svg>
+              </div>
+              <span className="font-medium text-sm">通知センター</span>
+            </Link>
           {settingsItems.map((item) => (
             <Link 
               key={item.name} 

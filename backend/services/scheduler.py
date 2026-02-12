@@ -109,8 +109,12 @@ def start_scheduler():
         scheduler.add_job(check_and_publish_scheduled_posts, 'interval', minutes=1)
         scheduler.add_job(auto_reply_to_reviews, 'interval', minutes=5)  # Check every 5 minutes
         scheduler.add_job(sync_all_locations, 'interval', minutes=60) # Sync every hour
+        
+        # Enterprise Jobs
+        scheduler.add_job(check_daily_rankings, 'interval', hours=24) # Daily Rank Check
+        
         scheduler.start()
-        logger.info("Scheduler started with post publishing, auto-reply, and hourly sync jobs. (Debug Code Added)")
+        logger.info("Scheduler started with post publishing, auto-reply, hourly sync, and daily rank check.")
         # Test job to confirm execution
         scheduler.add_job(lambda: logger.info("Scheduler Heartbeat: Tick-tock"), 'interval', minutes=1)
 
@@ -288,4 +292,14 @@ async def sync_all_locations():
         logger.error(f"Sync scheduler error: {e}")
     finally:
         db.close()
+
+async def check_daily_rankings():
+    """
+    Mock function to simulate checking keyword rankings daily.
+    """
+    logger.info("Scheduler: Checking daily rankings (MOCK)...")
+    # In reality, this would query all Keywords, call a SERP API, and save RankLog.
+    # For now, we just log.
+    pass
+
 

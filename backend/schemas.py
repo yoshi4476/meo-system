@@ -113,3 +113,73 @@ class UserSettings(UserSettingsUpdate):
     
     class Config:
         from_attributes = True
+
+# --- Enterprise Schemas ---
+
+class StoreGroupBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class StoreGroupCreate(StoreGroupBase):
+    pass
+
+class StoreGroup(StoreGroupBase):
+    id: str
+    company_id: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class KeywordBase(BaseModel):
+    text: str
+    location: Optional[str] = None
+
+class KeywordCreate(KeywordBase):
+    pass
+
+class Keyword(KeywordBase):
+    id: str
+    store_id: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class RankLog(BaseModel):
+    id: str
+    keyword_id: str
+    rank: int
+    date: datetime
+    url: Optional[str] = None
+    class Config:
+        from_attributes = True
+
+class NotificationUserView(BaseModel):
+    id: str
+    type: str
+    subject: Optional[str]
+    message: str
+    status: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class PlanBase(BaseModel):
+    name: str
+    price: int
+    currency: str
+    limits: Optional[dict] = None
+
+class Plan(PlanBase):
+    id: str
+    stripe_price_id: Optional[str] = None
+    class Config:
+        from_attributes = True
+
+class Subscription(BaseModel):
+    id: str
+    status: str
+    current_period_end: Optional[datetime]
+    plan: Optional[Plan]
+    class Config:
+        from_attributes = True
+
