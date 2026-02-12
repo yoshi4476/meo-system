@@ -258,10 +258,43 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 5. ユーザー・店舗設定 */}
+        {/* ■ 5. エンタープライズ機能（通知・グループ） */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
                <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">5</div>
+               <h2 className="text-2xl font-bold text-white">エンタープライズ機能</h2>
+          </div>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
+            
+            <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white border-b border-white/10 pb-2">通知センター</h3>
+                <p className="text-slate-300">
+                    システムからの重要なお知らせ、投稿の失敗、低い評価のクチコミなどのアラートを一元管理します。
+                </p>
+                <ul className="list-disc list-inside text-slate-400 ml-4 space-y-2">
+                    <li>サイドメニューの「設定」→「通知センター」からアクセスできます。</li>
+                    <li>重要な通知は登録メールアドレスにも送信されます。</li>
+                </ul>
+            </div>
+
+            <div className="space-y-4 pt-4">
+                <h3 className="text-xl font-bold text-white border-b border-white/10 pb-2">店舗グループ管理（管理者向け）</h3>
+                <p className="text-slate-300">
+                    多数の店舗を運営する場合、エリアやブランドごとにグループ化して管理できます。
+                </p>
+                <ul className="list-disc list-inside text-slate-400 ml-4 space-y-2">
+                    <li>サイドメニューの「管理者用」→「グループ管理」からアクセスします。</li>
+                    <li>新規グループを作成し、店舗を割り当てることで、将来的にグループ単位での分析や権限管理が可能になります。</li>
+                </ul>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ■ 6. ユーザー・店舗設定 */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">6</div>
                <h2 className="text-2xl font-bold text-white">ユーザー・店舗管理（管理者向け）</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
@@ -293,6 +326,68 @@ export default function UsageManualPage() {
                         Googleアカウント連携を行うと、そのアカウントが管理しているすべての店舗が自動的にインポートされます。<br/>
                         もし新しい店舗が表示されない場合は、「設定」画面で「Google連携」を一度解除し、再度連携し直してください（最新の店舗リストが取得されます）。
                     </p>
+                </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ■ 7. 推奨ルーティン */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+               <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-500/30">7</div>
+               <h2 className="text-2xl font-bold text-white">運用の推奨ルーティン</h2>
+          </div>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-slate-900/50 p-6 rounded-xl border border-blue-500/20">
+                    <div className="bg-blue-500/20 text-blue-400 w-fit px-3 py-1 rounded-full text-xs font-bold mb-4">Daily</div>
+                    <h3 className="text-lg font-bold text-white mb-4">毎日やること</h3>
+                    <ul className="space-y-3 text-sm text-slate-300">
+                        <li className="flex items-start gap-2">
+                             <CheckCircle2 className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                             <span>通知センターの確認（エラーや低評価がないか）</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                             <CheckCircle2 className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                             <span>自動返信されたクチコミの確認（必要に応じて修正）</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div className="bg-slate-900/50 p-6 rounded-xl border border-green-500/20">
+                    <div className="bg-green-500/20 text-green-400 w-fit px-3 py-1 rounded-full text-xs font-bold mb-4">Weekly</div>
+                    <h3 className="text-lg font-bold text-white mb-4">週1回やること</h3>
+                    <ul className="space-y-3 text-sm text-slate-300">
+                        <li className="flex items-start gap-2">
+                             <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                             <span>AI投稿スタジオで翌週分の記事を3本予約</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                             <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                             <span>インサイトで検索数の増減をチェック</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div className="bg-slate-900/50 p-6 rounded-xl border border-purple-500/20">
+                    <div className="bg-purple-500/20 text-purple-400 w-fit px-3 py-1 rounded-full text-xs font-bold mb-4">Monthly</div>
+                    <h3 className="text-lg font-bold text-white mb-4">月1回やること</h3>
+                    <ul className="space-y-3 text-sm text-slate-300">
+                        <li className="flex items-start gap-2">
+                             <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 shrink-0" />
+                             <span>新しい写真（メニューや店内）を10枚以上追加</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                             <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 shrink-0" />
+                             <span>店舗情報の更新（営業時間やキャンペーン情報）</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                             <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 shrink-0" />
+                             <span>レポート機能で月次成果を確認・保存</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
 

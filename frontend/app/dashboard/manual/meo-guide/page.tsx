@@ -207,10 +207,85 @@ export default function MeoGuidePage() {
            </div>
         </section>
 
-        {/* 5. サイテーション（NAP情報）の統一 */}
+        {/* 5. 勝利のルーティン（月次・週次） */}
+        <section className="relative">
+          <div className="absolute -left-4 top-0 w-1 h-full bg-linear-to-b from-yellow-500 to-orange-500 rounded-full"></div>
+           <div className="flex items-center gap-3 mb-6">
+              <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded uppercase">Routine</span>
+              <h2 className="text-2xl font-bold text-white">5. これだけやれば勝てる！MEOルーティン</h2>
+           </div>
+           
+           <div className="grid md:grid-cols-3 gap-6">
+                {/* Daily */}
+                <div className="bg-slate-800/50 p-6 rounded-2xl border border-white/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <span className="text-6xl font-black text-white">D</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-400"></span> 毎日 (5分)
+                    </h3>
+                    <ul className="space-y-4 text-slate-300 text-sm">
+                        <li className="flex items-start gap-3">
+                            <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5">Check</span>
+                            <span>通知センターを確認。エラーや緊急のクチコミがないかチェック。</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5">Reply</span>
+                            <span>クチコミが入っていたら即返信。（AI返信機能を活用）</span>
+                        </li>
+                    </ul>
+                </div>
+
+                {/* Weekly */}
+                <div className="bg-slate-800/50 p-6 rounded-2xl border border-white/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <span className="text-6xl font-black text-white">W</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-400"></span> 毎週 (15分)
+                    </h3>
+                    <ul className="space-y-4 text-slate-300 text-sm">
+                        <li className="flex items-start gap-3">
+                            <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5">Post</span>
+                            <span>AI投稿スタジオで、翌週分の投稿を<strong className="text-white">3本予約</strong>する。</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5">Data</span>
+                            <span>インサイトを見て「表示回数」が先週より増えているか確認。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                {/* Monthly */}
+                <div className="bg-slate-800/50 p-6 rounded-2xl border border-white/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <span className="text-6xl font-black text-white">M</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-purple-400"></span> 毎月 (30分)
+                    </h3>
+                    <ul className="space-y-4 text-slate-300 text-sm">
+                        <li className="flex items-start gap-3">
+                            <span className="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5">Photo</span>
+                            <span>スマホで撮った新しい写真を<strong className="text-white">10枚以上</strong>アップロード。</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <span className="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5">Info</span>
+                            <span>翌月の休業日や営業時間を設定（特別営業日など）。</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <span className="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5">Review</span>
+                            <span>レポート機能で月次成果を出力し、スタッフと共有。</span>
+                        </li>
+                    </ul>
+                </div>
+           </div>
+        </section>
+
+        {/* 6. サイテーション（NAP情報）の統一 */}
         <section className="relative">
           <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
-           <h2 className="text-2xl font-bold text-white mb-6">5. 基礎中の基礎：NAPの統一とサイテーション</h2>
+           <h2 className="text-2xl font-bold text-white mb-6">6. 基礎中の基礎：NAPの統一とサイテーション</h2>
            <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
              <div className="flex flex-col md:flex-row items-start gap-8">
                 <div className="flex-1">
@@ -263,10 +338,10 @@ export default function MeoGuidePage() {
            </div>
         </section>
 
-        {/* 6. Q&Aの活用 */}
+        {/* 7. Q&Aの活用 */}
         <section className="relative">
           <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
-           <h2 className="text-2xl font-bold text-white mb-6">6. Q&A（質問と回答）を自作自演する</h2>
+           <h2 className="text-2xl font-bold text-white mb-6">7. Q&A（質問と回答）を自作自演する</h2>
            <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-4">
              <p className="text-slate-300">
                 Googleマップにはユーザーが質問できる機能がありますが、実は<strong className="text-white">オーナー自身が質問を投稿し、回答する</strong>ことも公式に認められています（FAQとして機能します）。
@@ -292,10 +367,10 @@ export default function MeoGuidePage() {
            </div>
         </section>
 
-        {/* 7. インサイト分析とPDCA */}
+        {/* 8. インサイト分析とPDCA */}
         <section className="relative">
           <div className="absolute -left-4 top-0 w-1 h-full bg-slate-700/50 rounded-full"></div>
-           <h2 className="text-2xl font-bold text-white mb-6">7. 数字で見るPDCAサイクル</h2>
+           <h2 className="text-2xl font-bold text-white mb-6">8. 数字で見るPDCAサイクル</h2>
            <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6">
              <p className="text-slate-300">
                 ダッシュボードの数字を見て、以下のように対策を打ち分けましょう。
