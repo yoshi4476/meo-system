@@ -42,10 +42,11 @@ export default function RankingPage() {
   }, [selectedKeyword]);
 
   const fetchKeywords = async () => {
-    if (!userInfo?.token || !userInfo?.store_id) return;
+    const token = localStorage.getItem('meo_auth_token');
+    if (!token || !userInfo?.store_id) return;
     try {
       const res = await fetch(`${API_URL}/ranking/keywords`, {
-        headers: { Authorization: `Bearer ${userInfo.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
@@ -62,10 +63,11 @@ export default function RankingPage() {
   };
 
   const fetchHistory = async (keywordId: string) => {
-    if (!userInfo?.token) return;
+    const token = localStorage.getItem('meo_auth_token');
+    if (!token) return;
     try {
       const res = await fetch(`${API_URL}/ranking/keywords/${keywordId}/history`, {
-        headers: { Authorization: `Bearer ${userInfo.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
@@ -78,14 +80,15 @@ export default function RankingPage() {
 
   const handleAddKeyword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInfo?.token || !newKeywordText) return;
+    const token = localStorage.getItem('meo_auth_token');
+    if (!token || !newKeywordText) return;
 
     try {
       const res = await fetch(`${API_URL}/ranking/keywords`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userInfo.token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ text: newKeywordText, location: newKeywordLocation })
       });
@@ -104,11 +107,12 @@ export default function RankingPage() {
   };
 
   const handleDeleteKeyword = async (id: string) => {
-    if (!confirm("このキーワードを削除しますか？") || !userInfo?.token) return;
+    const token = localStorage.getItem('meo_auth_token');
+    if (!confirm("このキーワードを削除しますか？") || !token) return;
     try {
         const res = await fetch(`${API_URL}/ranking/keywords/${id}`, {
             method: 'DELETE',
-            headers: { Authorization: `Bearer ${userInfo.token}` }
+            headers: { Authorization: `Bearer ${token}` }
         });
         if(res.ok) {
             setKeywords(prev => prev.filter(k => k.id !== id));
@@ -210,13 +214,14 @@ export default function RankingPage() {
                     </div>
                     <button
                         onClick={async () => {
-                             if(!selectedKeyword || !userInfo?.token) return;
+                             const token = localStorage.getItem('meo_auth_token');
+                             if(!selectedKeyword || !token) return;
                              try {
                                  // Show loading state (could be improved with local state)
                                  alert("順位を再計測しています...（数秒かかります）");
                                  const res = await fetch(`${API_URL}/ranking/keywords/${selectedKeyword.id}/check`, {
                                      method: 'POST',
-                                     headers: { Authorization: `Bearer ${userInfo.token}` }
+                                     headers: { Authorization: `Bearer ${token}` }
                                  });
                                  if(res.ok) {
                                      // Refresh data
