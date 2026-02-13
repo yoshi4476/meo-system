@@ -300,10 +300,10 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 4. 複数店舗管理 */}
+        {/* ■ 5. 複数店舗管理 */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">4</div>
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">5</div>
                <h2 className="text-2xl font-bold text-white">複数店舗の管理</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
@@ -324,10 +324,10 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 5. エンタープライズ機能（通知・グループ） */}
+        {/* ■ 6. エンタープライズ機能（通知・グループ） */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">5</div>
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">6</div>
                <h2 className="text-2xl font-bold text-white">エンタープライズ機能</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
@@ -357,10 +357,10 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 6. ユーザー・店舗設定 */}
+        {/* ■ 7. ユーザー・店舗設定 */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">6</div>
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">7</div>
                <h2 className="text-2xl font-bold text-white">ユーザー・店舗管理（管理者向け）</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
