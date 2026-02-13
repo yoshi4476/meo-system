@@ -17,3 +17,5 @@ google-api-python-client
 apscheduler
 psycopg2-binary
 requests-oauthlib
+beautifulsoup4
+lxml

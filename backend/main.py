@@ -186,7 +186,6 @@ app.include_router(stores.router)
 app.include_router(notifications.router)
 app.include_router(groups.router)
 app.include_router(ranking.router)
-app.include_router(ranking.router)
 app.include_router(billing.router)
 
 from routers import support

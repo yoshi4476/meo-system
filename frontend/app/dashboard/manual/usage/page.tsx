@@ -177,14 +177,80 @@ export default function UsageManualPage() {
                                 </li>
                             </ul>
                         </div>
+                    {/* Rank Tracking */}
+                    <div className="group bg-slate-800/50 rounded-2xl border border-white/5 shadow-sm hover:border-pink-500/50 hover:bg-slate-800 transition-all duration-300 overflow-hidden">
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 bg-pink-500/20 rounded-xl text-pink-400">
+                                    <BarChart2 className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-white">順位計測</h3>
+                                    <p className="text-xs text-slate-400">SEO成果を追跡</p>
+                                </div>
+                            </div>
+                            <ul className="space-y-2 mb-4 text-sm text-slate-300">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-pink-500 shrink-0 mt-0.5" />
+                                    <span>Google検索順位を自動で毎日計測</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-pink-500 shrink-0 mt-0.5" />
+                                    <span>エリア指定でローカル検索に対応</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
           </div>
         </section>
 
-        {/* ■ 3. AI投稿スタジオ */}
+        {/* ■ 3. 順位計測エンジンの設定 */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">3</div>
+                <h2 className="text-2xl font-bold text-white">順位計測エンジンの設定と活用</h2>
+          </div>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
+            <p className="text-slate-300">
+                あなたの店舗がGoogle検索で何位に表示されているかを正確に把握することは、MEO対策の第一歩です。<br/>
+                「順位計測」機能を使って、注力すべきキーワードの成果をモニタリングしましょう。
+            </p>
+            
+            <div className="space-y-6">
+                <div>
+                    <h3 className="font-bold text-white text-lg mb-3">設定手順</h3>
+                    <ol className="list-decimal list-inside text-slate-300 space-y-4 ml-2">
+                        <li className="pl-2">
+                            <strong className="text-white block mb-1">キーワードの追加</strong>
+                            サイドメニューの「<span className="text-white font-bold">順位計測</span>」を開き、右上の「キーワード追加」ボタンをクリックします。
+                        </li>
+                        <li className="pl-2">
+                            <strong className="text-white block mb-1">条件の入力</strong>
+                            <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-sm">
+                                <li><span className="text-blue-400 font-bold">キーワード:</span> 検索されそうな言葉（例: 「渋谷 カフェ」「新宿 ランチ」）を入力します。</li>
+                                <li><span className="text-blue-400 font-bold">計測エリア (任意):</span> どこで検索したことにするかを指定します（例: 「東京都新宿区」）。<br/>
+                                <span className="text-xs text-slate-500">※ Googleマップは検索地点によって順位が大きく変わるため、店舗のある市区町村を入力することを強く推奨します。</span></li>
+                            </ul>
+                        </li>
+                        <li className="pl-2">
+                            <strong className="text-white block mb-1">計測開始と確認</strong>
+                            「追加する」を押すと、即座にGoogle検索を実行し、現在の順位を取得します。<br/>
+                            以降は自動的に毎日計測が行われ、グラフで推移を確認できるようになります。
+                        </li>
+                        <li className="pl-2">
+                            <strong className="text-white block mb-1">手動での再計測</strong>
+                            順位表示の横にある「再計測 (Real)」ボタンを押すことで、最新の状況をその場で確認することも可能です。
+                        </li>
+                    </ol>
+                </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ■ 4. AI投稿スタジオ */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">4</div>
                 <h2 className="text-2xl font-bold text-white">AI投稿スタジオ（マルチプラットフォーム投稿）</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
