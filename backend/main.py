@@ -19,10 +19,13 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    scheduler.start_scheduler()
+    print("DEBUG: Lifespan startup...")
+    # scheduler.start_scheduler()
+    print("DEBUG: Scheduler skipped for debugging.")
     yield
     # Shutdown
-    scheduler.shutdown_scheduler()
+    print("DEBUG: Lifespan shutdown...")
+    # scheduler.shutdown_scheduler()
 
 # Run DB Migration (Add store_id if missing)
 try:
@@ -196,7 +199,7 @@ app.include_router(companies.router)
 app.include_router(stores.router)
 app.include_router(notifications.router)
 app.include_router(groups.router)
-app.include_router(ranking.router)
+# app.include_router(ranking.router)
 app.include_router(billing.router)
 
 from routers import support

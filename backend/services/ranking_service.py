@@ -11,7 +11,7 @@ class RankingService:
     def __init__(self, db: Session):
         self.db = db
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
     def add_keyword(self, store_id: str, text: str, location: str = None):
@@ -54,7 +54,7 @@ class RankingService:
             # Add delay to be polite
             time.sleep(random.uniform(1.0, 3.0))
             
-            response = requests.get(url, headers=self.headers, timeout=10)
+            response = requests.get(url, headers=self.headers, timeout=5)
             
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
