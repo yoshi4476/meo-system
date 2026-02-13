@@ -177,6 +177,7 @@ export default function UsageManualPage() {
                                 </li>
                             </ul>
                         </div>
+                    </div>
                     {/* Rank Tracking */}
                     <div className="group bg-slate-800/50 rounded-2xl border border-white/5 shadow-sm hover:border-pink-500/50 hover:bg-slate-800 transition-all duration-300 overflow-hidden">
                         <div className="p-6">
@@ -398,11 +399,11 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 7. 推奨ルーティン */}
+        {/* ■ 8. 推奨ルーティン */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-               <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-500/30">7</div>
-               <h2 className="text-2xl font-bold text-white">運用の推奨ルーティン</h2>
+                <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-500/30">8</div>
+                <h2 className="text-2xl font-bold text-white">運用の推奨ルーティン</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
             

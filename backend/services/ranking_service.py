@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import random
 import time
-from .. import models
+import models
 
 class RankingService:
     def __init__(self, db: Session):
