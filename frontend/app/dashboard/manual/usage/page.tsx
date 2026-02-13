@@ -1,6 +1,6 @@
 'use client';
 
-import { useDashboard } from '../../../../contexts/DashboardContext';
+// import { useDashboard } from '../../../../contexts/DashboardContext';
 import React from 'react';
 import { 
     MapPin, 
@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function UsageManualPage() {
-  const { userInfo } = useDashboard();
+// useDashboard removed as it was unused
 
   return (
     <div className="h-full flex flex-col p-8 overflow-y-auto w-full max-w-5xl mx-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
