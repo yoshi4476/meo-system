@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from models import User, RankLog, Keyword, Store
 import models, schemas, database
-from context import get_current_user
+from auth import get_current_user
 from services.ranking_service import RankingService
 from pydantic import BaseModel
 from datetime import datetime

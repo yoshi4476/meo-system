@@ -10,8 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas, auth
-from routers import gbp, posts, reviews, admin, locations, insights, media, qa, ai, bulk, reports, sync, optimization, messages
-from services import scheduler
+try:
+    from routers import gbp, posts, reviews, admin, locations, insights, media, qa, ai, bulk, reports, sync, optimization, messages
+except Exception as e:
+    import traceback
+    print(f"CRITICAL IMPORT ERROR in main.py first block: {e}")
+    traceback.print_exc()
+    raise
 from datetime import timedelta
 
 try:
@@ -175,10 +180,14 @@ app.include_router(reports.router)
 app.include_router(sync.router)
 app.include_router(optimization.router)
 app.include_router(messages.router)
-app.include_router(messages.router)
-app.include_router(messages.router)
-from routers import users, debug, social_auth, companies, stores, notifications, groups, ranking, billing
-app.include_router(users.router)
+
+try:
+    from routers import users, debug, social_auth, companies, stores, notifications, groups, ranking, billing
+except Exception as e:
+    import traceback
+    print(f"CRITICAL IMPORT ERROR in main.py second block: {e}")
+    traceback.print_exc()
+    raise
 app.include_router(debug.router)
 app.include_router(social_auth.router)
 app.include_router(companies.router)
