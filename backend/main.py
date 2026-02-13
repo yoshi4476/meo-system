@@ -10,15 +10,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas, auth
-try:
-    from routers import gbp, posts, reviews, admin, locations, insights, media, qa, ai, bulk, reports, sync, optimization, messages
-except Exception as e:
-    import traceback
-    print(f"CRITICAL IMPORT ERROR in main.py first block: {e}")
-    traceback.print_exc()
-    raise
+from routers import gbp, posts, reviews, admin, locations, insights, media, qa, ai, bulk, reports, sync, optimization, messages
+from services import scheduler
 from datetime import timedelta
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    scheduler.start_scheduler()
+    yield
+    # Shutdown
+    scheduler.shutdown_scheduler()
+
+# Run DB Migration (Add store_id if missing)
 try:
     print("DEBUG: Creating database tables...")
     models.Base.metadata.create_all(bind=engine)
@@ -119,16 +125,16 @@ SECRET_KEY=ランダムな文字列
 
 ## 🎯 主要機能
 
-* **Google連携** - OAuth 2.0による安全なGoogleアカウント連携
-* **投稿管理** - 投稿の作成、編集、予約、GBPへの公開
-* **クチコミ管理** - クチコミの同期と返信
-* **インサイト分析** - パフォーマンスデータの取得と分析
+*   **Google連携** - OAuth 2.0による安全なGoogleアカウント連携
+*   **投稿管理** - 投稿の作成、編集、予約、GBPへの公開
+*   **クチコミ管理** - クチコミの同期と返信
+*   **インサイト分析** - パフォーマンスデータの取得と分析
 
 ## 👥 ロール
 
-* `SUPER_ADMIN` - 最高管理者（すべての機能にアクセス可能）
-* `COMPANY_ADMIN` - 企業管理者
-* `STORE_USER` - 店舗ユーザー
+*   `SUPER_ADMIN` - 最高管理者（すべての機能にアクセス可能）
+*   `COMPANY_ADMIN` - 企業管理者
+*   `STORE_USER` - 店舗ユーザー
 """
 
 
@@ -143,13 +149,14 @@ app = FastAPI(
     license_info={
         "name": "Proprietary",
     },
+    lifespan=lifespan
 )
 
 # CORS Configuration
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://meo-system-act.vercel.app", 
+    "https://meo-system-act.vercel.app",
     "https://meo-backend-xoeo.onrender.com",
 ]
 
@@ -181,13 +188,8 @@ app.include_router(sync.router)
 app.include_router(optimization.router)
 app.include_router(messages.router)
 
-try:
-    from routers import users, debug, social_auth, companies, stores, notifications, groups, ranking, billing
-except Exception as e:
-    import traceback
-    print(f"CRITICAL IMPORT ERROR in main.py second block: {e}")
-    traceback.print_exc()
-    raise
+from routers import users, debug, social_auth, companies, stores, notifications, groups, ranking, billing
+app.include_router(users.router)
 app.include_router(debug.router)
 app.include_router(social_auth.router)
 app.include_router(companies.router)
@@ -199,14 +201,6 @@ app.include_router(billing.router)
 
 from routers import support
 app.include_router(support.router)
-
-@app.on_event("startup")
-async def startup_event():
-    scheduler.start_scheduler()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    scheduler.shutdown_scheduler()
 
 # Dependency
 def get_db():
