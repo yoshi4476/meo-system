@@ -128,7 +128,7 @@ export default function RankingPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-purple-500">
               順位計測エンジン
             </h1>
             <p className="text-slate-400 mt-2">Googleマップの検索順位を自動計測・可視化します</p>
