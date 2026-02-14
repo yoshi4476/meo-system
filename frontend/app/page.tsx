@@ -65,6 +65,25 @@ export default function Home() {
     return () => clearInterval(progressInterval);
   }, []);
 
+  // Google Config Error Handling
+  const [showConfigError, setShowConfigError] = useState(false);
+
+  useEffect(() => {
+     // Check URL for error params (e.g. from backend redirect)
+     // Use window.location because searchParams might be hydration-sensitive for SSG? 
+     // simplified:
+     if (typeof window !== 'undefined') {
+         const params = new URLSearchParams(window.location.search);
+         if (params.get('error') === 'google_config_missing') {
+             setShowConfigError(true);
+             // Clean URL
+             const url = new URL(window.location.href);
+             url.searchParams.delete('error');
+             window.history.replaceState({}, '', url.toString());
+         }
+     }
+  }, []);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden">
       {/* Background Effect */}
@@ -140,6 +159,67 @@ export default function Home() {
           )}
 
         </div>
+        
+        {/* Config Error Modal */}
+        {showConfigError && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <div className="glass-card max-w-2xl w-full p-8 relative animate-in fade-in zoom-in duration-300">
+                    <button 
+                        onClick={() => setShowConfigError(false)}
+                        className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                    >
+                        ✕
+                    </button>
+                    
+                    <div className="flex items-center gap-4 mb-6 text-amber-400">
+                        <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <h2 className="text-2xl font-bold">Google API設定が必要です</h2>
+                    </div>
+                    
+                    <div className="space-y-4 text-slate-300">
+                        <p>Google Business Profileと連携するには、バックエンドの環境変数にGoogle Cloud Consoleの認証情報を設定する必要があります。</p>
+                        
+                        <div className="bg-slate-900/50 p-4 rounded-lg border border-white/10 text-sm font-mono">
+                            <p className="text-slate-400 mb-2">.envファイルの設定例:</p>
+                            <div className="text-emerald-400">
+                                GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com<br/>
+                                GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4 mt-4">
+                            <a 
+                                href="https://console.cloud.google.com/" 
+                                target="_blank" 
+                                className="p-4 bg-white/5 hover:bg-white/10 rounded-lg block border border-white/10 transition-colors"
+                            >
+                                <h3 className="font-bold text-white mb-1">1. プロジェクト作成</h3>
+                                <p className="text-xs">Google Cloud ConsoleでAPIプロジェクトを作成します。</p>
+                            </a>
+                            <a 
+                                href="https://console.cloud.google.com/apis/library/mybusinessbusinessinformation.googleapis.com" 
+                                target="_blank" 
+                                className="p-4 bg-white/5 hover:bg-white/10 rounded-lg block border border-white/10 transition-colors"
+                            >
+                                <h3 className="font-bold text-white mb-1">2. API有効化</h3>
+                                <p className="text-xs">My Business APIを有効化します。</p>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-8 flex justify-end">
+                        <button 
+                            onClick={() => setShowConfigError(false)}
+                            className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                        >
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
     </main>
   );
 }

@@ -23,94 +23,13 @@ def login_google(state: str = "default"):
         return RedirectResponse(url=auth_url)
     except ValueError as e:
         # Google credentials not configured - show setup instructions
-        html_content = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Google API設定が必要です</title>
-            <style>
-                body { 
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
-                    color: white;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 100vh;
-                    margin: 0;
-                    padding: 20px;
-                    box-sizing: border-box;
-                }
-                .card {
-                    background: rgba(255,255,255,0.1);
-                    border-radius: 16px;
-                    padding: 40px;
-                    max-width: 600px;
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(255,255,255,0.2);
-                }
-                .warning { color: #fbbf24; font-size: 48px; }
-                h1 { margin: 20px 0 10px; }
-                p { color: #94a3b8; line-height: 1.6; }
-                .steps {
-                    background: rgba(0,0,0,0.3);
-                    border-radius: 8px;
-                    padding: 20px;
-                    margin: 20px 0;
-                    text-align: left;
-                }
-                .steps ol { margin: 0; padding-left: 20px; }
-                .steps li { margin: 10px 0; color: #e2e8f0; }
-                code {
-                    background: rgba(124, 58, 237, 0.3);
-                    padding: 2px 8px;
-                    border-radius: 4px;
-                    font-family: monospace;
-                }
-                .btn {
-                    display: inline-block;
-                    margin-top: 20px;
-                    padding: 12px 24px;
-                    background: #7c3aed;
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 8px;
-                }
-                .btn-secondary {
-                    background: transparent;
-                    border: 1px solid #7c3aed;
-                    margin-left: 10px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <div class="warning">⚠️</div>
-                <h1>Google API設定が必要です</h1>
-                <p>Google Business Profileと連携するには、Google Cloud ConsoleでAPIの認証情報を設定する必要があります。</p>
-                
-                <div class="steps">
-                    <ol>
-                        <li><a href="https://console.cloud.google.com/" target="_blank" style="color:#a78bfa">Google Cloud Console</a>でプロジェクトを作成</li>
-                        <li>My Business Business Information APIを有効化</li>
-                        <li>OAuth同意画面を設定</li>
-                        <li>OAuthクライアントIDを作成</li>
-                        <li><code>.env</code>ファイルに認証情報を追加:
-                            <br><code>GOOGLE_CLIENT_ID=あなたのID</code>
-                            <br><code>GOOGLE_CLIENT_SECRET=あなたのシークレット</code>
-                        </li>
-                        <li>バックエンドサーバーを再起動</li>
-                    </ol>
-                </div>
-                
-                
-                <a href="http://localhost:8001/docs" class="btn">📚 詳細なセットアップガイド</a>
-                <a href="{os.getenv('FRONTEND_URL', 'http://localhost:3001')}/dashboard/settings" class="btn btn-secondary">← 設定画面に戻る</a>
-            </div>
-        </body>
-        </html>
-        """
-        return HTMLResponse(content=html_content, status_code=200)
+        # Google credentials not configured - Redirect to frontend with error
+        import os
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        return RedirectResponse(
+            url=f"{frontend_url}?error=google_config_missing",
+            status_code=302
+        )
 
 
 @router.get("/callback")
