@@ -68,7 +68,8 @@ def social_auth_start(platform: str, db: Session = Depends(database.get_db), cur
     
     if platform == "instagram":
         client_id = (user_settings.instagram_client_id if user_settings else None) or get_env_var("INSTAGRAM_CLIENT_ID")
-        if not client_id: return _mock_auth(platform, state, frontend_url)
+        client_id = (user_settings.instagram_client_id if user_settings else None) or get_env_var("INSTAGRAM_CLIENT_ID")
+        if not client_id: raise HTTPException(status_code=400, detail="Instagram Client ID is not configured. Please set it in Settings.")
         
         # Instagram Basic Display or Graph API (Business)
         base_url = "https://www.facebook.com/v19.0/dialog/oauth"
@@ -83,7 +84,8 @@ def social_auth_start(platform: str, db: Session = Depends(database.get_db), cur
         
     elif platform == "twitter":
         client_id = (user_settings.twitter_client_id if user_settings else None) or get_env_var("TWITTER_CLIENT_ID")
-        if not client_id: return _mock_auth(platform, state, frontend_url)
+        client_id = (user_settings.twitter_client_id if user_settings else None) or get_env_var("TWITTER_CLIENT_ID")
+        if not client_id: raise HTTPException(status_code=400, detail="Twitter Client ID is not configured. Please set it in Settings.")
         
         # PKCE S256 Challenge
         code_challenge = base64.urlsafe_b64encode(hashlib.sha256(pkce_verifier.encode()).digest()).decode().rstrip("=")
@@ -102,7 +104,8 @@ def social_auth_start(platform: str, db: Session = Depends(database.get_db), cur
         
     elif platform == "youtube":
         client_id = (user_settings.youtube_client_id if user_settings else None) or get_env_var("GOOGLE_CLIENT_ID") or get_env_var("YOUTUBE_CLIENT_ID")
-        if not client_id: return _mock_auth(platform, state, frontend_url)
+        client_id = (user_settings.youtube_client_id if user_settings else None) or get_env_var("GOOGLE_CLIENT_ID") or get_env_var("YOUTUBE_CLIENT_ID")
+        if not client_id: raise HTTPException(status_code=400, detail="YouTube/Google Client ID is not configured. Please set it in Settings.")
         
         base_url = "https://accounts.google.com/o/oauth2/v2/auth"
         params = {
@@ -138,9 +141,9 @@ def social_auth_callback(platform: str, code: str, state: str = None, db: Sessio
     frontend_url = os.getenv("FRONTEND_URL", "https://meo-system-act.vercel.app").rstrip("/")
     redirect_uri = f"{frontend_url}/dashboard/settings"
     
-    # Handle Mock Code
+    # Handle Mock Code - DISALLOWED
     if code.startswith("mock_"):
-        return _mock_callback(platform, code, db, current_user)
+        raise HTTPException(status_code=400, detail="Mock authentication is disabled.")
 
     # Real Token Exchange
     access_token = None

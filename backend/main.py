@@ -20,12 +20,11 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     print("DEBUG: Lifespan startup...")
-    # scheduler.start_scheduler()
-    print("DEBUG: Scheduler skipped for debugging.")
+    scheduler.start_scheduler()
     yield
     # Shutdown
     print("DEBUG: Lifespan shutdown...")
-    # scheduler.shutdown_scheduler()
+    scheduler.shutdown_scheduler()
 
 # Run DB Migration (Add store_id if missing)
 try:

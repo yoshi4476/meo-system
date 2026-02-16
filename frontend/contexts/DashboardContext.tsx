@@ -51,11 +51,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Mark as mounted after first render (client-side only)
   useEffect(() => {
     setMounted(true);
-    // Check for saved demo preference on mount
-    const saved = localStorage.getItem('is_demo_mode');
-    if (saved === 'true') {
-        setIsDemoMode(true);
-    }
+    // Demo Mode Removed: Always false
+    setIsDemoMode(false);
+    localStorage.removeItem('is_demo_mode');
   }, []);
 
   const logout = useCallback(() => {
@@ -75,24 +73,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    // If in Demo Mode, return mock user immediately
-    if (localStorage.getItem('is_demo_mode') === 'true') {
-        setUserInfo({
-            id: 'demo-user-id',
-            name: 'デモ ユーザー',
-            email: 'demo@example.com',
-            role: 'SUPER_ADMIN',
-            is_google_connected: true,
-            store_id: 'demo-store-id',
-            store: {
-                id: 'demo-store-id',
-                name: 'MEO Cafe 渋谷店 (Demo)',
-                google_location_id: 'locations/demo'
-            }
-        });
-        setIsLoading(false);
-        return;
-    }
+    // Demo Mode Removed: Logic deleted
 
     try {
       setIsLoading(true);
@@ -127,15 +108,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [isDemoMode]); // Re-run if mode changes
+  }, []); // Re-run if mode changes
 
   const syncData = async () => {
-      if (isDemoMode) {
-          await new Promise(r => setTimeout(r, 2000));
-          alert("デモモード: 同期が完了しました（シミュレーション）");
-          return;
-      }
-
       if (!userInfo?.store_id) {
           alert("エラー: 店舗IDが見つかりません。店舗を選択してください。");
           return;
@@ -212,19 +187,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, [fetchUser]);
 
   const toggleDemoMode = () => {
-    setIsDemoMode(prev => {
-      const next = !prev;
-      localStorage.setItem('is_demo_mode', String(next));
-      if (next) {
-         // Entering demo mode
-         fetchUser(); // Will pick up mock data
-      } else {
-         // Exiting demo mode
-         setUserInfo(null); // Clear mock data
-         logout();
-      }
-      return next;
-    });
+    // Disabled
+    console.log("Demo Mode Disabled");
   };
 
 

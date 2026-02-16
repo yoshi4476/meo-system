@@ -257,7 +257,7 @@ function DashboardContent() {
            {Array.from({ length: 31 }, (_, i) => (
              <div 
                key={i} 
-               className={`py-3 rounded-lg ${i === 14 || i === 21 ? 'bg-aurora-purple/30 border border-aurora-purple' : 'hover:bg-white/5'} ${i === 22 ? 'bg-aurora-cyan/30 border border-aurora-cyan' : ''} cursor-pointer transition-colors`}
+               className={`py-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors`}
              >
                {i + 1}
              </div>
