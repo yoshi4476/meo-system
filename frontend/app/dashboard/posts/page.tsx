@@ -13,6 +13,7 @@ type Post = {
     status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'FAILED';
     scheduled_at?: string;
     created_at: string;
+    social_post_ids?: any;
 };
 
 // 過去にアップロードした画像のモックデータ (Demo Mode / Fallback)
@@ -43,7 +44,7 @@ function PostsContent() {
         setIsLoading(true);
         if (isDemoMode) {
              setPosts([
-                 { id: '1', content: '【3月の限定メニュー🌸】\n桜と抹茶のモンブランが新登場！\n春の訪れを感じる一品をぜひお楽しみください。\n#カフェ #春スイーツ #抹茶', status: 'PUBLISHED', created_at: new Date().toISOString(), media_url: demoImages[0].url },
+                 { id: '1', content: '【3月の限定メニュー🌸】\n桜と抹茶のモンブランが新登場！\n春の訪れを感じる一品をぜひお楽しみください。\n#カフェ #春スイーツ #抹茶', status: 'PUBLISHED', created_at: new Date().toISOString(), media_url: demoImages[0].url, social_post_ids: { google: { searchUrl: 'https://google.com' } } },
                  { id: '2', content: 'GW期間中の営業時間について📅\n4/29〜5/5は休まず営業いたします。\n通常通り9:00〜20:00でお待ちしております。', status: 'SCHEDULED', scheduled_at: '2025-04-20T09:00:00', created_at: new Date(Date.now() - 86400000).toISOString() },
                  { id: '3', content: '【スタッフ募集中】\n私たちと一緒に働きませんか？\n未経験者大歓迎！詳細はプロフィールのリンクから。', status: 'PUBLISHED', created_at: new Date(Date.now() - 259200000).toISOString(), media_url: demoImages[3].url },
                  { id: '4', content: '夏の新作ドリンク試作中...🍹\nお楽しみに！', status: 'DRAFT', created_at: new Date(Date.now() - 604800000).toISOString() },
@@ -60,7 +61,13 @@ function PostsContent() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                setPosts(await res.json());
+                const data = await res.json();
+                // Ensure social_post_ids is parsed if string
+                const parsedData = data.map((p: any) => ({
+                    ...p,
+                    social_post_ids: typeof p.social_post_ids === 'string' ? JSON.parse(p.social_post_ids) : p.social_post_ids
+                }));
+                setPosts(parsedData);
             }
         } catch (e) {
             console.error(e);
@@ -171,7 +178,17 @@ function PostsContent() {
                         <p>このステータスの投稿はありません</p>
                     </div>
                 ) : (
-                    filteredPosts.map(post => (
+                    filteredPosts.map(post => {
+                        // Extract Google URL if available
+                        let googleUrl = null;
+                        if (post.social_post_ids && typeof post.social_post_ids === 'object') {
+                             const g = (post.social_post_ids as any).google;
+                             if (g && typeof g === 'object' && g.searchUrl) {
+                                  googleUrl = g.searchUrl;
+                             }
+                        }
+
+                        return (
                         <div key={post.id} className={`glass-card p-6 flex flex-col md:flex-row gap-6 hover:bg-white/5 transition-colors relative ${post.status === 'SCHEDULED' ? 'border-l-4 border-l-blue-500' : ''}`}>
                             <div className="w-full md:w-48 h-32 bg-slate-800 rounded-lg overflow-hidden shrink-0">
                                 {post.media_url ? (
@@ -223,6 +240,13 @@ function PostsContent() {
                                             })()}
                                         </span>
                                     )}
+                                    {/* Google Link */}
+                                    {googleUrl && (
+                                        <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded flex items-center gap-1 transition-colors">
+                                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                           Googleマップで見る
+                                        </a>
+                                    )}
                                 </div>
                                 <p className="text-slate-200 whitespace-pre-wrap line-clamp-3 leading-relaxed">{post.content}</p>
                                 
@@ -246,7 +270,7 @@ function PostsContent() {
                                 </div>
                             </div>
                         </div>
-                    ))
+                    )})
                 )}
             </div>
         </div>

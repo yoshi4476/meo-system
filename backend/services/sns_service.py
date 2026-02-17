@@ -79,7 +79,12 @@ class SNSService:
                         
                         res = client.create_local_post(store.google_location_id, post_data)
                         if res and "name" in res:
-                            results["google"] = res.get("name")
+                            # Store both ID and URL if available
+                            results["google"] = {
+                                "id": res.get("name"),
+                                "searchUrl": res.get("searchUrl")
+                            }
+                            logger.info(f"Google Post Success: {res.get('searchUrl')}")
                             success_count += 1
                         else:
                             results["google"] = f"ERROR: API returned {res}"
