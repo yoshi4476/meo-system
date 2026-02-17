@@ -338,9 +338,23 @@ class GBPClient:
             url = f"https://mybusiness.googleapis.com/v4/{v4_location_path}/localPosts"
             print(f"DEBUG: Creating post at {url}")
             response = requests.post(url, headers=self._get_headers(), json=post_data)
-            response.raise_for_status()
+            
+            if not response.ok:
+                try:
+                    err_json = response.json()
+                    error_msg = err_json.get("error", {}).get("message", response.text)
+                    print(f"DEBUG: Google API Error: {error_msg}")
+                    # Raise detailed error for frontend to display
+                    raise ValueError(f"Google API Error: {error_msg}")
+                except ValueError:
+                     # Raise original if JSON parsing fails
+                     response.raise_for_status()
+            
             return response.json()
         except Exception as e:
+            # Re-raise detailed ValueError, or log and re-raise other exceptions
+            print(f"DEBUG: create_local_post error: {e}")
+            raise
             print(f"DEBUG: create_local_post error: {e}")
             raise
 
