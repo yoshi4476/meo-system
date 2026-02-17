@@ -430,7 +430,20 @@ function CreatePostContent() {
                 alert('下書きを保存しました');
                 router.push('/dashboard/posts');
             } else if (data.status === 'FAILED') {
-                alert('投稿に失敗しました。各SNSの連携状態を確認してください。');
+                let errorMsg = '投稿に失敗しました。各SNSの連携状態を確認してください。';
+                if (data.social_post_ids) {
+                    try {
+                        const ids = typeof data.social_post_ids === 'string' ? JSON.parse(data.social_post_ids) : data.social_post_ids;
+                        const errors = Object.entries(ids)
+                            .filter(([k, v]) => typeof v === 'string' && (v as string).startsWith('ERROR'))
+                            .map(([k, v]) => `・${k}: ${v}`)
+                            .join('\n');
+                        if (errors) errorMsg += `\n\n詳細エラー:\n${errors}`;
+                    } catch (e) {
+                         console.error("Error parsing details", e);
+                    }
+                }
+                alert(errorMsg);
             } else if (data.status === 'PARTIAL') {
                 alert('一部のプラットフォームへの投稿に失敗しました。');
                 router.push('/dashboard/posts');
