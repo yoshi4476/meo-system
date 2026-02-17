@@ -74,15 +74,70 @@ class SNSService:
                             }
                             # Handle Media for GBP
                             if post.media_url:
-                                 # Check for localhost/private IP which Google can't access
-                                 if "localhost" in post.media_url or "127.0.0.1" in post.media_url:
+                                 target_url = post.media_url
+                                 
+                                 # Check for localhost/private IP
+                                 if "localhost" in target_url or "127.0.0.1" in target_url:
                                      results["google"] = "ERROR: ローカル環境(localhost)の画像はGoogleに送信できません。公開URLを使用するか、本番環境で実行してください。"
                                      fail_count += 1
+                                     # Continue to next if possible, but here we just mark error.
+                                     
                                  else:
-                                     if post.media_type == "PHOTO":
-                                          post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": post.media_url}]
-                                     elif post.media_type == "VIDEO":
-                                          post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": post.media_url}]
+                                     # Check for googleusercontent.com (Library images) - Google API rejects these as sourceUrl
+                                     if "googleusercontent.com" in target_url:
+                                         try:
+                                             # Download image temporarily
+                                             logger.info(f"Proxying Google Image: {target_url}")
+                                             import requests
+                                             import uuid
+                                             import os
+                                             
+                                             img_res = requests.get(target_url, timeout=10)
+                                             if img_res.ok:
+                                                 ext = "jpg" # Default
+                                                 if "image/png" in img_res.headers.get("Content-Type", ""): ext = "png"
+                                                 
+                                                 filename = f"proxy_{uuid.uuid4()}.{ext}"
+                                                 save_path = f"static/uploads/{filename}"
+                                                 os.makedirs("static/uploads", exist_ok=True)
+                                                 
+                                                 with open(save_path, "wb") as f:
+                                                     f.write(img_res.content)
+                                                     
+                                                 # Generate public URL
+                                                 base_url = os.getenv("RENDER_EXTERNAL_URL")
+                                                 if not base_url:
+                                                     # Fallback if env not set (e.g. local without env)
+                                                     base_url = "http://localhost:8000" 
+                                                     
+                                                 target_url = f"{base_url.rstrip('/')}/static/uploads/{filename}"
+                                                 logger.info(f"Proxied Image URL: {target_url}")
+                                                 
+                                                 # Update payload to use new URL
+                                                 if post.media_type == "PHOTO":
+                                                      post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": target_url}]
+                                                 elif post.media_type == "VIDEO":
+                                                      post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
+                                             else:
+                                                 logger.warning(f"Failed to download Google image: {img_res.status_code}")
+                                                 # Fallback to original
+                                                 if post.media_type == "PHOTO":
+                                                      post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": target_url}]
+                                                 elif post.media_type == "VIDEO":
+                                                      post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
+                                         except Exception as px_e:
+                                             logger.error(f"Proxy failed: {px_e}")
+                                             # Fallback to original
+                                             if post.media_type == "PHOTO":
+                                                  post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": target_url}]
+                                             elif post.media_type == "VIDEO":
+                                                  post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
+                                     else:
+                                         # Standard URL
+                                         if post.media_type == "PHOTO":
+                                              post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": target_url}]
+                                         elif post.media_type == "VIDEO":
+                                              post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
                                      
                                      res = client.create_local_post(store.google_location_id, post_data)
                                      if res and "name" in res:
