@@ -21,7 +21,7 @@ import uuid
 BASE_URL = os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8000"
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(request: Request, file: UploadFile = File(...)):
     """
     Upload a file to local static storage (Ephemeral on Render).
     Returns a URL that can be used for posting.
@@ -36,16 +36,11 @@ async def upload_file(file: UploadFile = File(...)):
         with open(filepath, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Construct URL
-        # If on Render, RENDER_EXTERNAL_URL starts with https://...
-        # If local, localhost...
-        
-        # We can also use Request.base_url to be dynamic but let's try env var first if available
-        # or just return relative if consumer handles it. 
-        # Frontend expects full URL for preview.
-        # GBP API expects full URL for download.
-        
-        full_url = f"{BASE_URL}/static/uploads/{filename}"
+        # Construct URL dynamically from the request
+        # This ensures it works on both Localhost (for preview) and Render (for public URL)
+        # request.base_url returns "http://localhost:8000/" or "https://myapp.onrender.com/"
+        base_url = str(request.base_url).rstrip("/")
+        full_url = f"{base_url}/static/uploads/{filename}"
         
         return {"url": full_url, "filename": filename}
     except Exception as e:
