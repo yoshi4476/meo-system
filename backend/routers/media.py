@@ -36,10 +36,15 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         with open(filepath, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Construct URL dynamically from the request
-        # This ensures it works on both Localhost (for preview) and Render (for public URL)
-        # request.base_url returns "http://localhost:8000/" or "https://myapp.onrender.com/"
-        base_url = str(request.base_url).rstrip("/")
+        # Construct URL dynamically
+        # Prioritize RENDER_EXTERNAL_URL if set (Production)
+        # Fallback to request.base_url (Local development)
+        render_url = os.getenv("RENDER_EXTERNAL_URL")
+        if render_url:
+            base_url = render_url.rstrip("/")
+        else:
+            base_url = str(request.base_url).rstrip("/")
+            
         full_url = f"{base_url}/static/uploads/{filename}"
         
         return {"url": full_url, "filename": filename}
