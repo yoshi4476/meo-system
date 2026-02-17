@@ -72,23 +72,42 @@ class SNSService:
                             "topicType": "STANDARD",
                         }
                         # Handle Media for GBP
-                        if post.media_url and post.media_type == "PHOTO":
-                             post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": post.media_url}]
-                        elif post.media_url and post.media_type == "VIDEO":
-                             post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": post.media_url}]
-                        
-                        res = client.create_local_post(store.google_location_id, post_data)
-                        if res and "name" in res:
-                            # Store both ID and URL if available
-                            results["google"] = {
-                                "id": res.get("name"),
-                                "searchUrl": res.get("searchUrl")
-                            }
-                            logger.info(f"Google Post Success: {res.get('searchUrl')}")
-                            success_count += 1
+                        if post.media_url:
+                             # Check for localhost/private IP which Google can't access
+                             if "localhost" in post.media_url or "127.0.0.1" in post.media_url:
+                                 results["google"] = "ERROR: ローカル環境(localhost)の画像はGoogleに送信できません。公開URLを使用するか、本番環境で実行してください。"
+                                 fail_count += 1
+                             else:
+                                 if post.media_type == "PHOTO":
+                                      post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": post.media_url}]
+                                 elif post.media_type == "VIDEO":
+                                      post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": post.media_url}]
+                                 
+                                 res = client.create_local_post(store.google_location_id, post_data)
+                                 if res and "name" in res:
+                                     # Store both ID and URL if available
+                                     results["google"] = {
+                                         "id": res.get("name"),
+                                         "searchUrl": res.get("searchUrl")
+                                     }
+                                     logger.info(f"Google Post Success: {res.get('searchUrl')}")
+                                     success_count += 1
+                                 else:
+                                     results["google"] = f"ERROR: API returned {res}"
+                                     fail_count += 1
                         else:
-                            results["google"] = f"ERROR: API returned {res}"
-                            fail_count += 1
+                             # No media, just text
+                             res = client.create_local_post(store.google_location_id, post_data)
+                             if res and "name" in res:
+                                 results["google"] = {
+                                     "id": res.get("name"),
+                                     "searchUrl": res.get("searchUrl")
+                                 }
+                                 logger.info(f"Google Post Success: {res.get('searchUrl')}")
+                                 success_count += 1
+                             else:
+                                 results["google"] = f"ERROR: API returned {res}"
+                                 fail_count += 1
                     else:
                         results["google"] = "ERROR: No Location ID"
                         fail_count += 1
