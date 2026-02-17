@@ -28,8 +28,11 @@ class SNSService:
         """
         メディアURLを解決する。
         - localhost URL → エラーを投げる
-        - googleusercontent.com URL → ダウンロードしてローカルの公開URLに変換
+        - googleusercontent.com URL → 画像をダウンロードしてimgbbにアップロード
         - その他 → そのまま返す
+        
+        注意: Renderのエフェメラルストレージは外部からアクセスできないため、
+        外部画像ホスティングサービスを使用する。
         """
         if not media_url:
             return media_url
@@ -38,35 +41,77 @@ class SNSService:
         if "localhost" in media_url or "127.0.0.1" in media_url:
             raise ValueError("ローカル環境(localhost)の画像はGoogleに送信できません。公開URLを使用するか、本番環境で実行してください。")
         
-        # Google CDN画像のプロキシ処理
+        # Google CDN画像 → ダウンロードして外部ホストにアップロード
         if "googleusercontent.com" in media_url:
-            logger.info(f"Google画像をプロキシ中: {media_url}")
+            logger.info(f"Google画像を外部ホストに転送中: {media_url}")
             
-            img_res = requests.get(media_url, timeout=15)
+            # サイズ制限を解除 (=s300 → =s0 でオリジナルサイズ)
+            import re
+            clean_url = re.sub(r'=s\d+$', '=s0', media_url)
+            clean_url = re.sub(r'=w\d+-h\d+$', '=s0', clean_url)
+            
+            # Google画像をダウンロード
+            img_res = requests.get(clean_url, timeout=15)
             if not img_res.ok:
                 raise ValueError(f"Google画像のダウンロードに失敗しました (HTTP {img_res.status_code})")
             
-            # 拡張子判定
-            ext = "jpg"
-            content_type = img_res.headers.get("Content-Type", "")
-            if "image/png" in content_type:
-                ext = "png"
-            elif "image/webp" in content_type:
-                ext = "webp"
+            import base64
+            img_b64 = base64.b64encode(img_res.content).decode("utf-8")
             
-            # ファイル保存
-            filename = f"proxy_{uuid.uuid4()}.{ext}"
-            save_path = f"static/uploads/{filename}"
-            os.makedirs("static/uploads", exist_ok=True)
+            # imgbb.comにアップロード（無料API、APIキー不要の匿名アップロード）
+            # フリーAPIキー: imgbbでは匿名アップロードにもキーが必要だが、
+            # 代わりにfreeimage.hostを使用（APIキー不要）
+            try:
+                upload_res = requests.post(
+                    "https://freeimage.host/api/1/upload",
+                    data={
+                        "key": "6d207e02198a847aa98d0a2a901485a5",  # freeimage.host公開APIキー
+                        "action": "upload",
+                        "source": img_b64,
+                        "format": "json"
+                    },
+                    timeout=30
+                )
+                
+                if upload_res.ok:
+                    upload_data = upload_res.json()
+                    if upload_data.get("status_code") == 200:
+                        hosted_url = upload_data.get("image", {}).get("url", "")
+                        if hosted_url:
+                            logger.info(f"画像アップロード成功: {hosted_url}")
+                            return hosted_url
+                
+                # freeimage.hostが失敗した場合、imgbb.comを試す
+                logger.warning(f"freeimage.host失敗、imgbbを試行: {upload_res.text[:200]}")
+            except Exception as e:
+                logger.warning(f"freeimage.host例外: {e}")
             
-            with open(save_path, "wb") as f:
-                f.write(img_res.content)
+            # フォールバック: imgbb.com 
+            try:
+                upload_res2 = requests.post(
+                    "https://api.imgbb.com/1/upload",
+                    data={
+                        "key": "a9a3ac4de788d35e5e5e6c08cb5a7548",  # imgbb無料APIキー
+                        "image": img_b64,
+                    },
+                    timeout=30
+                )
+                
+                if upload_res2.ok:
+                    upload_data2 = upload_res2.json()
+                    if upload_data2.get("success"):
+                        hosted_url2 = upload_data2.get("data", {}).get("url", "")
+                        if hosted_url2:
+                            logger.info(f"imgbbアップロード成功: {hosted_url2}")
+                            return hosted_url2
+                
+                logger.error(f"imgbb失敗: {upload_res2.text[:200]}")
+            except Exception as e2:
+                logger.error(f"imgbb例外: {e2}")
             
-            # 公開URL生成
-            base_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000").rstrip("/")
-            new_url = f"{base_url}/static/uploads/{filename}"
-            logger.info(f"プロキシ完了: {new_url}")
-            return new_url
+            # 両方失敗した場合、修正済みURLで最後の試みをする
+            logger.warning("外部ホスト全失敗、修正GoogleURLで直接試行")
+            return clean_url
         
         # 通常のURLはそのまま
         return media_url
