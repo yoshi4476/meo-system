@@ -48,6 +48,7 @@ function CreatePostContent() {
   const [isKeyAreaLocked, setIsKeyAreaLocked] = useState(false); 
   const [charCount, setCharCount] = useState<string>('auto'); // 'auto', '140', '300', '500'
   const [customPrompt, setCustomPrompt] = useState('');
+  const [isCustomPromptLocked, setIsCustomPromptLocked] = useState(false);
 
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
@@ -66,6 +67,9 @@ function CreatePostContent() {
     
     setIsKeywordsLocked(savedKeywordsLock);
     setIsKeyAreaLocked(savedKeyAreaLock);
+    
+    const savedCustomPromptLock = localStorage.getItem('post_customprompt_locked') === 'true';
+    setIsCustomPromptLocked(savedCustomPromptLock);
 
     if (savedKeywordsLock) {
         const savedK = localStorage.getItem('post_keywords_content');
@@ -74,6 +78,14 @@ function CreatePostContent() {
     if (savedKeyAreaLock) {
         const savedA = localStorage.getItem('post_keyarea_content');
         if (savedA) setKeyArea(savedA);
+    }
+    if (savedKeyAreaLock) {
+        const savedA = localStorage.getItem('post_keyarea_content');
+        if (savedA) setKeyArea(savedA);
+    }
+    if (savedCustomPromptLock) {
+        const savedC = localStorage.getItem('post_customprompt_content');
+        if (savedC) setCustomPrompt(savedC);
     }
 
     // Fetch if editing
@@ -167,6 +179,14 @@ function CreatePostContent() {
         localStorage.setItem('post_keyarea_content', keyArea);
     }
   };
+
+  const handleCustomPromptLockChange = (locked: boolean) => {
+    setIsCustomPromptLocked(locked);
+    localStorage.setItem('post_customprompt_locked', String(locked));
+    if (locked) {
+        localStorage.setItem('post_customprompt_content', customPrompt);
+    }
+  };
   
   // Update storage when content changes IF locked
   const handleKeywordsChange = (val: string) => {
@@ -180,6 +200,13 @@ function CreatePostContent() {
       setKeyArea(val);
       if (isKeyAreaLocked) {
           localStorage.setItem('post_keyarea_content', val);
+      }
+  };
+
+  const handleCustomPromptChange = (val: string) => {
+      setCustomPrompt(val);
+      if (isCustomPromptLocked) {
+          localStorage.setItem('post_customprompt_content', val);
       }
   };
 
@@ -576,12 +603,21 @@ function CreatePostContent() {
 
                 {/* Custom Prompt */}
                 <div>
-                     <label className="text-xs font-bold text-slate-400 mb-1 block">カスタムプロンプト (AIへの追加指示)</label>
+                     <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-bold text-slate-400 block">カスタムプロンプト (AIへの追加指示)</label>
+                        <button 
+                            onClick={() => handleCustomPromptLockChange(!isCustomPromptLocked)}
+                            className={`text-xs flex items-center gap-1 transition-colors px-2 py-0.5 rounded ${isCustomPromptLocked ? 'bg-aurora-cyan/20 text-aurora-cyan' : 'text-slate-500 hover:text-slate-300'}`}
+                            title="次回もこのプロンプトを使用する"
+                        >
+                            {isCustomPromptLocked ? '🔒 固定中' : '🔓 固定しない'}
+                        </button>
+                     </div>
                      <textarea 
                         value={customPrompt}
-                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        onChange={(e) => handleCustomPromptChange(e.target.value)}
                         placeholder="例: 若い女性向けに、絵文字を多めに使って。ハッシュタグは5個以内で。"
-                        className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm h-16 resize-none placeholder-slate-600"
+                        className={`w-full bg-slate-900 border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-aurora-cyan text-sm h-16 resize-none placeholder-slate-600 transition-colors ${isCustomPromptLocked ? 'border-aurora-cyan/50 bg-aurora-cyan/5' : 'border-white/10'}`}
                      />
                 </div>
                 
