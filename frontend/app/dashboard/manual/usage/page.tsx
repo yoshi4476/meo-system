@@ -553,6 +553,44 @@ export default function UsageManualPage() {
           </div>
         </section>
 
+
+        {/* ■ 10. トラブルシューティング */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-slate-500 flex items-center justify-center text-white font-bold text-lg">10</div>
+                <h2 className="text-2xl font-bold text-white">トラブルシューティング・よくある質問</h2>
+          </div>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
+            
+            <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/10 pb-2">
+                    <span className="text-yellow-500">⚠️</span> ログイン画面がなかなか開かない / エラーが出る
+                </h3>
+                <div className="bg-slate-900/50 p-5 rounded-xl border border-yellow-500/20">
+                    <p className="text-slate-300 mb-2">
+                        本システムはクラウドサーバーの「自動スリープ機能」を使用しているため、しばらく操作していない状態からアクセスすると、<strong>起動に50秒〜1分程度かかる場合があります。</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-slate-400 text-sm space-y-2">
+                        <li>ログイン画面で「システム起動中...」と表示されている間は、そのままお待ちください。</li>
+                        <li>もし「Render」のロゴが入ったエラー画面や「502/504 Bad Gateway」が表示された場合は、1分ほど待ってからブラウザを再読み込み（リロード）してください。</li>
+                        <li>これは無料プラン特有の挙動であり、有料プランへの移行で解消可能です（必要な場合はお問い合わせください）。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/10 pb-2">
+                    <span className="text-blue-500">🔄</span> データが反映されない
+                </h3>
+                <p className="text-slate-300 text-sm">
+                    Googleビジネスプロフィールの変更（投稿や情報更新）が反映されるまで、Google側で数分〜数時間のタイムラグが発生することがあります。<br/>
+                    また、ダッシュボードの数値がおかしい場合は、ページを再読み込みするか、一度ログアウトして再ログインをお試しください。
+                </p>
+            </div>
+
+          </div>
+        </section>
+
       </div>
     </div>
   );

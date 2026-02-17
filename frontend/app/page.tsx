@@ -10,54 +10,67 @@ export default function Home() {
   const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
-    // 1. Start progress animation immediately to show activity
+    // 1. Start progress animation
     const progressInterval = setInterval(() => {
         setLoadingProgress((prev: number) => {
-            if (prev >= 90) return prev; // Hold at 90% until ready
-            return prev + 10;
+            // Slower progress for Cold Start (approx 50s)
+            if (prev >= 95) return prev; 
+            return prev + 1; // 1% every 500ms = 50 seconds to 100%
         });
     }, 500);
 
-    // 2. Ping Backend
+    // 2. Ping Backend Health Check
     const checkSystem = async () => {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-        try {
-            console.log("Pinging system...", apiUrl);
-            // Simple fetch to root or lightweight endpoint
-            // Set timeout to avoiding hanging forever if network is down
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        let retries = 0;
+        const maxRetries = 20; // 20 * 3s = 60s max wait
 
-            const res = await fetch(`${apiUrl}/`, { 
-                mode: 'cors',
-                signal: controller.signal 
-            });
-            clearTimeout(timeoutId);
+        const ping = async () => {
+             try {
+                console.log(`Pinging system health... Attempt ${retries + 1}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
-            if (res.ok) {
-                console.log("System Ready!");
-                setIsSystemReady(true);
-                setLoadingProgress(100);
-                setTimeout(() => setIsWarmingUp(false), 500); // Small delay for smooth transition
-            } else {
-                console.warn("System responded but not OK", res.status);
-                // Even if not 200, it replied, so it's "awake". But maybe error.
-                // For now, treat as ready to allow login attempt (which might fail but shows UI)
-                setIsSystemReady(true);
-                setLoadingProgress(100);
-                setIsWarmingUp(false);
-            }
-        } catch (e) {
-            console.error("System connection failed (likely sleeping)", e);
-            // Retry logic could go here, but for now let's just show options
-            // or keep loading? 
-            // Better to show login button anyway after a timeout so user isn't stuck
+                // Use the lightweight /health endpoint if available, else root
+                const res = await fetch(`${apiUrl}/health`, { 
+                    mode: 'cors',
+                    signal: controller.signal 
+                });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    console.log("System Health verified!");
+                    setIsSystemReady(true);
+                    setLoadingProgress(100);
+                    setTimeout(() => setIsWarmingUp(false), 800);
+                    return true;
+                } else {
+                    console.warn(`System responded ${res.status}, but not OK yet.`);
+                }
+             } catch (e) {
+                 console.log("System unreachable (likely sleeping).");
+             }
+             return false;
+        };
+
+        // Retry Loop
+        while (retries < maxRetries) {
+            const isReady = await ping();
+            if (isReady) break;
+            
+            retries++;
+            await new Promise(r => setTimeout(r, 3000)); // Wait 3s between pings
+        }
+        
+        // If still not ready after all retries, show UI anyway to allow manual retry or demo
+        if (retries >= maxRetries) {
+            console.warn("System warm-up timed out. Showing UI anyway.");
             setIsSystemReady(true);
             setLoadingProgress(100);
             setIsWarmingUp(false);
-        } finally {
-            clearInterval(progressInterval);
         }
+        
+        clearInterval(progressInterval);
     };
 
     checkSystem();
@@ -160,9 +173,8 @@ export default function Home() {
 
         </div>
         
-        {/* Config Error Modal */}
         {showConfigError && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                 <div className="glass-card max-w-2xl w-full p-8 relative animate-in fade-in zoom-in duration-300">
                     <button 
                         onClick={() => setShowConfigError(false)}
