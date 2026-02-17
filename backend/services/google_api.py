@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from urllib.parse import urlencode
 
@@ -340,22 +341,19 @@ class GBPClient:
             response = requests.post(url, headers=self._get_headers(), json=post_data)
             
             if not response.ok:
+                # レスポンスボディからエラー詳細を取得
+                error_msg = f"HTTP {response.status_code}"
                 try:
                     err_json = response.json()
-                    error_msg = err_json.get("error", {}).get("message", response.text)
-                    print(f"DEBUG: Google API Error: {error_msg}")
-                    # Raise detailed error for frontend to display
-                    raise ValueError(f"Google API Error: {error_msg}")
-                except ValueError:
-                     # If JSON parsing fails, use text
-                     print(f"DEBUG: Google API Non-JSON Error: {response.text}")
-                     raise ValueError(f"Google API Error (Raw): {response.text[:200]}")
+                    error_msg = err_json.get("error", {}).get("message", response.text[:300])
+                except (json.JSONDecodeError, Exception):
+                    error_msg = response.text[:300] if response.text else f"HTTP {response.status_code}"
+                
+                print(f"DEBUG: Google API Error: {error_msg}")
+                raise ValueError(f"Google API Error: {error_msg}")
             
             return response.json()
         except Exception as e:
-            # Re-raise detailed ValueError, or log and re-raise other exceptions
-            print(f"DEBUG: create_local_post error: {e}")
-            raise
             print(f"DEBUG: create_local_post error: {e}")
             raise
 

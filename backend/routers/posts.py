@@ -55,13 +55,22 @@ async def create_post(post: PostCreate, db: Session = Depends(database.get_db), 
     db.commit()
     db.refresh(db_post)
 
-    # If status is PUBLISHED (Immediate Post), trigger publish
+    # 即時投稿の場合、パブリッシュをトリガー
     if db_post.status == 'PUBLISHED':
         from services.sns_service import SNSService
         service = SNSService(db, current_user)
         try:
-            await service.publish_post(db_post.id)
+            final_status = await service.publish_post(db_post.id)
             db.refresh(db_post)
+            # フロントエンドがエラー詳細を表示できるようにsocial_post_idsを含める
+            return {
+                "id": db_post.id,
+                "status": db_post.status,
+                "social_post_ids": db_post.social_post_ids,
+                "content": db_post.content,
+                "media_url": db_post.media_url,
+                "created_at": str(db_post.created_at),
+            }
         except Exception as e:
             print(f"Publish Error: {e}")
 

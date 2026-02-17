@@ -6,20 +6,13 @@ import re
 import logging
 import httpx
 import requests
+import uuid
+import os
 try:
-    from requests_oauthlib import OAuth1Session # Standard for Twitter v1.1
+    from requests_oauthlib import OAuth1Session # Twitter v1.1用
 except ImportError:
     OAuth1Session = None
     print("WARNING: requests_oauthlib not found. Twitter v1.1 features will be disabled.")
-
-# Note: requests_oauthlib might not be in requirements.txt. 
-# If not, we have to rely on requests and manual auth headers or just v2 with Bearer (if App-only) or User Context.
-# Twitter API v2 User Context uses OAuth 2.0 with Bearer Token (AccessToken).
-# We will try standard requests with Bearer Token for v2.
-# For v1.1 media upload, it usually requires OAuth 1.0a OR OAuth 2.0 (if enabled). 
-# Basic Tier supports v2 write. Media upload is tricky. 
-# Let's assume User has OAuth 2.0 Access Token which works for v2.
-# For media, we might need v1.1. 
 
 from services import google_api
 from services.ai_generator import AIClient
@@ -31,17 +24,64 @@ class SNSService:
         self.db = db
         self.user = user
 
+    def _resolve_media_url(self, media_url: str) -> str:
+        """
+        メディアURLを解決する。
+        - localhost URL → エラーを投げる
+        - googleusercontent.com URL → ダウンロードしてローカルの公開URLに変換
+        - その他 → そのまま返す
+        """
+        if not media_url:
+            return media_url
+            
+        # localhost/プライベートIPチェック
+        if "localhost" in media_url or "127.0.0.1" in media_url:
+            raise ValueError("ローカル環境(localhost)の画像はGoogleに送信できません。公開URLを使用するか、本番環境で実行してください。")
+        
+        # Google CDN画像のプロキシ処理
+        if "googleusercontent.com" in media_url:
+            logger.info(f"Google画像をプロキシ中: {media_url}")
+            
+            img_res = requests.get(media_url, timeout=15)
+            if not img_res.ok:
+                raise ValueError(f"Google画像のダウンロードに失敗しました (HTTP {img_res.status_code})")
+            
+            # 拡張子判定
+            ext = "jpg"
+            content_type = img_res.headers.get("Content-Type", "")
+            if "image/png" in content_type:
+                ext = "png"
+            elif "image/webp" in content_type:
+                ext = "webp"
+            
+            # ファイル保存
+            filename = f"proxy_{uuid.uuid4()}.{ext}"
+            save_path = f"static/uploads/{filename}"
+            os.makedirs("static/uploads", exist_ok=True)
+            
+            with open(save_path, "wb") as f:
+                f.write(img_res.content)
+            
+            # 公開URL生成
+            base_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000").rstrip("/")
+            new_url = f"{base_url}/static/uploads/{filename}"
+            logger.info(f"プロキシ完了: {new_url}")
+            return new_url
+        
+        # 通常のURLはそのまま
+        return media_url
+
     async def publish_post(self, post_id: str):
         """
-        Publish a post to all target platforms.
-        Updates post.social_post_ids with results.
-        Returns final status (PUBLISHED, PARTIAL, FAILED).
+        投稿を全ターゲットプラットフォームに公開する。
+        post.social_post_idsに結果を保存する。
+        最終ステータス (PUBLISHED, PARTIAL, FAILED) を返す。
         """
         post = self.db.query(models.Post).filter(models.Post.id == post_id).first()
         if not post:
             return "FAILED"
 
-        # Initialize results if empty
+        # 結果を初期化
         results = post.social_post_ids or {}
         if isinstance(results, str):
              try: results = json.loads(results)
@@ -52,7 +92,7 @@ class SNSService:
              try: targets = json.loads(targets)
              except: targets = []
              
-        # Normalize targets
+        # ターゲットの正規化
         if "google" in targets and "gbp" not in targets: targets.append("gbp")
 
         success_count = 0
@@ -61,115 +101,41 @@ class SNSService:
         # 1. Google Business Profile
         if "google" in targets or "gbp" in targets:
             try:
-                if self.user.is_google_connected:
-                    # Use existing google_api service
-                    client = google_api.GBPClient(self.user.google_connection.access_token)
-                    store = self.db.query(models.Store).filter(models.Store.id == post.store_id).first()
-                    
-                    if store and store.google_location_id:
-                        try:
-                            post_data = {
-                                "summary": post.content,
-                                "topicType": "STANDARD",
-                            }
-                            # Handle Media for GBP
-                            if post.media_url:
-                                 target_url = post.media_url
-                                 
-                                 # Check for localhost/private IP
-                                 if "localhost" in target_url or "127.0.0.1" in target_url:
-                                     results["google"] = "ERROR: ローカル環境(localhost)の画像はGoogleに送信できません。公開URLを使用するか、本番環境で実行してください。"
-                                     fail_count += 1
-                                     # Continue to next if possible, but here we just mark error.
-                                     
-                                 else:
-                                     # Check for googleusercontent.com (Library images) - Google API rejects these as sourceUrl
-                                     if "googleusercontent.com" in target_url:
-                                         try:
-                                             # Download image temporarily
-                                             logger.info(f"Proxying Google Image: {target_url}")
-                                             import requests
-                                             import uuid
-                                             import os
-                                             
-                                             img_res = requests.get(target_url, timeout=10)
-                                             if img_res.ok:
-                                                 ext = "jpg" # Default
-                                                 if "image/png" in img_res.headers.get("Content-Type", ""): ext = "png"
-                                                 
-                                                 filename = f"proxy_{uuid.uuid4()}.{ext}"
-                                                 save_path = f"static/uploads/{filename}"
-                                                 os.makedirs("static/uploads", exist_ok=True)
-                                                 
-                                                 with open(save_path, "wb") as f:
-                                                     f.write(img_res.content)
-                                                     
-                                                 # Generate public URL
-                                                 base_url = os.getenv("RENDER_EXTERNAL_URL")
-                                                 if not base_url:
-                                                     # Fallback if env not set (e.g. local without env)
-                                                     base_url = "http://localhost:8000" 
-                                                     
-                                                 target_url = f"{base_url.rstrip('/')}/static/uploads/{filename}"
-                                                 logger.info(f"Proxied Image URL: {target_url}")
-                                                 
-                                                 # Update payload to use new URL
-                                                 if post.media_type == "PHOTO":
-                                                      post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": target_url}]
-                                                 elif post.media_type == "VIDEO":
-                                                      post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
-                                             else:
-                                                 logger.error(f"Failed to download Google image: {img_res.status_code}")
-                                                 raise ValueError(f"Google画像のダウンロードに失敗しました (Status: {img_res.status_code})")
-
-                                         except Exception as px_e:
-                                             logger.error(f"Proxy failed: {px_e}")
-                                             # Do NOT fallback. Report error because we know Google will reject the original.
-                                             results["google"] = f"ERROR: 画像の自動変換に失敗しました: {px_e}"
-                                             fail_count += 1
-                                             continue # Skip execution for Google
-                                     else:
-                                         # Standard URL
-                                         if post.media_type == "PHOTO":
-                                              post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": target_url}]
-                                         elif post.media_type == "VIDEO":
-                                              post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
-                                     
-                                     res = client.create_local_post(store.google_location_id, post_data)
-                                     if res and "name" in res:
-                                         # Store both ID and URL if available
-                                         results["google"] = {
-                                             "id": res.get("name"),
-                                             "searchUrl": res.get("searchUrl")
-                                         }
-                                         logger.info(f"Google Post Success: {res.get('searchUrl')}")
-                                         success_count += 1
-                                     else:
-                                         results["google"] = f"ERROR: API returned {res}"
-                                         fail_count += 1
-                            else:
-                                 # No media, just text
-                                 res = client.create_local_post(store.google_location_id, post_data)
-                                 if res and "name" in res:
-                                     results["google"] = {
-                                         "id": res.get("name"),
-                                         "searchUrl": res.get("searchUrl")
-                                     }
-                                     logger.info(f"Google Post Success: {res.get('searchUrl')}")
-                                     success_count += 1
-                                 else:
-                                     results["google"] = f"ERROR: API returned {res}"
-                                     fail_count += 1
-                        except Exception as e:
-                            error_detail = str(e)
-                            results["google"] = f"ERROR: {error_detail} | Payload: {post_data}"
-                            fail_count += 1
-                    else:
-                        results["google"] = "ERROR: No Location ID"
-                        fail_count += 1
+                if not self.user.is_google_connected:
+                    raise ValueError("Googleアカウントが未接続です")
+                
+                client = google_api.GBPClient(self.user.google_connection.access_token)
+                store = self.db.query(models.Store).filter(models.Store.id == post.store_id).first()
+                
+                if not store or not store.google_location_id:
+                    raise ValueError("Location IDが設定されていません")
+                
+                # 投稿データ構築
+                post_data = {
+                    "summary": post.content,
+                    "topicType": "STANDARD",
+                }
+                
+                # メディア処理
+                if post.media_url:
+                    resolved_url = self._resolve_media_url(post.media_url)
+                    media_format = post.media_type if post.media_type in ("PHOTO", "VIDEO") else "PHOTO"
+                    post_data["media"] = [{"mediaFormat": media_format, "sourceUrl": resolved_url}]
+                
+                # API呼び出し
+                res = client.create_local_post(store.google_location_id, post_data)
+                
+                if res and "name" in res:
+                    results["google"] = {
+                        "id": res.get("name"),
+                        "searchUrl": res.get("searchUrl")
+                    }
+                    logger.info(f"Google Post Success: {res.get('searchUrl')}")
+                    success_count += 1
                 else:
-                    results["google"] = "ERROR: Not Connected"
+                    results["google"] = f"ERROR: APIレスポンスが不正: {res}"
                     fail_count += 1
+                    
             except Exception as e:
                 logger.error(f"Google Post Error: {e}")
                 results["google"] = f"ERROR: {str(e)}"
