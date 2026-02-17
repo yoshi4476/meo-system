@@ -341,15 +341,30 @@ class GBPClient:
             response = requests.post(url, headers=self._get_headers(), json=post_data)
             
             if not response.ok:
-                # レスポンスボディからエラー詳細を取得
+                # レスポンスボディからエラー詳細を取得（details配列含む）
                 error_msg = f"HTTP {response.status_code}"
                 try:
                     err_json = response.json()
-                    error_msg = err_json.get("error", {}).get("message", response.text[:300])
+                    error_obj = err_json.get("error", {})
+                    error_msg = error_obj.get("message", "Unknown")
+                    # details配列に具体的なフィールドエラーが含まれる
+                    details = error_obj.get("details", [])
+                    if details:
+                        detail_msgs = []
+                        for d in details:
+                            # fieldViolationsがある場合
+                            for fv in d.get("fieldViolations", []):
+                                detail_msgs.append(f"{fv.get('field','?')}: {fv.get('description','?')}")
+                            # それ以外のdetail情報
+                            if not d.get("fieldViolations"):
+                                detail_msgs.append(json.dumps(d, ensure_ascii=False)[:200])
+                        if detail_msgs:
+                            error_msg += " | Details: " + " / ".join(detail_msgs)
                 except (json.JSONDecodeError, Exception):
-                    error_msg = response.text[:300] if response.text else f"HTTP {response.status_code}"
+                    error_msg = response.text[:500] if response.text else f"HTTP {response.status_code}"
                 
-                print(f"DEBUG: Google API Error: {error_msg}")
+                print(f"DEBUG: Google API Error (Full): {error_msg}")
+                print(f"DEBUG: Sent post_data: {json.dumps(post_data, ensure_ascii=False)[:500]}")
                 raise ValueError(f"Google API Error: {error_msg}")
             
             return response.json()
