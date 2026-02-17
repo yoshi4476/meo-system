@@ -119,19 +119,15 @@ class SNSService:
                                                  elif post.media_type == "VIDEO":
                                                       post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
                                              else:
-                                                 logger.warning(f"Failed to download Google image: {img_res.status_code}")
-                                                 # Fallback to original
-                                                 if post.media_type == "PHOTO":
-                                                      post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": target_url}]
-                                                 elif post.media_type == "VIDEO":
-                                                      post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
+                                                 logger.error(f"Failed to download Google image: {img_res.status_code}")
+                                                 raise ValueError(f"Google画像のダウンロードに失敗しました (Status: {img_res.status_code})")
+
                                          except Exception as px_e:
                                              logger.error(f"Proxy failed: {px_e}")
-                                             # Fallback to original
-                                             if post.media_type == "PHOTO":
-                                                  post_data["media"] = [{"mediaFormat": "PHOTO", "sourceUrl": target_url}]
-                                             elif post.media_type == "VIDEO":
-                                                  post_data["media"] = [{"mediaFormat": "VIDEO", "sourceUrl": target_url}]
+                                             # Do NOT fallback. Report error because we know Google will reject the original.
+                                             results["google"] = f"ERROR: 画像の自動変換に失敗しました: {px_e}"
+                                             fail_count += 1
+                                             continue # Skip execution for Google
                                      else:
                                          # Standard URL
                                          if post.media_type == "PHOTO":
