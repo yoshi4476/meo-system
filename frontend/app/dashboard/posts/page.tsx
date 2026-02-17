@@ -181,11 +181,21 @@ function PostsContent() {
                     filteredPosts.map(post => {
                         // Extract Google URL if available
                         let googleUrl = null;
+                        let errorDetails: string[] = [];
+                        
                         if (post.social_post_ids && typeof post.social_post_ids === 'object') {
-                             const g = (post.social_post_ids as any).google;
+                             const ids = post.social_post_ids as any;
+                             const g = ids.google;
                              if (g && typeof g === 'object' && g.searchUrl) {
                                   googleUrl = g.searchUrl;
                              }
+                             
+                             // Collect Errors
+                             Object.entries(ids).forEach(([platform, result]) => {
+                                 if (typeof result === 'string' && result.startsWith('ERROR')) {
+                                     errorDetails.push(`${platform}: ${result}`);
+                                 }
+                             });
                         }
 
                         return (
@@ -250,9 +260,18 @@ function PostsContent() {
                                 </div>
                                 <p className="text-slate-200 whitespace-pre-wrap line-clamp-3 leading-relaxed">{post.content}</p>
                                 
-                                {post.status === 'FAILED' && (
-                                    <div className="text-xs text-red-300 bg-red-900/20 p-2 rounded border border-red-900/50">
-                                        ※ 投稿に失敗しました。編集して再試行するか、設定を確認してください。
+                                {(post.status === 'FAILED' || errorDetails.length > 0) && (
+                                    <div className="text-xs text-red-300 bg-red-900/20 p-3 rounded border border-red-900/50">
+                                        <p className="font-bold mb-1">⚠️ 投稿エラー</p>
+                                        {errorDetails.length > 0 ? (
+                                            <ul className="list-disc list-inside space-y-1">
+                                                {errorDetails.map((err, i) => (
+                                                    <li key={i}>{err}</li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p>詳細なエラー情報は取得できませんでした。</p>
+                                        )}
                                     </div>
                                 )}
 
