@@ -347,8 +347,9 @@ class GBPClient:
                     # Raise detailed error for frontend to display
                     raise ValueError(f"Google API Error: {error_msg}")
                 except ValueError:
-                     # Raise original if JSON parsing fails
-                     response.raise_for_status()
+                     # If JSON parsing fails, use text
+                     print(f"DEBUG: Google API Non-JSON Error: {response.text}")
+                     raise ValueError(f"Google API Error (Raw): {response.text[:200]}")
             
             return response.json()
         except Exception as e:
