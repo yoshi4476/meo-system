@@ -17,9 +17,11 @@ def login_google(state: str = "default"):
     Generate Google OAuth URL for authentication.
     No authentication required - this is the entry point for OAuth flow.
     """
+    print(f"DEBUG: /google/login hit. State: {state}")
     from fastapi.responses import RedirectResponse, HTMLResponse
     try:
         auth_url = google_api.get_authorization_url(state=state)
+        print(f"DEBUG: Redirecting to Google Auth URL: {auth_url[:50]}...")
         return RedirectResponse(url=auth_url)
     except ValueError as e:
         # Google credentials not configured - show setup instructions
