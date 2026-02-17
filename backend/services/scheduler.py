@@ -106,16 +106,20 @@ async def check_and_publish_scheduled_posts():
 
 def start_scheduler():
     if not scheduler.running:
-        scheduler.add_job(check_and_publish_scheduled_posts, 'interval', minutes=1)
-        scheduler.add_job(auto_reply_to_reviews, 'interval', minutes=5)  # Check every 5 minutes
-        scheduler.add_job(sync_all_locations, 'interval', minutes=60) # Sync every hour
+        # Delay first run by 30 seconds to allow app startup/health check
+        start_delay = datetime.utcnow() + timedelta(seconds=30)
+        
+        scheduler.add_job(check_and_publish_scheduled_posts, 'interval', minutes=1, start_date=start_delay)
+        scheduler.add_job(auto_reply_to_reviews, 'interval', minutes=5, start_date=start_delay)  # Check every 5 minutes
+        scheduler.add_job(sync_all_locations, 'interval', minutes=60, start_date=start_delay) # Sync every hour
         
         # Enterprise Jobs
-        scheduler.add_job(check_daily_rankings, 'interval', hours=24) # Daily Rank Check
+        scheduler.add_job(check_daily_rankings, 'interval', hours=24, start_date=start_delay) # Daily Rank Check
         
         scheduler.start()
-        logger.info("Scheduler started with post publishing, auto-reply, hourly sync, and daily rank check.")
-        # Test job to confirm execution
+        logger.info(f"Scheduler started (first run at {start_delay}).")
+        
+        # Heartbeat runs immediately to show life
         scheduler.add_job(lambda: logger.info("Scheduler Heartbeat: Tick-tock"), 'interval', minutes=1)
 
 def shutdown_scheduler():

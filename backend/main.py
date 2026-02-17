@@ -253,3 +253,11 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @app.get("/")
 def read_root():
     return {"message": "Welcome to MEO Mastermind AI API"}
+
+@app.get("/health")
+def health_check():
+    """
+    Lightweight health check for Render/Vercel.
+    """
+    return {"status": "ok", "scheduler": "running" if scheduler.scheduler.running else "stopped"}
+

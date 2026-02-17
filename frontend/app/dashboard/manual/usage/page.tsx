@@ -399,10 +399,102 @@ export default function UsageManualPage() {
           </div>
         </section>
 
-        {/* ■ 8. 推奨ルーティン */}
+        {/* ■ 8. SNS連携設定 */}
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-500/30">8</div>
+               <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">8</div>
+               <h2 className="text-2xl font-bold text-white">SNS連携設定（APIキー取得ガイド）</h2>
+          </div>
+          <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-8 ml-14">
+            <p className="text-slate-300">
+                本システムの自動投稿機能を有効にするには、各SNSプラットフォームで「APIキー（Client ID / Secret）」を取得し、設定画面に入力する必要があります。
+            </p>
+
+            {/* Instagram */}
+            <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/10 pb-2">
+                    <span className="text-pink-500">📸</span> Instagram (Meta)
+                </h3>
+                <div className="bg-slate-900/50 p-5 rounded-xl border border-white/5">
+                    <h4 className="font-bold text-slate-200 mb-2">必要なもの</h4>
+                    <ul className="list-disc list-inside text-slate-400 text-sm mb-4">
+                        <li>Facebookアカウント</li>
+                        <li>Instagramプロアカウント（ビジネス/クリエイター）</li>
+                        <li>Facebookページ（Instagramとリンク済み）</li>
+                    </ul>
+                    <h4 className="font-bold text-slate-200 mb-2">手順: Meta for Developers</h4>
+                    <ol className="list-decimal list-inside text-slate-400 text-sm space-y-2">
+                        <li><a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Meta for Developers</a> にアクセスし、「マイアプリ」→「アプリを作成」をクリック。</li>
+                        <li>タイプは<strong>「ビジネス」</strong>を選択。</li>
+                        <li>「製品を追加」で<strong>「Instagram Graph API」</strong>を設定。</li>
+                        <li><strong>「設定」→「ベーシック」</strong>で <strong>アプリID (Client ID)</strong> と <strong>App Secret (Client Secret)</strong> を取得。</li>
+                        <li>「有効なOAuthリダイレクトURI」に以下を追加:<br/>
+                            <code className="bg-black/30 px-2 py-1 rounded text-xs select-all">https://[あなたのドメイン]/dashboard/settings</code>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
+            {/* X (Twitter) */}
+            <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/10 pb-2">
+                    <span className="text-white">🕊️</span> X (旧Twitter)
+                </h3>
+                <div className="bg-slate-900/50 p-5 rounded-xl border border-white/5">
+                    <h4 className="font-bold text-slate-200 mb-2">手順: Twitter Developer Portal</h4>
+                    <ol className="list-decimal list-inside text-slate-400 text-sm space-y-2">
+                        <li><a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Twitter Developer Portal</a> でアプリを作成 (Create App)。</li>
+                        <li><strong>User authentication settings</strong> をセットアップ:
+                            <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                                <li>App permissions: <strong>Read and Write</strong></li>
+                                <li>Type of App: <strong>Web App, Automated App or Bot</strong></li>
+                                <li>Redirect URL: <code className="bg-black/30 px-2 py-1 rounded text-xs select-all">https://[あなたのドメイン]/dashboard/settings</code></li>
+                            </ul>
+                        </li>
+                        <li><strong>Keys and tokens</strong> タブの <strong>OAuth 2.0 Client ID and Client Secret</strong> を取得。<br/>
+                        <span className="text-xs text-yellow-500">※ "Consumer Keys" ではありません。</span></li>
+                    </ol>
+                </div>
+            </div>
+
+            {/* YouTube */}
+            <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/10 pb-2">
+                    <span className="text-red-500">▶️</span> YouTube / Shorts
+                </h3>
+                <div className="bg-slate-900/50 p-5 rounded-xl border border-white/5">
+                    <h4 className="font-bold text-slate-200 mb-2">手順: Google Cloud Console</h4>
+                    <ol className="list-decimal list-inside text-slate-400 text-sm space-y-2">
+                        <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Google Cloud Console</a> でプロジェクトを作成。</li>
+                        <li><strong>YouTube Data API v3</strong> を有効化。</li>
+                        <li><strong>OAuth同意画面</strong> を作成（User Type: 外部）。</li>
+                        <li><strong>認証情報</strong> → <strong>OAuth クライアント ID</strong> を作成（ウェブ アプリケーション）。</li>
+                        <li>承認済みのリダイレクト URI: <code className="bg-black/30 px-2 py-1 rounded text-xs select-all">https://[あなたのドメイン]/dashboard/settings</code></li>
+                        <li>発行された <strong>クライアント ID</strong> と <strong>クライアント シークレット</strong> を取得。</li>
+                    </ol>
+                </div>
+            </div>
+
+            {/* System Setup */}
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 mt-4">
+                 <h4 className="font-bold text-blue-300 mb-2 flex items-center gap-2">
+                     <Settings className="w-4 h-4" /> システムへの登録方法
+                 </h4>
+                 <ol className="list-decimal list-inside text-slate-300 space-y-2 text-sm">
+                     <li>サイドメニューの「<span className="text-white font-bold">設定</span>」を開きます。</li>
+                     <li>各SNSのパネルにある「<span className="text-white font-bold">▼ 独自のClient IDを使用する (高度な設定)</span>」をクリック。</li>
+                     <li>取得したIDとSecretを入力し、「設定を保存」をクリック。</li>
+                     <li>その後、「連携する」ボタンを押して認証を完了させてください。</li>
+                 </ol>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ■ 9. 推奨ルーティン */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-500/30">9</div>
                 <h2 className="text-2xl font-bold text-white">運用の推奨ルーティン</h2>
           </div>
           <div className="bg-slate-800/50 p-8 rounded-2xl border border-white/5 space-y-6 ml-14">
